@@ -17,7 +17,7 @@ setup(
     description="Reusable Nodes and Orchestration Scheme for ChimeraPy with JSON configuration",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/umesh-timalsina/chimerapy-orchestrator.git",
+    url="https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator",
     author="Umesh Timalsina",
     author_email="umesh.timalsina@vanderbilt.edu",
     classifiers=[

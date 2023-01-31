@@ -6,7 +6,7 @@ Proof of concept Reusable Nodes and Orchestration Scheme for ChimeraPy with JSON
 In your `ChimeraPy` dev environment, install the package:
 
 ```shell
-$ git clone git@github.com:umesh-timalsina/chimerapy-orchestrator.git
+$ git clone git@github.com:oele-isis-vanderbilt/ChimeraPyOrchestrator.git
 $ cd chimerapy-orchestrator
 $ pip install [-e] .
 ```
