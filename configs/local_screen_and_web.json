@@ -1,0 +1,22 @@
+{
+  "workers": [
+    {
+      "name": "local"
+    }
+  ],
+  "nodes": [
+    "WebcamNode",
+    "ScreenCaptureNode",
+    "ShowWindow"
+  ],
+  "adj": [
+    ["WebcamNode", "ShowWindow"],
+    ["ScreenCaptureNode", "ShowWindow"]
+  ],
+  "manager_config": {
+    "logdir": "cp-logs"
+  },
+  "mappings": {
+    "local": ["WebcamNode", "ShowWindow", "ScreenCaptureNode"]
+  }
+}
