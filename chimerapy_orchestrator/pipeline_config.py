@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class ManagerConfig(BaseModel):
     logdir: Path = Field(..., description="The log directory for the manager.")
+    port: int = Field(..., description="The port for the manager.")
 
 
 class WorkerConfig(BaseModel):
@@ -63,25 +64,25 @@ class ChimeraPyPipelineConfig(BaseModel):
         for edge in edges:
             pipeline.add_edge(*edge)
 
-        workers = []
+        workers = {}
         for wc in self.workers:
             if not wc.remote:
                 wo = cp.Worker(name=wc.name)
-                workers.append(wo)
+                workers[wo.name] = wo
 
         manager = self.manager()
 
         list(
             map(
                 lambda w: w.connect(host=manager.host, port=manager.port),
-                workers,
+                workers.values(),
             )
         )
 
         mp = {}
         for worker in self.mappings:
-            mp[worker] = [
-                created_nodes[node_name].name
+            mp[workers[worker].id] = [
+                created_nodes[node_name].id
                 for node_name in self.mappings[worker]
             ]
 
