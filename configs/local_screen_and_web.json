@@ -14,7 +14,8 @@
     ["ScreenCaptureNode", "ShowWindow"]
   ],
   "manager_config": {
-    "logdir": "cp-logs"
+    "logdir": "cp-logs",
+    "port": "9001"
   },
   "mappings": {
     "local": ["WebcamNode", "ShowWindow", "ScreenCaptureNode"]
