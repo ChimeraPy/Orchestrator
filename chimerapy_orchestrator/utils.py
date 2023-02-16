@@ -14,7 +14,6 @@ def register_chimerapy_node(cls=None, *, name=None):
 
 class RegistersChimeraPyNode:
     def __init__(self, name: Optional[str] = None) -> None:
-        print("here")
         self.name = name
 
     def __call__(self, node_class: Node):
@@ -24,7 +23,9 @@ class RegistersChimeraPyNode:
             name = self.name
 
         if name in ChimeraPyPipelineConfig.registered_nodes:
-            raise ValueError(f"{name} is already registered as a ChimeraPy Node")
+            raise ValueError(
+                f"{name} is already registered as a ChimeraPy Node"
+            )
 
         ChimeraPyPipelineConfig.registered_nodes[name] = node_class
         return node_class

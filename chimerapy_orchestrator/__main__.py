@@ -44,9 +44,14 @@ def run(args=None):
     ]
 
     parser.add_argument(
-        "mode", help="The mode for the orchestrator", type=str, choices=sorted(modes)
+        "mode",
+        help="The mode for the orchestrator",
+        type=str,
+        choices=sorted(modes),
     )
-    parser.add_argument("--config", help="The configuration file to use", type=str)
+    parser.add_argument(
+        "--config", help="The configuration file to use", type=str
+    )
 
     args = parser.parse_args(args)
 

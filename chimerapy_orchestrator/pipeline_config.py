@@ -21,7 +21,9 @@ class WorkerConfig(BaseModel):
 class ChimeraPyPipelineConfig(BaseModel):
     registered_nodes: ClassVar[Dict[str, cp.Node]] = {}
 
-    workers: List[WorkerConfig] = Field(..., description="The workers to be added.")
+    workers: List[WorkerConfig] = Field(
+        ..., description="The workers to be added."
+    )
 
     nodes: List[str] = Field(..., description="The nodes in the pipeline.")
 
@@ -29,7 +31,9 @@ class ChimeraPyPipelineConfig(BaseModel):
         ..., description="The edge list of the pipeline graph."
     )
 
-    manager_config: ManagerConfig = Field(..., description="The manager configs.")
+    manager_config: ManagerConfig = Field(
+        ..., description="The manager configs."
+    )
 
     mappings: Dict[str, List[str]] = Field(
         ..., description="The delegation mapping of workers to nodes."
@@ -43,7 +47,9 @@ class ChimeraPyPipelineConfig(BaseModel):
         NodeClass = self.registered_nodes[name]
         return NodeClass()
 
-    def pipeline_graph(self) -> Tuple[cp.Manager, cp.Graph, Dict[str, List[str]]]:
+    def pipeline_graph(
+        self,
+    ) -> Tuple[cp.Manager, cp.Graph, Dict[str, List[str]]]:
         created_nodes = {}
         for node_name in self.nodes:
             created_nodes[node_name] = self.get_registered_node(node_name)
@@ -51,7 +57,8 @@ class ChimeraPyPipelineConfig(BaseModel):
         pipeline = cp.Graph()
         pipeline.add_nodes_from(list(created_nodes.values()))
         edges = map(
-            lambda edge: (created_nodes[edge[0]], created_nodes[edge[1]]), self.adj
+            lambda edge: (created_nodes[edge[0]], created_nodes[edge[1]]),
+            self.adj,
         )
         for edge in edges:
             pipeline.add_edge(*edge)
@@ -64,12 +71,18 @@ class ChimeraPyPipelineConfig(BaseModel):
 
         manager = self.manager()
 
-        list(map(lambda w: w.connect(host=manager.host, port=manager.port), workers))
+        list(
+            map(
+                lambda w: w.connect(host=manager.host, port=manager.port),
+                workers,
+            )
+        )
 
         mp = {}
         for worker in self.mappings:
             mp[worker] = [
-                created_nodes[node_name].name for node_name in self.mappings[worker]
+                created_nodes[node_name].name
+                for node_name in self.mappings[worker]
             ]
 
         return manager, pipeline, mp
