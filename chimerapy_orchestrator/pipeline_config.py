@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import ClassVar, Dict, List, Tuple
+from typing import ClassVar, Dict, List, Optional, Set, Tuple
 
 import chimerapy as cp
 from pydantic import BaseModel, Field
@@ -12,6 +12,7 @@ class ManagerConfig(BaseModel):
 
 class WorkerConfig(BaseModel):
     name: str = Field(..., description="The name of the worker.")
+    id: Optional[str] = Field(default=None, description="The id of the worker.")
 
     remote: bool = Field(
         default=False,
@@ -50,7 +51,7 @@ class ChimeraPyPipelineConfig(BaseModel):
 
     def pipeline_graph(
         self,
-    ) -> Tuple[cp.Manager, cp.Graph, Dict[str, List[str]]]:
+    ) -> Tuple[cp.Manager, cp.Graph, Dict[str, List[str]], Set[str]]:
         created_nodes = {}
         for node_name in self.nodes:
             created_nodes[node_name] = self.get_registered_node(node_name)
@@ -65,10 +66,13 @@ class ChimeraPyPipelineConfig(BaseModel):
             pipeline.add_edge(*edge)
 
         workers = {}
+        remote_workers = set()
         for wc in self.workers:
             if not wc.remote:
                 wo = cp.Worker(name=wc.name)
                 workers[wo.name] = wo
+            else:
+                remote_workers.add(wc.id)
 
         manager = self.manager()
 
@@ -81,12 +85,18 @@ class ChimeraPyPipelineConfig(BaseModel):
 
         mp = {}
         for worker in self.mappings:
-            mp[workers[worker].id] = [
-                created_nodes[node_name].id
-                for node_name in self.mappings[worker]
-            ]
+            try:
+                mp[workers[worker].id] = [
+                    created_nodes[node_name].id
+                    for node_name in self.mappings[worker]
+                ]
+            except KeyError:
+                mp[worker] = [
+                    created_nodes[node_name].id
+                    for node_name in self.mappings[worker]
+                ]
 
-        return manager, pipeline, mp
+        return manager, pipeline, mp, remote_workers
 
     class Config:
         arbitrary_types_allowed = True

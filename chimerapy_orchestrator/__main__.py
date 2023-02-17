@@ -5,11 +5,18 @@ from .pipeline_config import ChimeraPyPipelineConfig
 
 
 def orchestrate(config: ChimeraPyPipelineConfig):
-    manager, pipeline, mappings = config.pipeline_graph()
+    manager, pipeline, mappings, remote_workers = config.pipeline_graph()
+    print(mappings)
 
+    print("Waiting for remote workers to connect...")
     while True:
-        q = input("All workers connected? (Y/n)")
-        if q.lower() == "y":
+        if all(
+            [
+                remote_worker in manager.workers
+                for remote_worker in remote_workers
+            ]
+        ):
+            print("All remote workers connected!")
             break
 
     # Commit the graph
