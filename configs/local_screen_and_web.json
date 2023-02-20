@@ -1,7 +1,13 @@
 {
   "workers": [
     {
-      "name": "local"
+      "name": "local",
+      "id": "local"
+    },
+    {
+        "name": "worker1",
+        "id": "worker1",
+        "remote": true
     }
   ],
   "nodes": [
@@ -18,6 +24,7 @@
     "port": "9001"
   },
   "mappings": {
-    "local": ["WebcamNode", "ShowWindow", "ScreenCaptureNode"]
+    "local": ["WebcamNode", "ShowWindow"],
+    "worker1": ["ScreenCaptureNode"]
   }
 }

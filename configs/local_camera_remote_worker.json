@@ -1,0 +1,23 @@
+{
+  "workers": [
+    {
+      "name": "worker1",
+      "id": "worker1",
+      "remote": true
+    }
+  ],
+  "nodes": [
+    "WebcamNode",
+    "ShowWindow"
+  ],
+  "adj": [
+    ["WebcamNode", "ShowWindow"]
+  ],
+  "manager_config": {
+    "logdir": "cp-logs",
+    "port": 9001
+  },
+  "mappings": {
+    "worker1": ["WebcamNode", "ShowWindow"]
+  }
+}
