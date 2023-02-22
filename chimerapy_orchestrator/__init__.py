@@ -1,1 +1,1 @@
-from . import nodes
+from . import registered_nodes
