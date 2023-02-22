@@ -37,7 +37,6 @@ class ShowWindow(cp.Node):
         super(ShowWindow, self).__init__(name="ShowWindow")
 
     def step(self, data_chunks: Dict[str, cp.DataChunk]):
-
         for name, data_chunk in data_chunks.items():
             self.logger.debug(f"{self}: got from {name}, data={data_chunk}")
 
