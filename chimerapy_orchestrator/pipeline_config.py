@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import ClassVar, Dict, List, Optional, Set, Tuple
 
@@ -19,13 +20,31 @@ class WorkerConfig(BaseModel):
         description="Indicating the worker is remote and is connected(no creation needed).",
     )
 
+    description: Optional[str] = Field(
+        default="", description="The description of the worker."
+    )
+
+    class Config:
+        allow_extra = False
+
+
+class Workers(BaseModel):
+    """A list of workers."""
+
+    manager_ip: str = Field(..., description="The manager ip.")
+    manager_port: int = Field(..., description="The manager port.")
+    instances: List[WorkerConfig] = Field(
+        ..., description="The workers to be added."
+    )
+
+    class Config:
+        allow_extra = False
+
 
 class ChimeraPyPipelineConfig(BaseModel):
     registered_nodes: ClassVar[Dict[str, cp.Node]] = {}
 
-    workers: List[WorkerConfig] = Field(
-        ..., description="The workers to be added."
-    )
+    workers: Workers = Field(..., description="The workers to be added.")
 
     nodes: List[str] = Field(..., description="The nodes in the pipeline.")
 
@@ -67,7 +86,7 @@ class ChimeraPyPipelineConfig(BaseModel):
 
         workers = {}
         remote_workers = set()
-        for wc in self.workers:
+        for wc in self.workers.instances:
             if not wc.remote:
                 wo = cp.Worker(name=wc.name)
                 workers[wo.name] = wo
@@ -97,6 +116,29 @@ class ChimeraPyPipelineConfig(BaseModel):
                 ]
 
         return manager, pipeline, mp, remote_workers
+
+    def instantiate_remote_worker(self, worker_id) -> cp.Worker:
+        for wc in self.workers.instances:
+            if wc.id == worker_id:
+                assert (
+                    wc.remote
+                ), f"Worker: {worker_id} is not remote, cannot instantiate."
+                return cp.Worker(name=wc.name, id=worker_id)
+
+        raise ValueError(f"Worker: {worker_id} not found.")
+
+    def list_remote_workers(self):
+        remotes = list(
+            map(
+                lambda wc: wc.dict(),
+                filter(
+                    lambda wc: wc.remote,
+                    self.workers.instances,
+                ),
+            )
+        )
+
+        print(json.dumps(remotes, indent=2))
 
     class Config:
         arbitrary_types_allowed = True

@@ -1,21 +1,33 @@
 {
-  "workers": [
-    {
-      "name": "local"
-    }
-  ],
+  "workers": {
+    "manager_ip": "129.59.104.153",
+    "manager_port": 9001,
+    "instances": [
+      {
+        "name": "worker1",
+        "id": "worker1",
+        "description": "Worker 1 for the webcam demo with a webcam node and a show window node"
+      }
+    ]
+  },
   "nodes": [
     "WebcamNode",
     "ShowWindow"
   ],
   "adj": [
-    ["WebcamNode", "ShowWindow"]
+    [
+      "WebcamNode",
+      "ShowWindow"
+    ]
   ],
   "manager_config": {
     "logdir": "cp-logs",
     "port": 9001
   },
   "mappings": {
-    "local": ["WebcamNode", "ShowWindow"]
+    "local": [
+      "WebcamNode",
+      "ShowWindow"
+    ]
   }
 }
