@@ -4,8 +4,9 @@
     "manager_port": 9001,
     "instances": [
       {
-        "name": "worker1",
-        "id": "worker1",
+        "name": "local",
+        "id": "local",
+        "remote": false,
         "description": "Worker 1 for the webcam demo with a webcam node and a show window node"
       }
     ]
@@ -29,5 +30,5 @@
       "WebcamNode",
       "ShowWindow"
     ]
-  }
+  },
 }
