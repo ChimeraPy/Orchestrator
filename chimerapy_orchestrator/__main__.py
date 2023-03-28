@@ -110,6 +110,21 @@ def run(args=None):
         type=str,
         required="orchestrate-worker" in sys.argv,
     )
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--no-wait",
+        help="Do not wait for the worker to connect to the manager",
+        action="store_true",
+        required=False,
+        default=True,
+    )
+    group.add_argument(
+        "--max-retries",
+        help="The maximum number of retries to connect to the manager",
+        type=int,
+        required=False,
+        default=10,
+    )
 
     args = parser.parse_args(args)
     with open(args.config) as config_file:
@@ -119,7 +134,11 @@ def run(args=None):
     if args.mode == "orchestrate":
         orchestrate(cp_config)
     elif args.mode == "orchestrate-worker":
-        orchestrate_worker(cp_config, args.worker_id)
+        kwargs = {
+            "wait_until_connected": not args.no_wait,
+            "max_retries": args.max_retries,
+        }
+        orchestrate_worker(cp_config, args.worker_id, **kwargs)
     elif args.mode == "list-remote-workers":
         print("=== Remote Workers ===")
         cp_config.list_remote_workers()
