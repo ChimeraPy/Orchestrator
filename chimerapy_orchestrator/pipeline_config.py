@@ -1,14 +1,30 @@
 import json
 from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, Set, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 import chimerapy as cp
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class ManagerConfig(BaseModel):
     logdir: Path = Field(..., description="The log directory for the manager.")
     port: int = Field(..., description="The port for the manager.")
+
+    class Config:
+        allow_extra = False
+
+
+class NodeConfig(BaseModel):
+    registry_name: str = Field(
+        ..., description="The name of the node to serach in the registry."
+    )
+    name: str = Field(..., description="The name of the node.")
+    kwargs: Dict[str, Any] = Field(
+        default={}, description="The kwargs for the node."
+    )
+
+    class Config:
+        allow_extra = False
 
 
 class WorkerConfig(BaseModel):
@@ -46,7 +62,9 @@ class ChimeraPyPipelineConfig(BaseModel):
 
     workers: Workers = Field(..., description="The workers to be added.")
 
-    nodes: List[str] = Field(..., description="The nodes in the pipeline.")
+    nodes: List[NodeConfig] = Field(
+        ..., description="The nodes in the pipeline."
+    )
 
     adj: List[Tuple[str, str]] = Field(
         ..., description="The edge list of the pipeline graph."
@@ -60,20 +78,38 @@ class ChimeraPyPipelineConfig(BaseModel):
         ..., description="The delegation mapping of workers to nodes."
     )
 
+    discover_nodes_from: Optional[List[str]] = Field(
+        default=[],
+        description="The list of modules to discover nodes from.",
+    )
+
     def manager(self) -> cp.Manager:
         return cp.Manager(**self.manager_config.dict())
 
-    def get_registered_node(self, name) -> cp.Node:
+    def register_external_nodes(self):
+        for module in self.discover_nodes_from:
+            try:
+                import importlib
+
+                module = importlib.import_module(module)
+            except ModuleNotFoundError:
+                print(f"Module {module} not found. Skipping nodes discovery")
+
+    def get_registered_node(self, name) -> Type[cp.Node]:
         assert name in self.registered_nodes, f"No node named: {name}"
         NodeClass = self.registered_nodes[name]
-        return NodeClass()
+        return NodeClass
 
     def pipeline_graph(
         self,
     ) -> Tuple[cp.Manager, cp.Graph, Dict[str, List[str]], Set[str]]:
         created_nodes = {}
-        for node_name in self.nodes:
-            created_nodes[node_name] = self.get_registered_node(node_name)
+
+        for node_config in self.nodes:
+            node_config.kwargs["name"] = node_config.name
+            created_nodes[node_config.name] = self.get_registered_node(
+                node_config.registry_name
+            )(**node_config.kwargs)
 
         pipeline = cp.Graph()
         pipeline.add_nodes_from(list(created_nodes.values()))
@@ -114,7 +150,6 @@ class ChimeraPyPipelineConfig(BaseModel):
                     created_nodes[node_name].id
                     for node_name in self.mappings[worker]
                 ]
-
         return manager, pipeline, mp, remote_workers
 
     def instantiate_remote_worker(self, worker_id) -> cp.Worker:
@@ -139,6 +174,12 @@ class ChimeraPyPipelineConfig(BaseModel):
         )
 
         print(json.dumps(remotes, indent=2))
+
+    @validator("nodes", pre=True, each_item=True)
+    def validate_nodes(cls, v):
+        if isinstance(v, str):
+            return NodeConfig(registry_name=v, name=v)
+        return v
 
     class Config:
         arbitrary_types_allowed = True

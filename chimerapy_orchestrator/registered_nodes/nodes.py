@@ -13,8 +13,8 @@ from chimerapy_orchestrator.utils import register_chimerapy_node
 
 @register_chimerapy_node
 class WebcamNode(cp.Node):
-    def __init__(self):
-        super(WebcamNode, self).__init__(name="WebcamNode")
+    def __init__(self, name="WebcamNode"):
+        super(WebcamNode, self).__init__(name=name)
 
     def prep(self):
         self.vid = cv2.VideoCapture(0)
@@ -33,8 +33,8 @@ class WebcamNode(cp.Node):
 
 @register_chimerapy_node
 class ShowWindow(cp.Node):
-    def __init__(self):
-        super(ShowWindow, self).__init__(name="ShowWindow")
+    def __init__(self, name="ShowWindow"):
+        super(ShowWindow, self).__init__(name=name)
 
     def step(self, data_chunks: Dict[str, cp.DataChunk]):
         for name, data_chunk in data_chunks.items():
@@ -46,8 +46,8 @@ class ShowWindow(cp.Node):
 
 @register_chimerapy_node
 class ScreenCaptureNode(cp.Node):
-    def __init__(self):
-        super(ScreenCaptureNode, self).__init__(name="ScreenCaptureNode")
+    def __init__(self, name="ScreenCaptureNode"):
+        super(ScreenCaptureNode, self).__init__(name=name)
 
     def prep(self):
         if platform.system() == "Windows":
