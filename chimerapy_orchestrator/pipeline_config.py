@@ -124,7 +124,7 @@ class ChimeraPyPipelineConfig(BaseModel):
         remote_workers = set()
         for wc in self.workers.instances:
             if not wc.remote:
-                wo = cp.Worker(name=wc.name)
+                wo = cp.Worker(name=wc.name, port=0)
                 workers[wo.name] = wo
             else:
                 remote_workers.add(wc.id)
@@ -158,7 +158,7 @@ class ChimeraPyPipelineConfig(BaseModel):
                 assert (
                     wc.remote
                 ), f"Worker: {worker_id} is not remote, cannot instantiate."
-                return cp.Worker(name=wc.name, id=worker_id)
+                return cp.Worker(name=wc.name, id=worker_id, port=0)
 
         raise ValueError(f"Worker: {worker_id} not found.")
 
