@@ -23,7 +23,7 @@ jobs:
     # The process
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
@@ -52,7 +52,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           curl.exe --url https://vanderbilt.box.com/shared/static/472y7ier44kaukrkg7ykj4wrtxg321fh.whl
-          pip install PyAudio-0.2.11-cp39-cp39-win_amd64.whl
+          pip3 install PyAudio-0.2.11-cp39-cp39-win_amd64.whl
           echo "MANUAL_OS_SET=Windows" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -65,17 +65,17 @@ jobs:
       - name: Install ChimeraPy (Bleeding Edge)
         run: |
           cd ChimeraPy
-          python -m pip install --upgrade pip
-          pip install -e ".[test]"
+          python3 -m pip3 install --upgrade pip
+          pip3 install -e ".[test]"
 
       - name: Install Package
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[test]"
+          python3 -m pip3 install --upgrade pip
+          pip3 install -e ".[test]"
 
       - name: Perform tests
         run: |
-          pip install coverage
+          pip3 install coverage
           coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
 
       - name: Upload coverage data to coveralls.io
