@@ -45,15 +45,13 @@ jobs:
       - name: Install MacOS dependencies
         if: matrix.os == 'macos-latest'
         run: |
-          sudo apt-get update
-          sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
+          brew install ffmpeg portaudio
           echo "MANUAL_OS_SET=Darwin" >> $GITHUB_ENV
 
       - name: Install Windows dependencies
         if: matrix.os == 'windows-latest'
         run: |
-          sudo apt-get update
-          sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
+          curl.exe -o pyaudio-wheel.whl https://vanderbilt.box.com/shared/static/472y7ier44kaukrkg7ykj4wrtxg321fh.whl
           echo "MANUAL_OS_SET=Windows" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -77,7 +75,6 @@ jobs:
       - name: Perform tests
         run: |
           coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
-          coverage combine --append
 
       - name: Upload coverage data to coveralls.io
         if : matrix.os == 'ubuntu-latest'
