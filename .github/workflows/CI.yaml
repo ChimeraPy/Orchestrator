@@ -1,11 +1,5 @@
 name: Test
 
-# Look at this: https://github.com/iterative/dvc/pull/7213
-# Forum: https://discuss.dvc.org/t/cml-github-actions-google-drive-service-account/795/3?fbclid=IwAR21DBJ3bP2m3VwZ7EUp4U1ik0YQbNRgAIdemg14msCC7UtnaBao81oTTDE
-# https://github.com/iterative/cml#using-cml-with-dvc
-# https://github.com/iterative/dvc.org/blob/master/content/docs/user-guide/setup-google-drive-remote.md
-# https://www.ravirajag.dev/blog/mlops-github-actions
-
 on:
   push:
     branches:
@@ -19,6 +13,7 @@ env:
 
 jobs:
   test:
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
