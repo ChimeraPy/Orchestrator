@@ -5,7 +5,9 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 from requests.exceptions import ConnectionError
 
-from .pipeline_config import ChimeraPyPipelineConfig
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 
 
 def orchestrate(config: ChimeraPyPipelineConfig):
