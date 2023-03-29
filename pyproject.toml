@@ -1,0 +1,51 @@
+[project]
+name = "chimerapy-orchestrator"
+version = "0.0.1"
+description = "ChimeraPyOrchestrator: A webapp and CLI tool for orchestrating ChimeraPy pipelines"
+authors = [
+    {name = "Eduardo Davalos", email="eduardo.davalos.anaya@vanderbilt.edu"},
+    {name = "Umesh Timalsina", email="umesh.timalsina@vanderbilt.edu"}
+]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">3.6"
+
+keywords = ["multimodal", "data", "distributed", "streaming", "real-time"]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GPL-3.0",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Distributed Computing",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    'chimerapy',
+    'pydantic'
+]
+
+[project.urls]
+homepath = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
+documentation = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
+repository = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
+
+# Entrypoint
+[project.scripts]
+cp-orchestrator = "chimerapy_orchestrator.cli.__main__:run"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# https://setuptools.pypa.io/en/stable/userguide/datafiles.html
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
