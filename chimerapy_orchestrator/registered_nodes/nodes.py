@@ -1,6 +1,6 @@
 import platform
 import time
-from typing import Any, Dict
+from typing import Dict
 
 import chimerapy as cp
 import cv2
