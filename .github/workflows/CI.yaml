@@ -51,8 +51,8 @@ jobs:
       - name: Install Windows dependencies
         if: matrix.os == 'windows-latest'
         run: |
-          curl.exe -o pyaudio.whl https://vanderbilt.box.com/shared/static/472y7ier44kaukrkg7ykj4wrtxg321fh.whl
-          pip install pyaudio.whl
+          curl.exe https://vanderbilt.box.com/shared/static/472y7ier44kaukrkg7ykj4wrtxg321fh.whl
+          pip install PyAudio-0.2.11-cp39-cp39-win_amd64.whl
           echo "MANUAL_OS_SET=Windows" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -75,6 +75,7 @@ jobs:
 
       - name: Perform tests
         run: |
+          pip install coverage
           coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
 
       - name: Upload coverage data to coveralls.io
