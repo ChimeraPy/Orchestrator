@@ -1,0 +1,82 @@
+name: Test
+
+# Look at this: https://github.com/iterative/dvc/pull/7213
+# Forum: https://discuss.dvc.org/t/cml-github-actions-google-drive-service-account/795/3?fbclid=IwAR21DBJ3bP2m3VwZ7EUp4U1ik0YQbNRgAIdemg14msCC7UtnaBao81oTTDE
+# https://github.com/iterative/cml#using-cml-with-dvc
+# https://github.com/iterative/dvc.org/blob/master/content/docs/user-guide/setup-google-drive-remote.md
+# https://www.ravirajag.dev/blog/mlops-github-actions
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  RUNNING_ON_GA: GA
+
+jobs:
+  test:
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    # The process
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - uses: actions/checkout@v3
+        name: Checkout code
+
+      - uses: actions/checkout@v3
+        name: Checkout ChimeraPy (main)
+        with:
+          repository: oele-isis-vanderbilt/ChimeraPy
+          ref: main
+          path: ChimeraPy
+
+      - name: Install ChimeraPy (Bleeding Edge)
+        run: |
+          cd ChimeraPy
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Install Package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Perform tests
+        run: |
+          coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/test
+          coverage combine --append
+
+      - name: Upload coverage data to coveralls.io
+        if : matrix.os == 'ubuntu-latest'
+        run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_FLAG_NAME: ${{ matrix.test-name }}
+          COVERALLS_PARALLEL: true
+
+
+  coveralls:
+    name: Indicate completion to coveralls.io
+    needs: test
+    runs-on: ubuntu-latest
+    container: python:3-slim
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - name: Finished
+      run: |
+        pip3 install --upgrade coveralls
+        coveralls --service=github --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
