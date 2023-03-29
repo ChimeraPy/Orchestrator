@@ -29,7 +29,7 @@ class NodeConfig(BaseModel):
 
 class WorkerConfig(BaseModel):
     name: str = Field(..., description="The name of the worker.")
-    id: Optional[str] = Field(default=None, description="The id of the worker.")
+    id: str = Field(default=None, description="The id of the worker.")
 
     remote: bool = Field(
         default=False,

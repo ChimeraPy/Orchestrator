@@ -30,6 +30,13 @@ dependencies = [
     'pydantic'
 ]
 
+[project.optional-dependencies]
+test = [
+    'pytest',
+    'coveralls',
+    'pre-commit'
+]
+
 [project.urls]
 homepath = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
 documentation = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
