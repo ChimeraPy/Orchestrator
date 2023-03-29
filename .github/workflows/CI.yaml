@@ -30,6 +30,32 @@ jobs:
       - uses: actions/checkout@v3
         name: Checkout code
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install ffmpeg libsm6 libxext6 -y
+          sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
+          echo "MANUAL_OS_SET=Linux" >> $GITHUB_ENV
+
+      - name: Install HomeBrew for MacOS
+        if: matrix.os == 'macos-latest'
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install MacOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
+          echo "MANUAL_OS_SET=Darwin" >> $GITHUB_ENV
+
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
+          echo "MANUAL_OS_SET=Windows" >> $GITHUB_ENV
+
       - uses: actions/checkout@v3
         name: Checkout ChimeraPy (main)
         with:
@@ -50,7 +76,7 @@ jobs:
 
       - name: Perform tests
         run: |
-          coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/test
+          coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
           coverage combine --append
 
       - name: Upload coverage data to coveralls.io
