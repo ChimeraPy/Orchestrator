@@ -45,7 +45,7 @@ setup(
     python_requires=">=3.8",
     entry_points={
         "console_scripts": [
-            "cp-orchestrator = chimerapy_orchestrator.__main__:run"
+            "cp-orchestrator = chimerapy_orchestrator.cli.__main__:run"
         ]
     },
 )

@@ -2,7 +2,9 @@ from typing import Optional
 
 from chimerapy import Node
 
-from .pipeline_config import ChimeraPyPipelineConfig
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 
 
 def register_chimerapy_node(cls=None, *, name=None):
