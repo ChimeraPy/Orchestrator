@@ -22,9 +22,9 @@ repos:
   hooks:
     - id: black
       args: [--line-length=80]
-- repo: https://github.com/pycqa/isort
-  rev: 5.10.1
+
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: 'v0.0.257'
   hooks:
-    - id: isort
-      name: isort (python)
-      args: [--profile=black, --line-length=80]
+  -   id: ruff
+      args: [--fix]
