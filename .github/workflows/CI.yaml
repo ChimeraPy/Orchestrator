@@ -51,7 +51,7 @@ jobs:
       - name: Install Windows dependencies
         if: matrix.os == 'windows-latest'
         run: |
-          curl.exe https://vanderbilt.box.com/shared/static/472y7ier44kaukrkg7ykj4wrtxg321fh.whl
+          curl.exe --url https://vanderbilt.box.com/shared/static/472y7ier44kaukrkg7ykj4wrtxg321fh.whl
           pip install PyAudio-0.2.11-cp39-cp39-win_amd64.whl
           echo "MANUAL_OS_SET=Windows" >> $GITHUB_ENV
 
