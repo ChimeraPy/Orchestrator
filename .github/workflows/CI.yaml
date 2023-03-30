@@ -12,7 +12,7 @@ env:
   RUNNING_ON_GA: GA
 
 jobs:
-  test:
+  test-orchestrator:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -66,7 +66,7 @@ jobs:
         run: |
           ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
 
-      - name: Perform Tests ${{ matrix.os }}
+      - name: Perform Tests (${{ matrix.os }})
         run: |
           ${{ steps.cp39.outputs.python-path }} -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
 
@@ -77,6 +77,40 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.test-name }}
           COVERALLS_PARALLEL: true
+
+  test-dashboard:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout Code
+
+      - uses: actions/setup-node@v3
+        name: Set up Node
+        with:
+          node-version: 16
+
+      - name: Install Dependencies
+        run: |
+          cd dashboard
+          npm install
+
+      - name: Perform Tests (${{ matrix.os }})
+        run: |
+          cd dashboard
+          npm run test
+
+      - name: Perform Linting and Formatting (${{ matrix.os }})
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd dashboard
+          npm run lint
+          npm run format
 
 
   coveralls:
