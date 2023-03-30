@@ -23,7 +23,7 @@ jobs:
     # The process
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v3
         with:
           python-version: 3.9
 
@@ -65,7 +65,11 @@ jobs:
         run: |
           python3 -m pip install -e ".[test]"
 
-      - name: Perform Tests
+      - name: Show Python Version
+        run: |
+          python3 --version
+
+      - name: Perform Tests ${{ matrix.os }}
         run: |
           python3 -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
 
