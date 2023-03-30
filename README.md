@@ -15,4 +15,4 @@ $ pip install [-e] .
 
 To Do
 
-** Note: ** This is a proof of concept and is not intended for production use.
+**Note:** This is a proof of concept and is not intended for production use.
