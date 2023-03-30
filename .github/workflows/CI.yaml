@@ -1,0 +1,129 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  RUNNING_ON_GA: GA
+
+jobs:
+  test-orchestrator:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    # The process
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        id: cp39
+        with:
+          python-version: 3.9
+
+      - uses: actions/checkout@v3
+        name: Checkout Code
+
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install ffmpeg libsm6 libxext6 -y
+          sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
+          echo "MANUAL_OS_SET=Linux" >> $GITHUB_ENV
+
+      - name: Install HomeBrew for MacOS
+        if: matrix.os == 'macos-latest'
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install MacOS Dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install portaudio
+          echo "MANUAL_OS_SET=Darwin" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+        name: Checkout ChimeraPy (Bleeding Edge)
+        with:
+          repository: oele-isis-vanderbilt/ChimeraPy
+          ref: main
+          path: ChimeraPy
+
+      - name: Install ChimeraPy (Bleeding Edge)
+        run: |
+          cd ChimeraPy
+          ${{ steps.cp39.outputs.python-path }} -m pip install --upgrade pip
+          ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
+
+      - name: Install Package
+        run: |
+          ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
+
+      - name: Perform Tests (${{ matrix.os }})
+        run: |
+          ${{ steps.cp39.outputs.python-path }} -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
+
+      - name: Upload Coverage Data to coveralls.io
+        if : matrix.os == 'ubuntu-latest'
+        run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_FLAG_NAME: ${{ matrix.test-name }}
+          COVERALLS_PARALLEL: true
+
+  test-dashboard:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout Code
+
+      - uses: actions/setup-node@v3
+        name: Set up Node
+        with:
+          node-version: 16
+
+      - name: Install Dependencies
+        run: |
+          cd dashboard
+          npm install
+
+      - name: Perform Tests (${{ matrix.os }})
+        run: |
+          cd dashboard
+          npm run test
+
+      - name: Perform Linting and Formatting (${{ matrix.os }})
+        if: matrix.os == 'ubuntu-latest'
+        continue-on-error: true
+        run: |
+          cd dashboard
+          npm run lint
+          npm run format
+
+
+  coveralls:
+    name: Indicate Completion to coveralls.io
+    needs: test-orchestrator
+    runs-on: ubuntu-latest
+    container: python:3-slim
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - name: Finished
+      run: |
+        pip3 install --upgrade coveralls
+        coveralls --service=github --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

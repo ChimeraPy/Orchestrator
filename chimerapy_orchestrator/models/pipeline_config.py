@@ -113,10 +113,11 @@ class ChimeraPyPipelineConfig(BaseModel):
 
         pipeline = cp.Graph()
         pipeline.add_nodes_from(list(created_nodes.values()))
-        edges = map(
-            lambda edge: (created_nodes[edge[0]], created_nodes[edge[1]]),
-            self.adj,
+        edges = (
+            (created_nodes[edge[0]], created_nodes[edge[1]])
+            for edge in self.adj
         )
+
         for edge in edges:
             pipeline.add_edge(*edge)
 
@@ -131,12 +132,10 @@ class ChimeraPyPipelineConfig(BaseModel):
 
         manager = self.manager()
 
-        list(
-            map(
-                lambda w: w.connect(host=manager.host, port=manager.port),
-                workers.values(),
-            )
-        )
+        [
+            w.connect(host=manager.host, port=manager.port)
+            for w in workers.values()
+        ]
 
         mp = {}
         for worker in self.mappings:
@@ -163,16 +162,7 @@ class ChimeraPyPipelineConfig(BaseModel):
         raise ValueError(f"Worker: {worker_id} not found.")
 
     def list_remote_workers(self):
-        remotes = list(
-            map(
-                lambda wc: wc.dict(),
-                filter(
-                    lambda wc: wc.remote,
-                    self.workers.instances,
-                ),
-            )
-        )
-
+        remotes = [wc.dict() for wc in self.workers.instances if wc.remote]
         print(json.dumps(remotes, indent=2))
 
     @validator("nodes", pre=True, each_item=True)
