@@ -59,12 +59,12 @@ jobs:
       - name: Install ChimeraPy (Bleeding Edge)
         run: |
           cd ChimeraPy
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -e ".[test]"
+          ${{ steps.cp39.outputs.python-path }} -m pip install --upgrade pip
+          ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
 
       - name: Install Package
         run: |
-          python3 -m pip install -e ".[test]"
+          ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
 
       - name: Perform Tests ${{ matrix.os }}
         run: |
