@@ -47,7 +47,6 @@ jobs:
         run: |
           brew install portaudio
           echo "MANUAL_OS_SET=Darwin" >> $GITHUB_ENV
-          export PATH="$pythonLocation:$PATH"
 
       - uses: actions/checkout@v3
         name: Checkout ChimeraPy (main)
@@ -59,16 +58,16 @@ jobs:
       - name: Install ChimeraPy (Bleeding Edge)
         run: |
           cd ChimeraPy
-          python -m pip install --upgrade pip
-          python -m pip install -e ".[test]"
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e ".[test]"
 
       - name: Install Package
         run: |
-          python -m pip install -e ".[test]"
+          python3 -m pip install -e ".[test]"
 
       - name: Perform Tests
         run: |
-          python -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
+          python3 -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
 
       - name: Upload Coverage Data to coveralls.io
         if : matrix.os == 'ubuntu-latest'
