@@ -50,7 +50,7 @@ jobs:
           echo "MANUAL_OS_SET=Darwin" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
-        name: Checkout ChimeraPy (main)
+        name: Checkout ChimeraPy (Bleeding Edge)
         with:
           repository: oele-isis-vanderbilt/ChimeraPy
           ref: main
