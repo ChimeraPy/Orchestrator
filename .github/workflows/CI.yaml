@@ -68,6 +68,7 @@ jobs:
       - name: Show Python Version
         run: |
           python3 --version
+          echo $PATH
 
       - name: Perform Tests ${{ matrix.os }}
         run: |
