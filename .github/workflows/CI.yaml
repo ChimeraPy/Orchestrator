@@ -23,7 +23,8 @@ jobs:
     # The process
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
+        id: cp39
         with:
           python-version: 3.9
 
@@ -65,14 +66,9 @@ jobs:
         run: |
           python3 -m pip install -e ".[test]"
 
-      - name: Show Python Version
-        run: |
-          python3 --version
-          echo $PATH
-
       - name: Perform Tests ${{ matrix.os }}
         run: |
-          python3 -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
+          ${{ steps.cp39.outputs.python-path }} -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
 
       - name: Upload Coverage Data to coveralls.io
         if : matrix.os == 'ubuntu-latest'
