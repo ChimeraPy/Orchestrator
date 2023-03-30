@@ -115,7 +115,7 @@ jobs:
 
   coveralls:
     name: Indicate Completion to coveralls.io
-    needs: test
+    needs: test-orchestrator
     runs-on: ubuntu-latest
     container: python:3-slim
     if: github.ref == 'refs/heads/main'
