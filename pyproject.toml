@@ -60,6 +60,7 @@ where = ["."]
 
 [tool.ruff]
 ignore = ["E501"]
+select = ["E", "W", "F", "C", "B", "I"]
 ignore-init-module-imports = true
 fixable = ["I001"]  # isort fix only
 

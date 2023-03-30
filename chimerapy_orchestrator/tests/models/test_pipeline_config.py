@@ -1,6 +1,6 @@
 import json
-
 from pathlib import Path
+
 import pytest
 
 from chimerapy_orchestrator.models.pipeline_config import (
