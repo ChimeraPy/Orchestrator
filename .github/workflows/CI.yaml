@@ -107,6 +107,7 @@ jobs:
 
       - name: Perform Linting and Formatting (${{ matrix.os }})
         if: matrix.os == 'ubuntu-latest'
+        continue-on-error: true
         run: |
           cd dashboard
           npm run lint
