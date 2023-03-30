@@ -1,0 +1,86 @@
+{
+  "description": "An example of a simple state machine that models a workflow.",
+  "states": {
+    "DRAFT": {
+      "name": "DRAFT",
+      "valid_transitions": [
+        {
+          "name": "BEGIN_REVIEW",
+          "from_state": "DRAFT",
+          "to_state": "REVIEW"
+        },
+        {
+          "name": "UPDATE_DOCUMENT",
+          "from_state": "DRAFT",
+          "to_state": "DRAFT"
+        }
+      ],
+      "description": "Draft State."
+    },
+    "REVIEW": {
+      "name": "REVIEW",
+      "valid_transitions": [
+        {
+          "name": "SUBMIT",
+          "from_state": "REVIEW",
+          "to_state": "SUBMITTED_TO_CLIENT"
+        },
+        {
+          "name": "CHANGE_NEEDED",
+          "from_state": "REVIEW",
+          "to_state": "CHANGE_REQUESTED"
+        }
+      ],
+      "description": "Review State."
+    },
+    "SUBMITTED_TO_CLIENT": {
+      "name": "SUBMITTED_TO_CLIENT",
+      "valid_transitions": [
+        {
+          "name": "APPROVE",
+          "from_state": "SUBMITTED_TO_CLIENT",
+          "to_state": "APPROVED"
+        },
+        {
+          "name": "DECLINE",
+          "from_state": "SUBMITTED_TO_CLIENT",
+          "to_state": "DECLINED"
+        }
+      ],
+      "description": "Client Submission State."
+    },
+    "APPROVED": {
+      "name": "APPROVED",
+      "valid_transitions": [],
+      "description": "Approved State."
+    },
+    "DECLINED": {
+      "name": "DECLINED",
+      "valid_transitions": [
+        {
+          "name": "RESTART_REVIEW",
+          "from_state": "DECLINED",
+          "to_state": "REVIEW"
+        }
+      ],
+      "description": "Declined State."
+    },
+    "CHANGE_REQUESTED": {
+      "name": "CHANGE_REQUESTED",
+      "valid_transitions": [
+        {
+          "name": "REJECT",
+          "from_state": "CHANGE_REQUESTED",
+          "to_state": "REVIEW"
+        },
+        {
+          "name": "ACCEPT",
+          "from_state": "CHANGE_REQUESTED",
+          "to_state": "DRAFT"
+        }
+      ],
+      "description": "Change Requested State."
+    }
+  },
+  "initial_state": "DRAFT"
+}
