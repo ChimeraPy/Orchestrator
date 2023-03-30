@@ -1,0 +1,38 @@
+{
+  "description": "The state machine configuration for the push pull turnstile.",
+  "states": {
+    "LOCKED": {
+      "name": "LOCKED",
+      "valid_transitions": [
+        {
+          "name": "PUSH",
+          "from_state": "LOCKED",
+          "to_state": "LOCKED"
+        },
+        {
+          "name": "COIN",
+          "from_state": "LOCKED",
+          "to_state": "UNLOCKED"
+        }
+      ],
+      "description": "Locked State."
+    },
+    "UNLOCKED": {
+      "name": "UNLOCKED",
+      "valid_transitions": [
+        {
+          "name": "PUSH",
+          "from_state": "UNLOCKED",
+          "to_state": "LOCKED"
+        },
+        {
+          "name": "COIN",
+          "from_state": "UNLOCKED",
+          "to_state": "LOCKED"
+        }
+      ],
+      "description": "Unlocked State."
+    }
+  },
+  "initial_state": "LOCKED"
+}
