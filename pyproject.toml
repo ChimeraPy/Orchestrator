@@ -34,7 +34,8 @@ dependencies = [
 test = [
     'pytest',
     'coveralls',
-    'pre-commit'
+    'pre-commit',
+    'coverage[toml]',
 ]
 
 [project.urls]
@@ -57,6 +58,9 @@ include-package-data = true
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.coverage]
+[tool.coverage.run]
+omit = ["*/tests/*", "*/__init__.py", "*/__main__.py", "*/__version__.py"]
 
 [tool.ruff]
 ignore = ["E501"]
