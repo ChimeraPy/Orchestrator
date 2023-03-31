@@ -8,13 +8,13 @@ import imutils
 import numpy as np
 from PIL import ImageGrab
 
-from chimerapy_orchestrator.utils import register_chimerapy_node
+from chimerapy_orchestrator.utils import sink_node, source_node
 
 
-@register_chimerapy_node
+@source_node
 class WebcamNode(cp.Node):
-    def __init__(self, name="WebcamNode"):
-        super(WebcamNode, self).__init__(name=name)
+    def __init__(self, name: str = "WebcamNode"):
+        super().__init__(name=name)
 
     def prep(self):
         self.vid = cv2.VideoCapture(0)
@@ -31,10 +31,10 @@ class WebcamNode(cp.Node):
         self.vid.release()
 
 
-@register_chimerapy_node
+@sink_node
 class ShowWindow(cp.Node):
-    def __init__(self, name="ShowWindow"):
-        super(ShowWindow, self).__init__(name=name)
+    def __init__(self, name: str = "ShowWindow"):
+        super().__init__(name=name)
 
     def step(self, data_chunks: Dict[str, cp.DataChunk]):
         for name, data_chunk in data_chunks.items():
@@ -44,10 +44,10 @@ class ShowWindow(cp.Node):
             cv2.waitKey(1)
 
 
-@register_chimerapy_node
+@source_node
 class ScreenCaptureNode(cp.Node):
-    def __init__(self, name="ScreenCaptureNode"):
-        super(ScreenCaptureNode, self).__init__(name=name)
+    def __init__(self, name: str = "ScreenCaptureNode"):
+        super().__init__(name=name)
 
     def prep(self):
         if platform.system() == "Windows":
