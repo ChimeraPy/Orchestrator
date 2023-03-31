@@ -1,9 +1,11 @@
 import json
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 import chimerapy as cp
 from pydantic import BaseModel, Field, validator
+
+from chimerapy_orchestrator.registry import get_registered_node
 
 
 class ManagerConfig(BaseModel):
@@ -58,7 +60,7 @@ class Workers(BaseModel):
 
 
 class ChimeraPyPipelineConfig(BaseModel):
-    registered_nodes: ClassVar[Dict[str, cp.Node]] = {}
+    """The pipeline config."""
 
     workers: Workers = Field(..., description="The workers to be added.")
 
@@ -95,10 +97,10 @@ class ChimeraPyPipelineConfig(BaseModel):
             except ModuleNotFoundError:
                 print(f"Module {module} not found. Skipping nodes discovery")
 
-    def get_registered_node(self, name) -> Type[cp.Node]:
-        assert name in self.registered_nodes, f"No node named: {name}"
-        NodeClass = self.registered_nodes[name]
-        return NodeClass
+    def get_registered_node(self, name) -> Type["WrappedNode"]:  # noqa: F821
+        wrapped_node = get_registered_node(name)
+
+        return wrapped_node
 
     def pipeline_graph(
         self,
@@ -109,7 +111,7 @@ class ChimeraPyPipelineConfig(BaseModel):
             node_config.kwargs["name"] = node_config.name
             created_nodes[node_config.name] = self.get_registered_node(
                 node_config.registry_name
-            )(**node_config.kwargs)
+            ).instantiate(**node_config.kwargs)
 
         pipeline = cp.Graph()
         pipeline.add_nodes_from(list(created_nodes.values()))
