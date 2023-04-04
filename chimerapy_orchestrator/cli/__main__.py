@@ -93,7 +93,12 @@ def run(args=None):
         "The CP orchestrator", formatter_class=ArgumentDefaultsHelpFormatter
     )
 
-    commands = ["orchestrate", "orchestrate-worker", "list-remote-workers"]
+    commands = [
+        "orchestrate",
+        "orchestrate-worker",
+        "list-remote-workers",
+        "server",
+    ]
 
     parser.add_argument(
         "mode",
@@ -105,7 +110,7 @@ def run(args=None):
         "--config",
         help="The configuration file to use",
         type=str,
-        required=True,
+        required="server" not in sys.argv,
     )
     parser.add_argument(
         "--worker-id",
@@ -129,10 +134,19 @@ def run(args=None):
         default=10,
     )
 
+    parser.add_argument(
+        "--server-port",
+        help="The port to run the server on",
+        type=int,
+        required="server" in sys.argv,
+        default=8000,
+    )
+
     args = parser.parse_args(args)
-    with open(args.config) as config_file:
-        config_dict = json.load(config_file)
-        cp_config = ChimeraPyPipelineConfig.parse_obj(config_dict)
+    if args.mode != "server":
+        with open(args.config) as config_file:
+            config_dict = json.load(config_file)
+            cp_config = ChimeraPyPipelineConfig.parse_obj(config_dict)
 
     if args.mode == "orchestrate":
         orchestrate(cp_config)
@@ -146,5 +160,15 @@ def run(args=None):
         print("=== Remote Workers ===")
         cp_config.list_remote_workers()
         print("=== End Remote Workers ===")
+    elif args.mode == "server":
+        from uvicorn import run
+
+        run(
+            "chimerapy_orchestrator.orchestrator:create_orchestrator_app",
+            port=args.server_port,
+            factory=True,
+            reload=True,
+        )
+
     else:
         parser.print_help()

@@ -8,7 +8,7 @@ import imutils
 import numpy as np
 from PIL import ImageGrab
 
-from chimerapy_orchestrator.utils import sink_node, source_node
+from chimerapy_orchestrator.registry.utils import sink_node, source_node
 
 
 @source_node

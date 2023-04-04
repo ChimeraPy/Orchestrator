@@ -60,16 +60,16 @@ class Workers(BaseModel):
 
 
 class ChimeraPyPipelineConfig(BaseModel):
-    """The pipeline config."""
+    """The pipeline_service config."""
 
     workers: Workers = Field(..., description="The workers to be added.")
 
     nodes: List[NodeConfig] = Field(
-        ..., description="The nodes in the pipeline."
+        ..., description="The nodes in the pipeline_service."
     )
 
     adj: List[Tuple[str, str]] = Field(
-        ..., description="The edge list of the pipeline graph."
+        ..., description="The edge list of the pipeline_service graph."
     )
 
     manager_config: ManagerConfig = Field(
