@@ -13,7 +13,10 @@ from chimerapy_orchestrator.tests.base_test import BaseTest
 class TestPipeline(BaseTest):
     @pytest.fixture
     def pipeline(self):
-        return Pipeline(name="test_pipeline")
+        p = Pipeline(name="test_pipeline")
+        assert p.name == "test_pipeline"
+        assert p.description == "A pipeline"
+        return p
 
     @pytest.fixture(scope="session", autouse=True)
     def dummy_step_node(self):
@@ -110,6 +113,7 @@ class TestPipeline(BaseTest):
             pipeline.add_edge(wrapped_node_3.id, wrapped_node_2.id)
 
     def test_web_json(self, pipeline):
+        pipeline.description = "Webcam to ShowWindow"
         wrapped_node_1 = pipeline.add_node("WebcamNode")
         wrapped_node_2 = pipeline.add_node("ShowWindow")
         pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
@@ -121,3 +125,4 @@ class TestPipeline(BaseTest):
         assert web_json["nodes"][1]["id"] == wrapped_node_2.id
         assert web_json["edges"][0]["source"] == wrapped_node_1.id
         assert web_json["edges"][0]["sink"] == wrapped_node_2.id
+        assert web_json["description"] == "Webcam to ShowWindow"

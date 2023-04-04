@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 import networkx as nx
 
@@ -9,22 +9,29 @@ from chimerapy_orchestrator.utils import uuid
 
 
 class NotADagError(ValueError):
-    def __init__(self, src, sink):
-        msg = f"Adding an edge from {src} to {sink} would create a cycle, which is not allowed."
+    def __init__(self, edge: Dict[str, WrappedNode]) -> None:
+        src_identifier = self._get_identifier(edge["source"])
+        sink_identifier = self._get_identifier(edge["sink"])
+        msg = f"Adding edge {src_identifier} -> {sink_identifier} would create a cycle"
         super().__init__(msg)
+
+    @staticmethod
+    def _get_identifier(wrapped_node: WrappedNode) -> str:
+        return f"{wrapped_node.NodeClass.__name__}:{wrapped_node.id}"
 
 
 class Pipeline(nx.DiGraph):
     """A directed graph representing a ChimeraPy pipeline without instantiated nodes."""
 
-    def __init__(self, name):
+    def __init__(self, name: str, description: str = "A pipeline") -> None:
         super().__init__()
         self.id = uuid()
         self.name = name
         self.instantiated = False
+        self.description = description or "A pipeline"
         self.chimerapy_graph = None
 
-    def add_node(self, node_name: str, **kwargs) -> WrappedNode:
+    def add_node(self, node_name: str, **kwargs: Dict[str, Any]) -> WrappedNode:
         """Adds a node to the pipeline_service."""
         wrapped_node = get_registered_node(node_name).clone(**kwargs)
         super().add_node(wrapped_node.id, wrapped_node=wrapped_node)
@@ -40,6 +47,7 @@ class Pipeline(nx.DiGraph):
         return wrapped_node
 
     def add_edge(self, source: str, sink: str) -> Dict[str, WrappedNode]:
+        """Adds an edge to the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
                 raise ValueError(f"{node} is not a valid node")
@@ -69,7 +77,7 @@ class Pipeline(nx.DiGraph):
 
         if not self.is_dag():
             super().remove_edge(source, sink)
-            raise NotADagError(source, sink)
+            raise NotADagError(edge)
 
         return edge
 
@@ -93,12 +101,13 @@ class Pipeline(nx.DiGraph):
     def __repr__(self) -> str:
         return f"Pipeline<{self.name}>"
 
-    def to_web_json(self):
+    def to_web_json(self) -> Dict[str, Any]:
         """Returns a JSON representation of the pipeline_service for the web interface."""
         return {
             "id": self.id,
             "name": self.name,
             "instantiated": self.instantiated,
+            "description": self.description,
             "nodes": [
                 data["wrapped_node"].to_web_node().dict()
                 for node_id, data in self.nodes(data=True)

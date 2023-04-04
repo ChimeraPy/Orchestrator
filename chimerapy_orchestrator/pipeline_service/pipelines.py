@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.pipeline_service.pipeline import Pipeline
@@ -7,7 +7,7 @@ from chimerapy_orchestrator.pipeline_service.pipeline import Pipeline
 class Pipelines:
     """A service for managing pipelines."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._pipelines = {}
 
     def get_pipeline(self, pipeline_id: str) -> Pipeline:
@@ -17,13 +17,13 @@ class Pipelines:
 
         return self._pipelines[pipeline_id]
 
-    def create_pipeline(self, name: str) -> Pipeline:
+    def create_pipeline(self, name: str, description: str = None) -> Pipeline:
         """Create a new pipeline_service."""
-        pipeline = Pipeline(name=name)
+        pipeline = Pipeline(name=name, description=description)
         self._pipelines[pipeline.id] = pipeline
         return pipeline
 
-    def delete_pipeline(self, pipeline_id: str) -> Pipeline:
+    def remove_pipeline(self, pipeline_id: str) -> Pipeline:
         """Delete a pipeline_service."""
         pipeline = self.get_pipeline(pipeline_id)
         self._pipelines.pop(pipeline.id)
@@ -64,7 +64,16 @@ class Pipelines:
 
         return wrapped_node
 
-    def web_json(self, pipeline_id=None) -> List[Dict]:
+    def get_pipelines_by_name(self, name: str) -> List[Pipeline]:
+        """Get pipeline(s) by name."""
+        pipelines = []
+        for pipeline in self._pipelines.values():
+            if pipeline.name == name:
+                pipelines.append(pipeline)
+
+        return pipelines
+
+    def web_json(self, pipeline_id=None) -> List[Dict[str, Any]]:
         """Returns a JSON representation of the pipelines for the web interface."""
         if pipeline_id is None:
             return [

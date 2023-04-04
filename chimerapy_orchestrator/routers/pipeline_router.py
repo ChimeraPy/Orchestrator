@@ -109,7 +109,7 @@ class PipelineRouter(APIRouter):
 
     async def delete_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Delete a pipeline."""
-        pipeline = self.pipelines.delete_pipeline(pipeline_id)
+        pipeline = self.pipelines.remove_pipeline(pipeline_id)
         return pipeline.to_web_json()
 
     async def list_nodes(self) -> List[WebNode]:

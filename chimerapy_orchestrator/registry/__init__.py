@@ -1,10 +1,13 @@
+import typing
 from typing import Dict
 
-from chimerapy_orchestrator.models.pipeline_models import WrappedNode
+if typing.TYPE_CHECKING:
+    from chimerapy_orchestrator.models.pipeline_models import WrappedNode
+
 from chimerapy_orchestrator.models.registry_models import NodeType
 
 
-def get_registered_node(name: str) -> WrappedNode:
+def get_registered_node(name: str) -> "WrappedNode":
     """Returns a registered ChimeraPy Node as a WrappedNode."""
     from chimerapy_orchestrator import nodes_registry
 
@@ -13,14 +16,14 @@ def get_registered_node(name: str) -> WrappedNode:
     return nodes_registry[name]
 
 
-def all_nodes() -> Dict[str, WrappedNode]:
+def all_nodes() -> Dict[str, "WrappedNode"]:
     """Returns all registered ChimeraPy Nodes."""
     from chimerapy_orchestrator import nodes_registry
 
     return nodes_registry
 
 
-def get_node_type(wrapped_node: WrappedNode) -> NodeType:
+def get_node_type(wrapped_node: "WrappedNode") -> NodeType:
     """Returns the type of a WrappedNode."""
     from chimerapy_orchestrator import sink_nodes, source_nodes, step_nodes
 

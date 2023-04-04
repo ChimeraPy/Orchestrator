@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional, Type
 from chimerapy.node import Node
 from pydantic import BaseModel, Field
 
+from chimerapy_orchestrator.models.registry_models import NodeType
+from chimerapy_orchestrator.registry import get_node_type
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -20,6 +22,8 @@ class WebNode(BaseModel):
     kwargs: Optional[Dict[str, Any]] = Field(
         default={}, description="The kwargs of the node."
     )
+
+    type: NodeType = Field(..., description="The type of the node.")
 
     class Config:
         allow_extra = False
@@ -75,6 +79,7 @@ class WrappedNode(BaseModel):
             name=name or self.NodeClass.__name__,
             registry_name=self.NodeClass.__name__,
             id=self.id,
+            type=get_node_type(self),
         )
 
     def __repr__(self):
