@@ -7,7 +7,7 @@
 
 <div class="container mx-auto flex flex-col h-screen">
 	<Header sections={data.sections} logo={data.logo} />
-	<main class="mb-auto h-full">
+	<main class="mb-auto h-[calc(100vh-5rem)]">
 		<slot />
 	</main>
 	<Footer copyrightHolder={data.copyrightHolder} copyrightHolderURL={data.copyrightHolderURL} />
