@@ -2,7 +2,11 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter
 
-from chimerapy_orchestrator.models.pipeline_models import WebEdge, WebNode
+from chimerapy_orchestrator.models.pipeline_models import (
+    PipelineRequest,
+    WebEdge,
+    WebNode,
+)
 from chimerapy_orchestrator.pipeline_service.pipelines import Pipelines
 from chimerapy_orchestrator.registry import all_nodes
 
@@ -24,9 +28,16 @@ class PipelineRouter(APIRouter):
             response_description="List of all the nodes available to add to a pipeline",
         )
 
+        self.add_api_route(
+            "/get/{pipeline_id}",
+            self.get_pipeline,
+            methods=["GET"],
+            response_description="The requested pipeline",
+        )
+
         # Create a new pipeline
         self.add_api_route(
-            "/create/{name}",
+            "/create",
             self.create_pipeline,
             methods=["PUT"],
             response_description="The newly created pipeline",
@@ -68,9 +79,13 @@ class PipelineRouter(APIRouter):
             response_description="The deleted pipeline",
         )
 
-    async def create_pipeline(self, name: str) -> Dict[str, Any]:
+    async def create_pipeline(
+        self, pipeline: PipelineRequest
+    ) -> Dict[str, Any]:
         """Create a new pipeline."""
-        pipeline = self.pipelines.create_pipeline(name)
+        pipeline = self.pipelines.create_pipeline(
+            pipeline.name, description=pipeline.description
+        )
         return pipeline.to_web_json()
 
     async def add_node_to(self, pipeline_id: str, web_node: WebNode) -> WebNode:
@@ -80,31 +95,35 @@ class PipelineRouter(APIRouter):
         )
         return wrapped_node.to_web_node()
 
-    async def remove_node_from(self, pipeline_id: str, node_id: str) -> WebNode:
+    async def remove_node_from(
+        self, pipeline_id: str, web_node: WebNode
+    ) -> WebNode:
         """Remove a node from a pipeline."""
-        wrapped_node = self.pipelines.remove_node_from(pipeline_id, node_id)
+        wrapped_node = self.pipelines.remove_node_from(pipeline_id, web_node.id)
         return wrapped_node.to_web_node()
 
     async def add_edge_to(self, pipeline_id: str, edge: WebEdge) -> WebEdge:
         """Add an edge to a pipeline."""
-        edge = self.pipelines.add_edge_to(
+        created = self.pipelines.add_edge_to(
             pipeline_id, (edge.source.id, edge.target.id)
         )
         return WebEdge(
-            source=edge["source"].to_web_node(),
-            target=edge["target"].to_web_node(),
+            id=edge.id,
+            source=created["source"].to_web_node(),
+            target=created["sink"].to_web_node(),
         )
 
     async def remove_edge_from(
         self, pipeline_id: str, edge: WebEdge
     ) -> WebEdge:
         """Remove an edge from a pipeline."""
-        edge = self.pipelines.remove_edge_from(
+        created = self.pipelines.remove_edge_from(
             pipeline_id, (edge.source.id, edge.target.id)
         )
         return WebEdge(
-            source=edge["source"].to_web_node(),
-            target=edge["target"].to_web_node(),
+            id=edge.id,
+            source=created["source"].to_web_node(),
+            target=created["sink"].to_web_node(),
         )
 
     async def delete_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
@@ -119,3 +138,7 @@ class PipelineRouter(APIRouter):
     async def list_pipelines(self) -> List[Dict[str, Any]]:
         """Get all pipelines."""
         return self.pipelines.web_json()
+
+    async def get_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
+        """Get a pipeline."""
+        return self.pipelines.get_pipeline(pipeline_id).to_web_json()

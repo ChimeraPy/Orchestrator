@@ -8,6 +8,19 @@ from chimerapy_orchestrator.registry import get_node_type
 from chimerapy_orchestrator.utils import uuid
 
 
+class PipelineRequest(BaseModel):
+    """A request to create a pipeline."""
+
+    name: str = Field(..., description="The name of the pipeline.")
+
+    description: Optional[str] = Field(
+        default=None, description="The description of the pipeline."
+    )
+
+    class Config:
+        allow_extra = False
+
+
 class WebNode(BaseModel):
     """A node for the web interface."""
 
@@ -23,7 +36,9 @@ class WebNode(BaseModel):
         default={}, description="The kwargs of the node."
     )
 
-    type: NodeType = Field(..., description="The type of the node.")
+    type: Optional[NodeType] = Field(
+        default=None, description="The type of the node."
+    )
 
     class Config:
         allow_extra = False
@@ -31,6 +46,10 @@ class WebNode(BaseModel):
 
 class WebEdge(BaseModel):
     """An edge for the web interface."""
+
+    id: Optional[str] = Field(
+        default_factory=uuid, description="The id of the edge."
+    )
 
     source: WebNode = Field(..., description="The source node of the edge.")
 

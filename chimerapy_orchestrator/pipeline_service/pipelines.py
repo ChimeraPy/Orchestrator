@@ -61,7 +61,6 @@ class Pipelines:
         """Remove a node from a pipeline_service."""
         pipeline = self.get_pipeline(pipeline_id)
         wrapped_node = pipeline.remove_node(node_id)
-
         return wrapped_node
 
     def get_pipelines_by_name(self, name: str) -> List[Pipeline]:
