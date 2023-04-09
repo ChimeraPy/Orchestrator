@@ -44,7 +44,6 @@ export class PipelineUtils {
 		});
 	}
 
-
 	static pipelineResultToJointCells(result: Result<Pipeline, ResponseError>): joint.dia.Cell[] {
 		let cells: joint.dia.Cell[] = [];
 
@@ -59,6 +58,7 @@ export class PipelineUtils {
 				});
 				pipeline.edges.forEach((edge) => {
 					const link = new joint.shapes.standard.Link({
+						id: edge.id,
 						source: { id: edge.source },
 						target: { id: edge.sink }
 					});
@@ -108,19 +108,15 @@ export class PipelineUtils {
 		activePipeline: Pipeline | null | undefined
 	): { id: string; text: string; active: boolean }[] {
 		let items: { id: string; text: string; active: boolean }[] = [];
-		result
-			.map((pipelines) => {
-				return pipelines.reverse().map((pipeline, index) => {
-					items.push({
-						id: pipeline.id,
-						text: pipeline.name,
-						active: activePipeline ? activePipeline.id === pipeline.id : index === 0
-					});
+		result.map((pipelines) => {
+			return pipelines.reverse().map((pipeline, index) => {
+				items.push({
+					id: pipeline.id,
+					text: pipeline.name,
+					active: activePipeline ? activePipeline.id === pipeline.id : index === 0
 				});
-			})
-			.mapError((error) => {
-				items.push({ id: 'error', text: error.message, active: false });
 			});
+		});
 
 		return items;
 	}

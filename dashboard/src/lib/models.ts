@@ -38,8 +38,8 @@ export interface PipelineNode {
 
 export interface Edge {
 	id: string;
-	source: string;
-	sink: string;
+	source: PipelineNode;
+	sink: PipelineNode;
 }
 
 export interface Pipeline {
@@ -81,4 +81,9 @@ export interface Manager {
 	graph?: Graph;
 	worker_graph_map?: { string: string }[];
 	network_updates_port: number;
+}
+
+export interface ResponseError {
+	message: string;
+	code: number;
 }

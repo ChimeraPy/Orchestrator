@@ -66,7 +66,7 @@
 		});
 
 		paper.on('link:pointerdblclick', (cellView) => {
-			cellView.model.remove();
+			doubleClickEvent(cellView.model);
 		});
 
 		paper.on('link:connect', (linkView) => {
@@ -76,6 +76,11 @@
 			if (src && tgt) {
 				dispatch('linkAdd', { src, tgt, link });
 			}
+		});
+
+		paper.on('cell:pointerclick', (cellView) => {
+			const cell = cellView.model;
+			clickEvent(cell);
 		});
 	});
 
@@ -92,7 +97,7 @@
 				tools: [
 					getConnectTool(),
 					getInfoButton((cell) => infoEvent(cell)),
-					getDeleteButton((cell) => deleteEvent(cell))
+					getDeleteButton((cell) => doubleClickEvent(cell))
 				]
 			});
 			element.findView(paper)?.addTools(toolsView);
@@ -100,13 +105,40 @@
 		});
 	}
 
-	function deleteEvent(cell) {
-		const event = cell.isLink() ? 'linkRemove' : 'nodeRemove';
+	function doubleClickEvent(cell: joint.dia.Cell) {
+		if (cell.isLink()) {
+			const src = cell.source();
+			const tgt = cell.target();
+			const link = cell;
+			dispatch('linkDblClick', { src, tgt, link });
+		} else {
+			dispatch('nodeDblClick', { cell });
+		}
+	}
+
+	function clickEvent(cell) {
+		const event = cell.isLink() ? 'linkClick' : 'nodeClick';
 		dispatch(event, { cell });
 	}
 
 	function infoEvent(cell) {
 		cell.isLink() ? null : dispatch('nodeInfo', { cell });
+	}
+
+	export function removeCell(cellId: string) {
+		const modelView = paper.findViewByModel(cellId);
+		modelView.model.remove();
+	}
+
+	export function setCellStrokeWidth(cellId: string, width: number) {
+		const modelView = paper.findViewByModel(cellId);
+		const cell = modelView?.model;
+		if (!cell) return;
+		if (cell.isLink()) {
+			cell.attr('line/strokeWidth', width);
+		} else {
+			cell.attr('body/strokeWidth', width);
+		}
 	}
 
 	export function layout() {
@@ -121,10 +153,17 @@
 			edgeSep: 10,
 			rankSep: 50,
 			resizeCluster: true,
-			ranker: 'network-simplex',
-			align: 'DL',
+			ranker: 'tight-tree',
+			align: 'DR',
 			dagre: dagre,
 			graphlib: graphLib
+		});
+
+		paper?.scaleContentToFit({
+			padding: 20,
+			useModelGeometry: true,
+			maxScale: 1.5,
+			minScale: 0.6
 		});
 	}
 
