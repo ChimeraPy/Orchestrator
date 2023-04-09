@@ -105,7 +105,7 @@ class PipelineRouter(APIRouter):
     async def add_edge_to(self, pipeline_id: str, edge: WebEdge) -> WebEdge:
         """Add an edge to a pipeline."""
         created = self.pipelines.add_edge_to(
-            pipeline_id, (edge.source.id, edge.target.id)
+            pipeline_id, (edge.source.id, edge.target.id), edge.id
         )
         return WebEdge(
             id=edge.id,
@@ -118,7 +118,7 @@ class PipelineRouter(APIRouter):
     ) -> WebEdge:
         """Remove an edge from a pipeline."""
         created = self.pipelines.remove_edge_from(
-            pipeline_id, (edge.source.id, edge.target.id)
+            pipeline_id, (edge.source.id, edge.target.id), edge.id
         )
         return WebEdge(
             id=edge.id,

@@ -40,20 +40,20 @@ class Pipelines:
         return wrapped_node
 
     def add_edge_to(
-        self, pipeline_id, edge: Tuple[str, str]
+        self, pipeline_id, edge: Tuple[str, str], edge_id: str = None
     ) -> Dict[str, WrappedNode]:
         """Add an edge to a pipeline_service."""
         pipeline = self.get_pipeline(pipeline_id)
-        edge = pipeline.add_edge(edge[0], edge[1])
+        edge = pipeline.add_edge(edge[0], edge[1], edge_id=edge_id)
 
         return edge
 
     def remove_edge_from(
-        self, pipeline_id, edge: Tuple[str, str]
+        self, pipeline_id, edge: Tuple[str, str], edge_id: str = None
     ) -> Dict[str, WrappedNode]:
         """Remove an edge from a pipeline_service."""
         pipeline = self.get_pipeline(pipeline_id)
-        edge = pipeline.remove_edge(edge[0], edge[1])
+        edge = pipeline.remove_edge(edge[0], edge[1], edge_id=edge_id)
 
         return edge
 

@@ -46,7 +46,9 @@ class Pipeline(nx.DiGraph):
         super().remove_node(node_id)
         return wrapped_node
 
-    def add_edge(self, source: str, sink: str) -> Dict[str, WrappedNode]:
+    def add_edge(
+        self, source: str, sink: str, *, edge_id: str = None
+    ) -> Dict[str, WrappedNode]:
         """Adds an edge to the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
@@ -73,7 +75,14 @@ class Pipeline(nx.DiGraph):
 
                 edge["sink"] = wrapped_node
 
-        super().add_edge(source, sink)
+        if not self.has_edge(source, sink):
+            super().add_edge(
+                source,
+                sink,
+                **{
+                    "id": edge_id or uuid(),
+                },
+            )
 
         if not self.is_dag():
             super().remove_edge(source, sink)
@@ -81,7 +90,9 @@ class Pipeline(nx.DiGraph):
 
         return edge
 
-    def remove_edge(self, source: str, sink: str) -> Dict[str, WrappedNode]:
+    def remove_edge(
+        self, source: str, sink: str, *, edge_id: str = None
+    ) -> Dict[str, WrappedNode]:
         """Removes an edge from the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
@@ -90,7 +101,14 @@ class Pipeline(nx.DiGraph):
         src_wrapped_node = self.nodes[source]["wrapped_node"]
         dst_wrapped_node = self.nodes[sink]["wrapped_node"]
 
-        super().remove_edge(source, sink)
+        if self.has_edge(source, sink):
+
+            if not self.edges[(source, sink)]["id"] == edge_id:
+                raise ValueError(
+                    f"Edge {source} -> {sink} does not exist in the pipeline"
+                )
+
+            super().remove_edge(source, sink)
 
         return {"source": src_wrapped_node, "sink": dst_wrapped_node}
 
@@ -113,6 +131,7 @@ class Pipeline(nx.DiGraph):
                 for node_id, data in self.nodes(data=True)
             ],
             "edges": [
-                {"source": source, "sink": sink} for source, sink in self.edges
+                {"source": source, "sink": sink, "id": data["id"]}
+                for (source, sink, data) in self.edges(data=True)
             ],
         }
