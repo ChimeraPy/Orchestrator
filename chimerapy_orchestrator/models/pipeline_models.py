@@ -64,6 +64,10 @@ class WrappedNode(BaseModel):
 
     NodeClass: Type[Node] = Field(..., description="The node to be wrapped.")
 
+    instance: Optional[Node] = Field(
+        default=None, description="The instance for this wrapped node"
+    )
+
     kwargs: Dict[str, Any] = Field(
         default={}, description="The kwargs to be passed to the node."
     )
@@ -72,11 +76,14 @@ class WrappedNode(BaseModel):
         default_factory=uuid, description="The id of the node."
     )
 
+    @property
+    def instantiated(self) -> bool:
+        return self.instance is not None
+
     def instantiate(self, **kwargs) -> Node:
         """Instantiates the node."""
-        if "id" not in kwargs:
-            kwargs["id"] = uuid()
-        return self.NodeClass(**kwargs)
+        self.instance = self.NodeClass(**kwargs)
+        return self.instance
 
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
