@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as joint from 'jointjs';
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { getAddButton } from './utils';
+	import { getAddTool } from './utils';
 
 	export let cells: joint.dia.Cell[] = [];
 	export let mode: 'vertical' | 'horizontal' = 'vertical';
@@ -24,6 +24,7 @@
 		paper.freeze();
 		let xpos: number = 0,
 			ypos: number = 0;
+
 		graph.getElements().forEach((element, index) => {
 			if (!element.isLink()) {
 				const bbox = element.getBBox();
@@ -87,7 +88,7 @@
 			if (!element.isLink()) {
 				const elementTools = new joint.dia.ToolsView({
 					tools: [
-						getAddButton((node) => {
+						getAddTool((node) => {
 							dispatchElementClickEvent(node as joint.dia.Element);
 						})
 					]
@@ -132,6 +133,10 @@
 	function dispatchElementClickEvent(cell: joint.dia.Element) {
 		dispatch('cellClick', cell);
 	}
+
+	function resize() {
+		paper?.setDimensions('100%', '100%');
+	}
 </script>
 
 <svelte:head>
@@ -139,22 +144,22 @@
 </svelte:head>
 
 <div
-	class="h-full
-            w-full
-            scrollbar-thin
+	class="relative
+			h-full
+			w-full
+			scrollbar-thin
             scrollbar-thumb-gray-700
             scrollbar-track-gray-100
-            max-w-full bg-[{bgColor}]
-            overflow-{mode === 'vertical' ? 'x' : 'y'}-scroll
-            overflow-{mode === 'vertical' ? 'x' : 'y'}-hidden"
+            bg-[{bgColor}]
+            overflow-auto"
 	id="paper-container"
 	bind:this={paperContainer}
 >
-	<div id="paper" />
+	<div use:resize id="paper" />
 </div>
 
 <style>
-	/* Some reason arch linux doesn't make it easy */
+	/* Proper Cursor was not showing up for the jointjs nodes in arch linux */
 	:global(g) {
 		cursor: pointer !important;
 	}

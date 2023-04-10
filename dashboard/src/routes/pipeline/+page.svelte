@@ -287,21 +287,38 @@
 </script>
 
 <div class="h-full flex">
-	<nav class="w-64 flex flex-col border-r-2 border-gray-400">
-		<div>
-			<HorizontalMenu
-				on:refresh={debouncedFetchNodes}
-				title="Nodes"
-				refreshBtn={true}
-				backgroundClass="bg-blue-600"
-			/>
+	<div class="w-64 flex flex-col border-r-2 border-gray-400">
+		<div class="flex flex-col flex-1 overflow-hidden">
+			<div>
+				<HorizontalMenu
+					on:refresh={debouncedFetchNodes}
+					title="Nodes"
+					refreshBtn={true}
+					backgroundClass="bg-blue-600"
+				/>
+			</div>
+			<div class="flex-1 bg-[#F3F7F6] overflow-hidden">
+				<PartBrowser
+					on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
+					cells={nodeCells}
+				/>
+			</div>
 		</div>
-		<PartBrowser
-			on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
-			cells={nodeCells}
-		/>
-	</nav>
-	<div class="flex flex-col flex-1 bg-indigo-100 border-r-2 border-gray-400">
+		<div class="flex flex-col flex-1">
+			<div>
+				<HorizontalMenu
+					on:refresh={debouncedFetchNodes}
+					title="Nodes"
+					refreshBtn={false}
+					backgroundClass="bg-blue-600"
+				/>
+			</div>
+			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+				<p>Networks view goes here</p>
+			</div>
+		</div>
+	</div>
+	<div class="flex flex-col w-full h-full flex-1 bg-indigo-100 border-r-2 border-gray-400">
 		<div bind:this={editorContainer} class="flex-1 flex flex-col">
 			<div>
 				<HorizontalMenu bind:this={horizontalMenu} title="Pipeline Editor" />
@@ -313,31 +330,50 @@
 					on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
 					on:linkAdd={(event) => addLinkToPipeline(event.detail)}
 					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
-					on:nodeRemove={(event) => removeNodeFromPipeline(event.detail.cell)}
+					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
 					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
 				/>
 			</div>
 		</div>
-		<div class="flex-1">
-			<HorizontalMenu title="Active Jobs" />
+		<div class="flex-1 flex flex-col">
+			<div>
+				<HorizontalMenu title="Active Jobs" />
+			</div>
+			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+				<p>Active Jobs go here</p>
+			</div>
 		</div>
 	</div>
-	<nav class="w-64 flex-none bg-indigo-50">
-		<HorizontalMenu
-			title="Pipelines"
-			backgroundClass="bg-blue-600"
-			refreshBtn={true}
-			addBtn={true}
-			on:add={showPipelineModal}
-			on:refresh={debouncedFetchPipelines}
-		/>
-		<EditableList
-			items={pipelineListItems}
-			on:info={(event) => requestPipelineInfo(event.detail)}
-			on:click={(event) => activatePipeline(event.detail)}
-			on:delete={(event) => requestPipelineDeletion(event.detail)}
-		/>
-	</nav>
+	<div class="w-64 flex flex-col bg-indigo-50">
+		<div class="flex flex-col flex-1 overflow-hidden">
+			<div>
+				<HorizontalMenu
+					title="Pipelines"
+					backgroundClass="bg-blue-600"
+					refreshBtn={true}
+					addBtn={true}
+					on:add={showPipelineModal}
+					on:refresh={debouncedFetchPipelines}
+				/>
+			</div>
+			<div class="flex-1 overflow-hidden">
+				<EditableList
+					items={pipelineListItems}
+					on:info={(event) => requestPipelineInfo(event.detail)}
+					on:click={(event) => activatePipeline(event.detail)}
+					on:delete={(event) => requestPipelineDeletion(event.detail)}
+				/>
+			</div>
+		</div>
+		<div class="flex flex-col flex-1">
+			<div>
+				<HorizontalMenu title="Selected Node" refreshBtn={false} backgroundClass="bg-blue-600" />
+			</div>
+			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+				<p>Selected Node attributes</p>
+			</div>
+		</div>
+	</div>
 </div>
 <!-- Creation Modal -->
 <Modal

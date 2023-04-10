@@ -76,30 +76,25 @@ export class PipelineUtils {
 		result: Result<PipelineNode[], ResponseError>
 	): joint.dia.Cell[] {
 		let cells: joint.dia.Cell[] = [];
-		result
-			.map((nodes) => {
-				return nodes
-					.sort((node1, node2) => {
-						if (node1.name < node2.name) {
-							return -1;
-						} else if (node1.name > node2.name) {
-							return 1;
-						} else {
-							return 0;
-						}
-					})
-					.map((node) => {
-						const rect = PipelineUtils.rectangle(node.name);
-						rect.prop('nodeId', node.id);
-						rect.prop('nodeType', node.type);
-						rect.prop('registryName', node.registry_name);
-						cells.push(rect);
-					});
-			})
-			.mapError((error) => {
-				cells.push(PipelineUtils.rectangle(error.message, 'red'));
-			});
-
+		result.map((nodes) => {
+			return nodes
+				.sort((node1, node2) => {
+					if (node1.name < node2.name) {
+						return -1;
+					} else if (node1.name > node2.name) {
+						return 1;
+					} else {
+						return 0;
+					}
+				})
+				.map((node) => {
+					const rect = PipelineUtils.rectangle(node.name);
+					rect.prop('nodeId', node.id);
+					rect.prop('nodeType', node.type);
+					rect.prop('registryName', node.registry_name);
+					cells.push(rect);
+				});
+		});
 		return cells;
 	}
 

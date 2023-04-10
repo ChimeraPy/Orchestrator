@@ -2,15 +2,30 @@
 	import * as joint from 'jointjs';
 	import * as dagre from 'dagre';
 	import * as graphLib from 'graphlib';
-	import { LinkValidator, getConnectTool, getInfoButton, getDeleteButton } from './utils';
-	import type { ValidatorFunc } from './utils';
+	import { LinkValidator, ToolViewType, getToolType } from './utils';
+	import type { DispatcherFunc, ToolOptions, ValidatorFunc } from './utils';
 	import { createEventDispatcher } from 'svelte';
 
 	import { onMount } from 'svelte';
 
 	export let additionalLinkValidators: ValidatorFunc[] = [];
+	export let toolViewAttachments: ToolViewType[] = [
+		ToolViewType.HOVER_CONNECT,
+		ToolViewType.DELETE,
+		ToolViewType.INFO // ToDo: Make sure this is added in the end
+	];
+	export let tooViewAttachmentsOptions: { [key in ToolViewType]: ToolOptions } = {
+		[ToolViewType.DELETE]: {},
+		[ToolViewType.INFO]: {},
+		[ToolViewType.HOVER_CONNECT]: {}
+	};
 
 	let cells: joint.dia.Cell[] = [];
+	const dispatchers: { [key in ToolViewType]: DispatcherFunc | null } = {
+		[ToolViewType.DELETE]: deleteEvent,
+		[ToolViewType.INFO]: infoEvent,
+		[ToolViewType.HOVER_CONNECT]: null
+	};
 
 	let paper: joint.dia.Paper;
 	let graph: joint.dia.Graph;
@@ -88,17 +103,20 @@
 		graph?.clear();
 	}
 
+	function getTools() {
+		return toolViewAttachments.map((tool) => {
+			const options = tooViewAttachmentsOptions[tool];
+			return getToolType(tool, dispatchers[tool], options);
+		});
+	}
+
 	export function render(cells: joint.dia.Cell[], clear = false) {
 		clearGraph();
 		graph?.addCells(cells);
 
 		graph?.getElements().forEach((element) => {
 			const toolsView = new joint.dia.ToolsView({
-				tools: [
-					getConnectTool(),
-					getInfoButton((cell) => infoEvent(cell)),
-					getDeleteButton((cell) => doubleClickEvent(cell))
-				]
+				tools: getTools(element)
 			});
 			element.findView(paper)?.addTools(toolsView);
 			element.findView(paper)?.hideTools();
@@ -113,6 +131,17 @@
 			dispatch('linkDblClick', { src, tgt, link });
 		} else {
 			dispatch('nodeDblClick', { cell });
+		}
+	}
+
+	function deleteEvent(cell: joint.dia.Cell) {
+		if (cell.isLink()) {
+			const src = cell.source();
+			const tgt = cell.target();
+			const link = cell;
+			dispatch('linkDelete', { src, tgt, link });
+		} else {
+			dispatch('nodeDelete', { cell });
 		}
 	}
 

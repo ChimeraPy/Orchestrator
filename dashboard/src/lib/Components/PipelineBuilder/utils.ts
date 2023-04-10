@@ -2,6 +2,16 @@ import * as joint from 'jointjs';
 import * as graphlib from 'graphlib';
 
 export type ValidatorFunc = (linkView: joint.dia.LinkView, paper: joint.dia.Paper) => boolean;
+export type DispatcherFunc = (cell: joint.dia.Cell) => void;
+
+export type ToolOptions =
+	| joint.elementTools.Button.Options
+	| joint.elementTools.HoverConnect.Options;
+export enum ToolViewType {
+	HOVER_CONNECT = 'hoverconnect',
+	INFO = 'info',
+	DELETE = 'remove'
+}
 
 export class LinkValidator {
 	private validators: ValidatorFunc[];
@@ -47,8 +57,38 @@ const nonNullValidator = (linkView: joint.dia.LinkView, paper: joint.dia.Paper) 
 	return nonNull<joint.dia.Cell>(src) && nonNull<joint.dia.Cell>(tgt);
 };
 
-export const getConnectTool = () => {
-	return new joint.elementTools.HoverConnect({
+export function getToolType(
+	type: ToolViewType,
+	dipatcher: DispatcherFunc | null,
+	options?: ToolOptions
+): joint.elementTools.Button | joint.elementTools.HoverConnect {
+	let tool;
+	switch (type) {
+		case ToolViewType.HOVER_CONNECT:
+			tool = getConnectTool(dipatcher, options as joint.elementTools.HoverConnect.Options);
+			break;
+		case ToolViewType.INFO:
+			tool = getInfoTool(dipatcher, options as joint.elementTools.Button.Options);
+			break;
+		case ToolViewType.DELETE:
+			tool = getDeleteTool(dipatcher, options as joint.elementTools.Button.Options);
+			break;
+		default:
+			throw new Error(`Tool type ${type} not supported`);
+	}
+
+	return tool;
+}
+
+const defaultsDeep = <T extends object>(source: T, destination: T): T => {
+	return joint.util.defaultsDeep(source, destination) as T;
+};
+
+export const getConnectTool = (
+	dispatcher: DispatcherFunc | null,
+	options: joint.elementTools.HoverConnect.Options
+) => {
+	options = defaultsDeep<joint.elementTools.HoverConnect.Options>(options || {}, {
 		magnet: 'body',
 		markup: [
 			{
@@ -64,17 +104,25 @@ export const getConnectTool = () => {
 			}
 		]
 	});
+
+	if (dispatcher) {
+		options.action = function (evt) {
+			dispatcher(this.model);
+		};
+	}
+
+	return new joint.elementTools.HoverConnect(options);
 };
 
-export const getInfoButton = (dispatcher: (cell: joint.dia.Cell) => void) => {
-	const infoBtn = new joint.elementTools.Button({
+export const getInfoTool = (
+	dispatcher: DispatcherFunc | null,
+	options: joint.elementTools.HoverConnect.Options
+) => {
+	options = defaultsDeep<joint.elementTools.HoverConnect.Options>(options || {}, {
 		focusOpacity: 0.5,
 		// top-right corner
 		x: '100%',
 		y: '0%',
-		action: function (evt) {
-			dispatcher(this.model);
-		},
 		markup: [
 			{
 				tagName: 'circle',
@@ -99,18 +147,26 @@ export const getInfoButton = (dispatcher: (cell: joint.dia.Cell) => void) => {
 		]
 	});
 
+	if (dispatcher) {
+		options.action = function (evt) {
+			dispatcher(this.model);
+		};
+	}
+
+	const infoBtn = new joint.elementTools.Button(options);
+
 	return infoBtn;
 };
 
-export const getAddButton = (dispatcher: (cell: joint.dia.Cell) => void) => {
-	const addBtn = new joint.elementTools.Button({
+export const getAddTool = (
+	dispatcher: DispatcherFunc | null,
+	options: joint.elementTools.HoverConnect.Options
+) => {
+	options = defaultsDeep<joint.elementTools.HoverConnect.Options>(options || {}, {
 		focusOpacity: 0.5,
 		// top-right corner
 		x: '100%',
 		y: '0%',
-		action: function (evt) {
-			dispatcher(this.model);
-		},
 		markup: [
 			{
 				tagName: 'circle',
@@ -135,17 +191,33 @@ export const getAddButton = (dispatcher: (cell: joint.dia.Cell) => void) => {
 		]
 	});
 
+	if (dispatcher) {
+		options.action = function (evt) {
+			dispatcher(this.model);
+		};
+	}
+
+	const addBtn = new joint.elementTools.Button(options);
+
 	return addBtn;
 };
 
-export const getDeleteButton = (dispatcher: (cell: joint.dia.Cell) => void) => {
-	return new joint.elementTools.Remove({
-		action: function (evt) {
-			dispatcher(this.model);
-		},
+export const getDeleteTool = (
+	dispatcher: DispatcherFunc | null,
+	options: joint.elementTools.HoverConnect.Options
+) => {
+	options = defaultsDeep<joint.elementTools.HoverConnect.Options>(options || {}, {
 		offset: {
 			x: -10,
 			y: -10
 		}
 	});
+
+	if (dispatcher) {
+		options.action = function (evt) {
+			dispatcher(this.model);
+		};
+	}
+
+	return new joint.elementTools.Remove(options);
 };
