@@ -1,5 +1,8 @@
-from chimerapy_orchestrator import sink_nodes, source_nodes
-from chimerapy_orchestrator.registry import get_registered_node
+from chimerapy_orchestrator.registry import (
+    get_registered_node,
+    sink_nodes,
+    source_nodes,
+)
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 
