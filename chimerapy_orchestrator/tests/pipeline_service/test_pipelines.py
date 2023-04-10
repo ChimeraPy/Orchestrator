@@ -124,6 +124,7 @@ class TestPipelines(BaseTest):
         node_choices = ["WebcamNode", "ShowWindow"]
         pipelines_created = []
         nodes_created = []
+        edge_ids = []
         for j in range(2):
             pipeline = pipelines.create_pipeline(
                 f"test_pipeline{j}", "test_description"
@@ -136,6 +137,7 @@ class TestPipelines(BaseTest):
                 edge.append(n.id)
 
             pipelines.add_edge_to(pipeline.id, (edge[0], edge[1]))
+            edge_ids.append(pipeline.edges[(edge[0], edge[1])]["id"])
 
             nodes_created.append(nodes)
             pipelines_created.append(pipeline)
@@ -164,6 +166,7 @@ class TestPipelines(BaseTest):
                 ],
                 "edges": [
                     {
+                        "id": edge_ids[0],
                         "source": nodes_created[0][0].id,
                         "sink": nodes_created[0][1].id,
                     }
@@ -192,6 +195,7 @@ class TestPipelines(BaseTest):
                 ],
                 "edges": [
                     {
+                        "id": edge_ids[1],
                         "source": nodes_created[1][0].id,
                         "sink": nodes_created[1][1].id,
                     }

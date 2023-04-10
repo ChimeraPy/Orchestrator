@@ -7,7 +7,7 @@ from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 
 def source_node(cls=None, *, name=None):
     """Registers a source node."""
-    from chimerapy_orchestrator import source_nodes
+    from chimerapy_orchestrator.registry import source_nodes
 
     if cls is not None:
         return RegistersChimeraPyNode(name, source_nodes)(cls)
@@ -17,7 +17,7 @@ def source_node(cls=None, *, name=None):
 
 def sink_node(cls=None, *, name=None):
     """Register a sink node."""
-    from chimerapy_orchestrator import sink_nodes
+    from chimerapy_orchestrator.registry import sink_nodes
 
     if cls is not None:
         return RegistersChimeraPyNode(name, sink_nodes)(cls)
@@ -27,7 +27,7 @@ def sink_node(cls=None, *, name=None):
 
 def step_node(cls=None, *, name=None):
     """Register a step node."""
-    from chimerapy_orchestrator import step_nodes
+    from chimerapy_orchestrator.registry import step_nodes
 
     if cls is not None:
         return RegistersChimeraPyNode(name, step_nodes)(cls)

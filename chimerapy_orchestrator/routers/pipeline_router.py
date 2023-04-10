@@ -53,7 +53,7 @@ class PipelineRouter(APIRouter):
         self.add_api_route(
             "/remove-node/{pipeline_id}",
             self.remove_node_from,
-            methods=["DELETE"],
+            methods=["POST"],
             response_description="The removed node",
         )
 
@@ -67,14 +67,14 @@ class PipelineRouter(APIRouter):
         self.add_api_route(
             "/remove-edge/{pipeline_id}",
             self.remove_edge_from,
-            methods=["DELETE"],
+            methods=["POST"],
             response_description="The removed edge",
         )
 
         # Delete a pipeline
         self.add_api_route(
-            "/delete/{pipeline_id}",
-            self.delete_pipeline,
+            "/remove/{pipeline_id}",
+            self.remove_pipeline,
             methods=["DELETE"],
             response_description="The deleted pipeline",
         )
@@ -105,12 +105,12 @@ class PipelineRouter(APIRouter):
     async def add_edge_to(self, pipeline_id: str, edge: WebEdge) -> WebEdge:
         """Add an edge to a pipeline."""
         created = self.pipelines.add_edge_to(
-            pipeline_id, (edge.source.id, edge.target.id), edge.id
+            pipeline_id, (edge.source.id, edge.sink.id), edge.id
         )
         return WebEdge(
             id=edge.id,
             source=created["source"].to_web_node(),
-            target=created["sink"].to_web_node(),
+            sink=created["sink"].to_web_node(),
         )
 
     async def remove_edge_from(
@@ -118,15 +118,15 @@ class PipelineRouter(APIRouter):
     ) -> WebEdge:
         """Remove an edge from a pipeline."""
         created = self.pipelines.remove_edge_from(
-            pipeline_id, (edge.source.id, edge.target.id), edge.id
+            pipeline_id, (edge.source.id, edge.sink.id), edge.id
         )
         return WebEdge(
             id=edge.id,
             source=created["source"].to_web_node(),
-            target=created["sink"].to_web_node(),
+            sink=created["sink"].to_web_node(),
         )
 
-    async def delete_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
+    async def remove_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Delete a pipeline."""
         pipeline = self.pipelines.remove_pipeline(pipeline_id)
         return pipeline.to_web_json()

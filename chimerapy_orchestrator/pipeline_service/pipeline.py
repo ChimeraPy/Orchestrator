@@ -20,6 +20,12 @@ class NotADagError(ValueError):
         return f"{wrapped_node.NodeClass.__name__}:{wrapped_node.id}"
 
 
+class EdgeNotFoundError(nx.NetworkXError):
+    def __init__(self, edge_id: str) -> None:
+        msg = f"Edge {edge_id} does not exist in the pipeline"
+        super().__init__(msg)
+
+
 class Pipeline(nx.DiGraph):
     """A directed graph representing a ChimeraPy pipeline without instantiated nodes."""
 
@@ -102,13 +108,17 @@ class Pipeline(nx.DiGraph):
         dst_wrapped_node = self.nodes[sink]["wrapped_node"]
 
         if self.has_edge(source, sink):
-
-            if not self.edges[(source, sink)]["id"] == edge_id:
+            if (
+                edge_id is not None
+                and not self.edges[(source, sink)]["id"] == edge_id
+            ):
                 raise ValueError(
-                    f"Edge {source} -> {sink} does not exist in the pipeline"
+                    f"Edge {source} -> {sink} does not have id {edge_id}"
                 )
 
             super().remove_edge(source, sink)
+        else:
+            raise EdgeNotFoundError(edge_id)
 
         return {"source": src_wrapped_node, "sink": dst_wrapped_node}
 

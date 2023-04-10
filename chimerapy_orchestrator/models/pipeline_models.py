@@ -53,7 +53,7 @@ class WebEdge(BaseModel):
 
     source: WebNode = Field(..., description="The source node of the edge.")
 
-    target: WebNode = Field(..., description="The target node of the edge.")
+    sink: WebNode = Field(..., description="The target node of the edge.")
 
     class Config:
         allow_extra = False
