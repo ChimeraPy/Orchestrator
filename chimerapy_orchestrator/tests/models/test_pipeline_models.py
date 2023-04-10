@@ -13,8 +13,8 @@ class TestPipelineModels(BaseTest):
 
     def test_node_instantiation_wrapped_node(self):
         class DummyNode(Node):
-            def __init__(self):
-                super().__init__()
+            def __init__(self, name="DummyNode", **kwargs):
+                super().__init__(name=name, **kwargs)
                 self.tunable_prop = None
 
             def prep(self):
@@ -24,4 +24,8 @@ class TestPipelineModels(BaseTest):
                 return self.tunable_prop
 
         wrapped_node = WrappedNode.from_node_class(DummyNode)
+        chimerapy_node = wrapped_node.instantiate()
+        assert isinstance(chimerapy_node, DummyNode)
+        assert chimerapy_node.name == "DummyNode"
+        assert wrapped_node.instantiated
         assert wrapped_node.NodeClass.__name__ == "DummyNode"
