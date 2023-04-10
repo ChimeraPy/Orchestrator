@@ -27,7 +27,8 @@ classifiers = [
 
 dependencies = [
     'chimerapy',
-    'pydantic'
+    'pydantic',
+    'fastapi[all]',
 ]
 
 [project.optional-dependencies]
