@@ -20,6 +20,7 @@
 	import { CreatePipelineStages } from '$lib/models';
 	import type { Pipeline } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
+	import { Icons } from '$lib/Icons';
 
 	import { Input, Label, Spinner } from 'flowbite-svelte';
 
@@ -116,7 +117,7 @@
 		}
 	}
 
-	async function fetchPipelines() {
+	async function fetchPipelines(rerender = true) {
 		const result = await pipelineClient.getPipelines();
 
 		pipelineListItems = PipelineUtils.pipelinesResultToEditableListItems(result, activePipeline);
@@ -131,7 +132,7 @@
 		} else {
 			activePipeline = pipelines.find((p) => p.id === activePipeline.id);
 		}
-		await renderActivePipelineGraph();
+		rerender ? await renderActivePipelineGraph() : null;
 	}
 
 	const debouncedFetchPipelines = debounce(fetchPipelines);
@@ -160,7 +161,7 @@
 			});
 		}
 
-		await fetchPipelines();
+		await fetchPipelines(false);
 	}
 
 	async function removeLinkFromPipeline({ src, tgt, link }) {
@@ -184,11 +185,11 @@
 						content: error
 					};
 				});
-			await fetchPipelines();
+			await fetchPipelines(false);
 		}
 	}
 
-	async function highlightPipelineEdge(link: joint.dia.Link) {
+	function highlightPipelineEdge(link: joint.dia.Link) {
 		const otherLinks = activePipeline?.edges.filter((e) => {
 			return e.id !== link.id;
 		});
@@ -198,6 +199,12 @@
 		});
 
 		pipelineGraph?.setCellStrokeWidth(link.id, 4);
+	}
+
+	function clearPipelineEdgeHighlight() {
+		activePipeline?.edges.forEach((l) => {
+			pipelineGraph?.setCellStrokeWidth(l.id, 2);
+		});
 	}
 
 	function showNodeInfo(node) {
@@ -254,7 +261,7 @@
 	}
 
 	async function requestPipelineDeletion(item) {
-		await pipelineClient.deletePipeline(item.id);
+		await pipelineClient.removePipeline(item.id);
 		if (activePipeline?.id === item.id) {
 			activePipeline = null;
 			pipelineGraph?.clearGraph();
@@ -287,13 +294,13 @@
 </script>
 
 <div class="h-full flex">
-	<div class="w-64 flex flex-col border-r-2 border-gray-400">
+	<div class="w-1/5 flex flex-col border-r-2 border-gray-400">
 		<div class="flex flex-col flex-1 overflow-hidden">
 			<div>
 				<HorizontalMenu
 					on:refresh={debouncedFetchNodes}
 					title="Nodes"
-					refreshBtn={true}
+					icons={[{ type: Icons.refresh, tooltip: 'Refresh nodes' }]}
 					backgroundClass="bg-blue-600"
 				/>
 			</div>
@@ -306,24 +313,39 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu
-					on:refresh={debouncedFetchNodes}
-					title="Nodes"
-					refreshBtn={false}
-					backgroundClass="bg-blue-600"
-				/>
+				<HorizontalMenu title="Network" refreshBtn={false} backgroundClass="bg-blue-600" />
 			</div>
 			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
 				<p>Networks view goes here</p>
 			</div>
 		</div>
 	</div>
-	<div class="flex flex-col w-full h-full flex-1 bg-indigo-100 border-r-2 border-gray-400">
-		<div bind:this={editorContainer} class="flex-1 flex flex-col">
+	<div class="flex flex-col w-3/5 h-full bg-indigo-100 border-r-2 border-gray-400">
+		<div bind:this={editorContainer} class="flex-1 flex flex-col overflow-hidden">
 			<div>
-				<HorizontalMenu bind:this={horizontalMenu} title="Pipeline Editor" />
+				<HorizontalMenu
+					bind:this={horizontalMenu}
+					on:magnify={() => pipelineGraph?.zoomIn()}
+					on:reduce={() => pipelineGraph?.zoomOut()}
+					on:refresh={() => pipelineGraph?.scaleContentToFit()}
+					icons={[
+						{
+							type: Icons.magnify,
+							tooltip: 'Zoom in'
+						},
+						{
+							type: Icons.reduce,
+							tooltip: 'Zoom out'
+						},
+						{
+							type: Icons.refresh,
+							tooltip: 'Fit to screen'
+						}
+					]}
+					title="Pipeline Editor"
+				/>
 			</div>
-			<div class="flex-1">
+			<div class="flex-1 overflow-hidden">
 				<EditableDagViewer
 					bind:this={pipelineGraph}
 					additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
@@ -332,6 +354,7 @@
 					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
 					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
 					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
+					on:blankClick={(event) => clearPipelineEdgeHighlight()}
 				/>
 			</div>
 		</div>
@@ -344,14 +367,16 @@
 			</div>
 		</div>
 	</div>
-	<div class="w-64 flex flex-col bg-indigo-50">
+	<div class="w-1/5 flex flex-col bg-indigo-50">
 		<div class="flex flex-col flex-1 overflow-hidden">
 			<div>
 				<HorizontalMenu
 					title="Pipelines"
 					backgroundClass="bg-blue-600"
-					refreshBtn={true}
-					addBtn={true}
+					icons={[
+						{ type: Icons.refresh, tooltip: 'Refresh Pipelines' },
+						{ type: Icons.add, tooltip: 'Create a new Pipeline' }
+					]}
 					on:add={showPipelineModal}
 					on:refresh={debouncedFetchPipelines}
 				/>
@@ -367,7 +392,7 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu title="Selected Node" refreshBtn={false} backgroundClass="bg-blue-600" />
+				<HorizontalMenu title="Selected Node" backgroundClass="bg-blue-600" />
 			</div>
 			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
 				<p>Selected Node attributes</p>

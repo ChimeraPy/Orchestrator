@@ -30,7 +30,10 @@
 	let paper: joint.dia.Paper;
 	let graph: joint.dia.Graph;
 	let paperEl: HTMLDivElement;
+	let paperContainer: HTMLDivElement;
 	const dispatch = createEventDispatcher();
+	const zoomLevels = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2];
+	let currentZoomLevel = zoomLevels.indexOf(1);
 
 	onMount(() => {
 		graph = new joint.dia.Graph();
@@ -97,10 +100,42 @@
 			const cell = cellView.model;
 			clickEvent(cell);
 		});
+
+		paper.on('blank:pointerclick', () => {
+			dispatch('blankClick');
+		});
 	});
 
 	export function clearGraph() {
 		graph?.clear();
+	}
+
+	export function zoomIn() {
+		if (currentZoomLevel < zoomLevels.length - 1) {
+			currentZoomLevel++;
+			const currentScale = paper.scale();
+			paper.scale(
+				zoomLevels[currentZoomLevel] * currentScale.sx,
+				zoomLevels[currentZoomLevel] * currentScale.sy
+			);
+			paper.fitToContent({
+				minWidth: paperContainer.clientWidth,
+				minHeight: paperContainer.clientHeight,
+				padding: 50
+			});
+		}
+	}
+
+	export function zoomOut() {
+		if (currentZoomLevel > 0) {
+			currentZoomLevel--;
+			paper.scale(zoomLevels[currentZoomLevel], zoomLevels[currentZoomLevel]);
+			paper.fitToContent({
+				minWidth: paperContainer.clientWidth,
+				minHeight: paperContainer.clientHeight,
+				padding: 50
+			});
+		}
 	}
 
 	function getTools() {
@@ -187,20 +222,31 @@
 			dagre: dagre,
 			graphlib: graphLib
 		});
-
-		paper?.scaleContentToFit({
-			padding: 20,
-			useModelGeometry: true,
-			maxScale: 1.5,
-			minScale: 0.6
-		});
+		scaleContentToFit();
 	}
 
 	export function resize() {
-		paper?.setDimensions('100%', '100%');
+		const width = (paper?.options.width as number) || 0;
+		const height = (paper?.options.height as number) || 0;
+		const w = Math.max(width, paperContainer?.clientWidth);
+		const h = Math.max(height, paperContainer?.clientHeight);
+		paper?.setDimensions(w, h);
+	}
+
+	export function scaleContentToFit() {
+		paper?.setDimensions(paperContainer?.clientWidth, paperContainer.clientHeight);
+		paper?.scaleContentToFit({
+			padding: 50,
+			maxScale: 1.6,
+			minScale: 0.2
+		});
+		currentZoomLevel = zoomLevels.indexOf(1);
 	}
 </script>
 
-<div class="w-full h-full">
+<div
+	bind:this={paperContainer}
+	class="w-full h-full overflow-scroll scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-100 "
+>
 	<div use:resize bind:this={paperEl} />
 </div>

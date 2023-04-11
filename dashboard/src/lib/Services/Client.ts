@@ -44,8 +44,8 @@ export class PipelineClient extends Client {
 		return response;
 	}
 
-	async deletePipeline(id: string): Promise<Result<Pipeline, ResponseError>> {
-		const prefix = encodeURIComponent(`/delete/${id}`);
+	async removePipeline(id: string): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/remove/${id}`);
 		const response = await this._fetch<Pipeline>(prefix, {
 			method: 'DELETE',
 			headers: new Headers({ 'Content-Type': 'application/json' })
@@ -57,14 +57,14 @@ export class PipelineClient extends Client {
 	async addEdgeTo(
 		pipeline_id: string,
 		src: PipelineNode,
-		tgt: PipelineNode,
+		sink: PipelineNode,
 		edgeId: string
 	): Promise<Result<Edge, ResponseError>> {
 		const prefix = encodeURIComponent(`/add-edge/${pipeline_id}`);
 
 		const requestBody = {
 			source: src,
-			target: tgt,
+			sink: sink,
 			id: edgeId
 		};
 
@@ -80,18 +80,18 @@ export class PipelineClient extends Client {
 	async removeEdgeFrom(
 		pipeline_id: string,
 		src: PipelineNode,
-		tgt: PipelineNode,
+		sink: PipelineNode,
 		edgeId: string
 	): Promise<Result<Edge, ResponseError>> {
 		const prefix = encodeURIComponent(`/remove-edge/${pipeline_id}`);
 		const requestBody = {
 			source: src,
-			target: tgt,
+			sink: sink,
 			id: edgeId
 		};
 
 		const response = await this._fetch<Edge>(prefix, {
-			method: 'DELETE',
+			method: 'POST',
 			body: JSON.stringify(requestBody),
 			headers: new Headers({ 'Content-Type': 'application/json' })
 		});
@@ -124,7 +124,7 @@ export class PipelineClient extends Client {
 		const requestBody = node;
 
 		const response = await this._fetch<PipelineNode>(prefix, {
-			method: 'DELETE',
+			method: 'POST',
 			body: JSON.stringify(requestBody),
 			headers: new Headers({ 'Content-Type': 'application/json' })
 		});

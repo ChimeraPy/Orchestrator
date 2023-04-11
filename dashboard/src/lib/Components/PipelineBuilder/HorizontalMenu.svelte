@@ -1,38 +1,46 @@
 <script lang="ts">
+	import { getIconPath } from '$lib/Icons';
+	import type { Icons } from '$lib/Icons';
+	import { Tooltip } from 'flowbite-svelte';
+
+	import { createEventDispatcher } from 'svelte';
+
+	export let icons: { type: Icons; tooltip?: string }[] = [];
 	export let title: string = 'Menu';
 	export let backgroundClass: string = 'bg-green-800';
-	export let refreshBtn = false;
-	export let addBtn = false;
-	import { createEventDispatcher } from 'svelte';
+
 	const dispatch = createEventDispatcher();
 
-	function dispatchRefreshEvent() {
-		dispatch('refresh');
-	}
-
-	function dispathAddEvent() {
-		dispatch('add');
+	function dispatchEvent(event: string) {
+		dispatch(event);
 	}
 </script>
 
 <div class="p-2 h-10 w-full {backgroundClass} text-white">
 	<div class="flex flex-row justify-between">
 		<h2>{title}</h2>
-		<div clas="flex flex-row">
-			{#if refreshBtn}
+		<div class="flex flex-row">
+			{#each icons as icon, index}
 				<span
 					role="button"
-					class="hover:text-green-900 mr-2"
-					on:click|preventDefault|stopPropagation={dispatchRefreshEvent}>&#10227;</span
+					class="mr-{index === icons.length - 1 ? 0 : 2} hover:text-gray-900 text-xl"
+					on:click={() => dispatchEvent(icon.type)}
 				>
-			{/if}
-			{#if addBtn}
-				<span
-					role="button"
-					class="hover:text-green-900"
-					on:click|preventDefault|stopPropagation={dispathAddEvent}>+</span
-				>
-			{/if}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						class="w-6 h-6"
+					>
+						<path d={getIconPath(icon.type)} />
+					</svg>
+					{#if icon.tooltip}
+						<Tooltip style={'dark'}>
+							{icon.tooltip}
+						</Tooltip>
+					{/if}
+				</span>
+			{/each}
 		</div>
 	</div>
 </div>
