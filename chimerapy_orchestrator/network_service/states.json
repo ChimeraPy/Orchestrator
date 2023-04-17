@@ -1,0 +1,38 @@
+{
+  "description": "The state machine configuration for the push pull turnstile.",
+  "states": {
+    "INITIALIZED": {
+      "name": "INITIALIZED",
+      "valid_transitions": [
+        {
+          "name": "commit",
+          "from_state": "INITIALIZED",
+          "to_state": "COMMITTED"
+        },
+        {
+          "name": "shutdown",
+          "from_state": "INITIALIZED",
+          "to_state": "SHUTDOWN"
+        }
+      ],
+      "description": "The cluster has been initialized."
+    },
+    "COMMITTED": {
+      "name": "COMMITTED",
+      "valid_transitions": [
+        {
+          "name": "shutdown",
+          "from_state": "COMMITTED",
+          "to_state": "SHUTDOWN"
+        }
+      ],
+      "description": "The network graph has been committed."
+    },
+    "SHUTDOWN": {
+      "name": "SHUTDOWN",
+      "valid_transitions": [],
+      "description": "The cluster has been shutdown."
+    }
+  },
+  "initial_state": "INITIALIZED"
+}

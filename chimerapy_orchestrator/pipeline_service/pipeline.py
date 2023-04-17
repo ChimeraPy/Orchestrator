@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+import chimerapy as cp
 import networkx as nx
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
@@ -125,6 +126,32 @@ class Pipeline(nx.DiGraph):
     def is_dag(self) -> bool:
         """Returns True if the pipeline_service is a DAG, False otherwise."""
         return nx.is_directed_acyclic_graph(self)
+
+    def instantiate_graph(self):
+        """Instantiates the pipeline_service graph."""
+        if self.instantiated:
+            return self.destroy_graph()
+
+        self.chimerapy_graph = cp.Graph()
+        wrapped_node_id_to_node_id = {}
+        for _, data in self.nodes(data=True):
+            wrapped_node = data["wrapped_node"]
+            node = wrapped_node.instantiate()
+            self.chimerapy_graph.add_node(node)
+            wrapped_node_id_to_node_id[wrapped_node.id] = node.id
+
+        for source, sink, _ in self.edges(data=True):
+            self.chimerapy_graph.add_edge(
+                wrapped_node_id_to_node_id[source],
+                wrapped_node_id_to_node_id[sink],
+            )
+
+        self.instantiated = True
+
+    def destroy_graph(self):
+        """Destroys the pipeline_service graph."""
+        self.chimerapy_graph = None
+        self.instantiated = False
 
     def __repr__(self) -> str:
         return f"Pipeline<{self.name}>"

@@ -32,6 +32,10 @@ class WebNode(BaseModel):
 
     id: Optional[str] = Field(default=None, description="The id of the node.")
 
+    instance_id: Optional[str] = Field(
+        default=None, description="The instance id of the node."
+    )
+
     kwargs: Optional[Dict[str, Any]] = Field(
         default={}, description="The kwargs of the node."
     )
@@ -75,6 +79,10 @@ class WrappedNode(BaseModel):
     id: Optional[str] = Field(
         default_factory=uuid, description="The id of the node."
     )
+
+    @property
+    def instance_id(self) -> Optional[str]:
+        return self.instance.id if self.instance is not None else None
 
     @property
     def instantiated(self) -> bool:
