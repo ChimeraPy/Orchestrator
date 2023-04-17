@@ -5,6 +5,7 @@
 	import { LinkValidator, ToolViewType, getToolType } from './utils';
 	import type { DispatcherFunc, ToolOptions, ValidatorFunc } from './utils';
 	import { createEventDispatcher } from 'svelte';
+	import { PaperScaler } from './PaperScaler';
 
 	import { onMount } from 'svelte';
 
@@ -32,8 +33,7 @@
 	let paperEl: HTMLDivElement;
 	let paperContainer: HTMLDivElement;
 	const dispatch = createEventDispatcher();
-	const zoomLevels = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2];
-	let currentZoomLevel = zoomLevels.indexOf(1);
+	let paperScaler: PaperScaler | null = null;
 
 	onMount(() => {
 		graph = new joint.dia.Graph();
@@ -74,6 +74,7 @@
 				}
 			})
 		} as joint.dia.Paper.Options);
+		paperScaler = new PaperScaler(paper);
 
 		paper.on('element:mouseenter', (elementView) => {
 			elementView.showTools();
@@ -111,31 +112,11 @@
 	}
 
 	export function zoomIn() {
-		if (currentZoomLevel < zoomLevels.length - 1) {
-			currentZoomLevel++;
-			const currentScale = paper.scale();
-			paper.scale(
-				zoomLevels[currentZoomLevel] * currentScale.sx,
-				zoomLevels[currentZoomLevel] * currentScale.sy
-			);
-			paper.fitToContent({
-				minWidth: paperContainer.clientWidth,
-				minHeight: paperContainer.clientHeight,
-				padding: 50
-			});
-		}
+		paperScaler?.zoomIn();
 	}
 
 	export function zoomOut() {
-		if (currentZoomLevel > 0) {
-			currentZoomLevel--;
-			paper.scale(zoomLevels[currentZoomLevel], zoomLevels[currentZoomLevel]);
-			paper.fitToContent({
-				minWidth: paperContainer.clientWidth,
-				minHeight: paperContainer.clientHeight,
-				padding: 50
-			});
-		}
+		paperScaler?.zoomOut();
 	}
 
 	function getTools() {
@@ -221,7 +202,7 @@
 			align: 'DR',
 			dagre: dagre,
 			graphlib: graphLib
-		});
+		} as joint.layout.DirectedGraph.LayoutOptions);
 		scaleContentToFit();
 	}
 
@@ -235,12 +216,7 @@
 
 	export function scaleContentToFit() {
 		paper?.setDimensions(paperContainer?.clientWidth, paperContainer.clientHeight);
-		paper?.scaleContentToFit({
-			padding: 50,
-			maxScale: 1.6,
-			minScale: 0.2
-		});
-		currentZoomLevel = zoomLevels.indexOf(1);
+		paperScaler?.scaleContentToFit();
 	}
 </script>
 
@@ -248,5 +224,6 @@
 	bind:this={paperContainer}
 	class="w-full h-full overflow-scroll scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-100 "
 >
-	<div use:resize bind:this={paperEl} />
+	<div bind:this={paperEl}>
+	</div>
 </div>
