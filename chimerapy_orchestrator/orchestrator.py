@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from chimerapy_orchestrator.network_service.network_manager import (
     NetworkManager,
@@ -17,11 +18,18 @@ class Orchestrator(FastAPI):
             port=5000,
         )
         print(self.network_manager.host, self.network_manager.port)
-        self.include_router(NetworkRouter(self.network_manager))
+        self.include_router(NetworkRouter(self.network_manager, self.pipelines))
         self.include_router(PipelineRouter(self.pipelines))
 
 
 def create_orchestrator_app() -> "Orchestrator":
     orchestrator = Orchestrator()
-    print("here")
+    orchestrator.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     return orchestrator
