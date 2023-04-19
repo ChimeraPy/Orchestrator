@@ -52,35 +52,32 @@ export interface Pipeline {
 }
 
 export interface Node {
+	id: string;
+	name: string;
+	port: number;
+	init: boolean;
+	connected: boolean;
+	ready: boolean;
+	finished: boolean;
+}
+
+export interface WorkerState {
 	ip: string;
 	name: string;
 	id: string;
 	port: number;
+	nodes: {[key: string]: Node}[];
+}
+
+export interface ClusterState {
+	id: string; // Define proper IP
+	ip: string;
+	port: number;
+	workers: {[key: string]: Worker}[];
+	logs_subscription_port?: number,
+	collection_status?: string;
 	running: boolean;
-	data_type: 'Video' | 'Series' | 'Audio';
-	dashboard_component: null | string;
-}
-
-export interface Worker {
-	ip: string;
-	name: string;
-	id: string;
-	port: number;
-	nodes: Node[];
-}
-
-export interface Graph {
-	id: string;
-}
-
-export interface Manager {
-	ip: string; // Define proper IP
-	status: ManagerStatus;
-	port: number;
-	workers: Worker[];
-	graph?: Graph;
-	worker_graph_map?: { string: string }[];
-	network_updates_port: number;
+	collecting: boolean;
 }
 
 export interface ResponseError {

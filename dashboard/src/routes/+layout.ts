@@ -1,9 +1,9 @@
 export const ssr = false;
 import type { LayoutLoad } from './$types';
-import { initNetwork } from '$lib/stores';
+import { populateStores } from '$lib/stores';
 
 export const load: LayoutLoad = ({ fetch }) => {
-	initNetwork(fetch);
+	populateStores(fetch);
 	return {
 		sections: [
 			{ slug: '/pipeline', title: 'Pipeline Design' },

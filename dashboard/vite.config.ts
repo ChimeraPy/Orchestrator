@@ -17,6 +17,13 @@ const config: UserConfig = {
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path: string) => path.replace('/api', '')
+			},
+			'/cluster-updates': {
+				target: 'ws://localhost:8000/cluster/updates',
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path: string) => path.replace('/cluster-updates', ''),
+				ws: true
 			}
 		}
 	}

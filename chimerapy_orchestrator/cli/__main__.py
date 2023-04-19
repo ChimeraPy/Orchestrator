@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
+from chimerapy_orchestrator.orchestrator_config import OrchestratorConfig
 
 
 def orchestrate(config: ChimeraPyPipelineConfig):
@@ -88,53 +89,85 @@ def orchestrate_worker(
     worker.shutdown()
 
 
-def run(args=None):
-    parser = ArgumentParser(
-        "The CP orchestrator", formatter_class=ArgumentDefaultsHelpFormatter
-    )
-
-    commands = [
+def add_orchestrate_parser(subparsers):
+    # Orchestrate
+    orchestrate_parser = subparsers.add_parser(
         "orchestrate",
-        "orchestrate-worker",
-        "list-remote-workers",
-        "server",
-    ]
-
-    parser.add_argument(
-        "mode",
-        help="The mode for the orchestrator",
-        type=str,
-        choices=sorted(commands),
+        help="Orchestrate the pipeline",
     )
-    parser.add_argument(
+
+    orchestrate_parser.add_argument(
         "--config",
         help="The configuration file to use",
         type=str,
-        required="server" not in sys.argv,
+        required=True,
     )
-    parser.add_argument(
+
+    return orchestrate_parser
+
+
+def add_orchestrate_worker_parser(subparsers):
+    # Orchestrate worker
+    orchestrate_worker_parser = subparsers.add_parser(
+        "orchestrate-worker",
+        help="Orchestrate a worker",
+    )
+
+    orchestrate_worker_parser.add_argument(
+        "--config",
+        help="The configuration file to use",
+        type=str,
+        required=True,
+    )
+
+    orchestrate_worker_parser.add_argument(
         "--worker-id",
         help="The id of the worker",
         type=str,
-        required="orchestrate-worker" in sys.argv,
+        required=True,
     )
-    group = parser.add_mutually_exclusive_group()
+
+    group = orchestrate_worker_parser.add_mutually_exclusive_group()
     group.add_argument(
         "--no-wait",
         help="Do not wait for the worker to connect to the manager",
         action="store_true",
-        required=False,
-        default=True,
-    )
-    group.add_argument(
-        "--max-retries",
-        help="The maximum number of retries to connect to the manager",
-        type=int,
-        required=False,
-        default=10,
     )
 
-    parser.add_argument(
+    group.add_argument(
+        "--wait",
+        help="Wait for the worker to connect to the manager",
+        action="store_true",
+    )
+
+    return orchestrate_worker_parser
+
+
+def add_list_remote_workers_parser(subparsers):
+    # List remote workers
+    list_remote_workers_parser = subparsers.add_parser(
+        "list-remote-workers",
+        help="List the remote workers",
+    )
+
+    list_remote_workers_parser.add_argument(
+        "--config",
+        help="The configuration file to use",
+        type=str,
+        required=True,
+    )
+
+    return list_remote_workers_parser
+
+
+def add_server_parser(subparsers):
+    # Server
+    server_parser = subparsers.add_parser(
+        "server",
+        help="Start the server",
+    )
+
+    server_parser.add_argument(
         "--server-port",
         help="The port to run the server on",
         type=int,
@@ -142,7 +175,52 @@ def run(args=None):
         default=8000,
     )
 
+    server_parser.add_argument(
+        "--server-mode",
+        help="The mode to run the server in",
+        type=str,
+        default="dev",
+        choices=["dev", "prod"],
+    )
+
+    for field, model_field in OrchestratorConfig.__fields__.items():
+        if field == "mode":
+            continue
+
+        server_parser.add_argument(
+            f"--{field.replace('_', '-')}",
+            help=model_field.field_info.description,
+            type=model_field.type_,
+            required=False,
+            default=model_field.default,
+        )
+
+    return server_parser
+
+
+def run(args=None):
+    parser = ArgumentParser(
+        "The CP orchestrator", formatter_class=ArgumentDefaultsHelpFormatter
+    )
+
+    subparsers = parser.add_subparsers(
+        title="subcommands", description="valid subcommands", dest="mode"
+    )
+
+    # Orchestrate
+    add_orchestrate_parser(subparsers)
+
+    # Orchestrate worker
+    add_orchestrate_worker_parser(subparsers)
+
+    # List remote workers
+    add_list_remote_workers_parser(subparsers)
+
+    # Server
+    add_server_parser(subparsers)
+
     args = parser.parse_args(args)
+
     if args.mode != "server":
         with open(args.config) as config_file:
             config_dict = json.load(config_file)
@@ -150,12 +228,14 @@ def run(args=None):
 
     if args.mode == "orchestrate":
         orchestrate(cp_config)
+
     elif args.mode == "orchestrate-worker":
         kwargs = {
             "wait_until_connected": not args.no_wait,
             "max_retries": args.max_retries,
         }
         orchestrate_worker(cp_config, args.worker_id, **kwargs)
+
     elif args.mode == "list-remote-workers":
         print("=== Remote Workers ===")
         cp_config.list_remote_workers()
@@ -163,6 +243,15 @@ def run(args=None):
     elif args.mode == "server":
         from uvicorn import run
 
+        kwargs = {}
+        for field in OrchestratorConfig.__fields__.keys():
+            if field == "mode":
+                continue
+
+            if getattr(args, field) is not None:
+                kwargs[field] = getattr(args, field)
+        config = OrchestratorConfig(mode=args.server_mode, **kwargs)
+        config.dump_env()
         run(
             "chimerapy_orchestrator.orchestrator:create_orchestrator_app",
             port=args.server_port,
