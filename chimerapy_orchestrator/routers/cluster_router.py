@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import websockets
@@ -28,30 +29,46 @@ class ClusterRouter(APIRouter):
         return ClusterState.from_cp_manager_state(self.manager.get_network())
 
     async def get_cluster_updates(self, websocket: WebSocket):
-        await websocket.accept()
         client_ws = await self.manager.get_client_socket()
+
+        await websocket.accept()
         await websocket.send_json(
-            ClusterState.from_cp_manager_state(
-                self.manager.get_network()
-            ).dict()
+            {
+                "signal": self.manager.get_network_update_signal(),
+                "data": ClusterState.from_cp_manager_state(
+                    self.manager.get_network()
+                ).dict(),
+            }
         )
-        try:
-            while True:
-                try:
-                    msg = json.loads(await client_ws.recv())
-                    if self.manager.is_cluster_shutdown_message(msg):
-                        await websocket.close()
-                        break
 
-                    if self.manager.is_cluster_update_message(msg):
-                        updated = ClusterState.parse_obj(msg["data"]).dict()
-                        await websocket.send_json(updated)
+        while True:
+            try:
+                recv_task1 = asyncio.create_task(client_ws.recv())
+                recv_task2 = asyncio.create_task(websocket.receive_json("text"))
 
-                except websockets.exceptions.ConnectionClosedOK:
+                done, pending = await asyncio.wait(
+                    [recv_task1, recv_task2],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for task in pending:
+                    task.cancel()
+                result = done.pop().result()
+                msg = result if isinstance(result, dict) else json.loads(result)
+
+                if self.manager.is_cluster_shutdown_message(msg):
+                    await websocket.send_json({"signal": "shutdown"})
                     break
-                except websockets.exceptions.ConnectionClosedError:
-                    break
-        except WebSocketDisconnect:
-            await websocket.close()
+
+                if self.manager.is_cluster_update_message(msg):
+                    updated = ClusterState.parse_obj(msg["data"]).dict()
+                    await websocket.send_json(updated)
+
+            except websockets.exceptions.ConnectionClosedOK:
+                break
+            except websockets.exceptions.ConnectionClosedError:
+                break
+            except WebSocketDisconnect:
+                break
 
         await client_ws.close()
+        await websocket.close()

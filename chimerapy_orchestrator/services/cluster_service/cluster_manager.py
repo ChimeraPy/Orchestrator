@@ -55,6 +55,11 @@ class ClusterManager:
         ]
 
     @staticmethod
+    def get_network_update_signal() -> int:
+        """Generate a network update message."""
+        return MANAGER_MESSAGE.NETWORK_STATUS_UPDATE.value
+
+    @staticmethod
     def is_cluster_shutdown_message(msg: Dict[str, Any]) -> bool:
         """Check if a message is a network shutdown message."""
         return msg.get("signal") == GENERAL_MESSAGE.SHUTDOWN.value
