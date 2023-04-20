@@ -5,7 +5,6 @@ export enum Icons {
 	magnify = 'magnify',
 	reduce = 'reduce',
 	default = 'default',
-	home = 'home'
 }
 
 const IconsPath: { [key in Icons]: string } = {

@@ -2,11 +2,11 @@ import pytest
 from chimerapy.node import Node
 from networkx import NetworkXError
 
-from chimerapy_orchestrator.pipeline_service.pipeline import (
+from chimerapy_orchestrator.registry.utils import step_node
+from chimerapy_orchestrator.services.pipeline_service.pipeline import (
     NotADagError,
     Pipeline,
 )
-from chimerapy_orchestrator.registry.utils import step_node
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 

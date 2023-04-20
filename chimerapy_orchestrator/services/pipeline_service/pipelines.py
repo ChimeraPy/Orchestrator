@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Tuple
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
-from chimerapy_orchestrator.pipeline_service.pipeline import Pipeline
+from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
 
 
 class Pipelines:

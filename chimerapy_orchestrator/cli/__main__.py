@@ -257,6 +257,7 @@ def run(args=None):
             port=args.server_port,
             factory=True,
             reload=True,
+            lifespan="on",
         )
 
     else:

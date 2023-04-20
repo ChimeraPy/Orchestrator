@@ -3,7 +3,7 @@ import type { LayoutLoad } from './$types';
 import { populateStores } from '$lib/stores';
 
 export const load: LayoutLoad = ({ fetch }) => {
-	populateStores(fetch);
+	populateStores();
 	return {
 		sections: [
 			{ slug: '/pipeline', title: 'Pipeline Design' },

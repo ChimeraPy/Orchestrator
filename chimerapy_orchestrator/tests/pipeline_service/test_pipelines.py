@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from chimerapy_orchestrator.pipeline_service.pipelines import Pipelines
+from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 

@@ -38,8 +38,8 @@ export interface PipelineNode {
 
 export interface Edge {
 	id: string;
-	source: PipelineNode;
-	sink: PipelineNode;
+	source: string;
+	sink: string;
 }
 
 export interface Pipeline {
@@ -51,7 +51,7 @@ export interface Pipeline {
 	edges: Edge[];
 }
 
-export interface Node {
+export interface NodeState {
 	id: string;
 	name: string;
 	port: number;
@@ -66,15 +66,15 @@ export interface WorkerState {
 	name: string;
 	id: string;
 	port: number;
-	nodes: {[key: string]: Node}[];
+	nodes: { [key: string]: NodeState }[];
 }
 
 export interface ClusterState {
 	id: string; // Define proper IP
 	ip: string;
 	port: number;
-	workers: {[key: string]: Worker}[];
-	logs_subscription_port?: number,
+	workers: { [key: string]: WorkerState };
+	logs_subscription_port?: number;
 	collection_status?: string;
 	running: boolean;
 	collecting: boolean;

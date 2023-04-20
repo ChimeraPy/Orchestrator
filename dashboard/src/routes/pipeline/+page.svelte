@@ -12,6 +12,7 @@
 	import { onMount } from 'svelte';
 	import { getStore } from '$lib/stores';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
+	import { ClusterUtils } from '$lib/Services/ClusterUtils';
 	import { debounce } from '$lib/utils';
 
 	import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
@@ -26,7 +27,6 @@
 
 	import { Input, Label, Spinner } from 'flowbite-svelte';
 	let networkStore = getStore('network');
-
 
 	let nodeCells: joint.dia.Cell[];
 	let pipelineName: string = '',
@@ -58,8 +58,6 @@
 			: null;
 	}
 
-
-
 	onMount(async () => {
 		await fetchPartBrowserNodes();
 		await fetchPipelines();
@@ -73,7 +71,6 @@
 
 		observer.observe(editorContainer);
 	});
-
 
 	// Part Browser
 	async function fetchPartBrowserNodes(): Promise<joint.dia.Graph> {
@@ -304,6 +301,18 @@
 		}
 		return `${clusterState.id}#${clusterState.ip}`;
 	}
+
+	function displayWorkerInfo(worker) {
+		const workerDetails = Object.values($networkStore?.workers || []).find(
+			(w) => w.id === worker.id
+		);
+		if (workerDetails) {
+			infoModalContent = {
+				title: workerDetails.name,
+				content: workerDetails
+			};
+		}
+	}
 </script>
 
 <div class="h-full flex">
@@ -326,13 +335,14 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu
-					title="{getNetworkTitle($networkStore)}"
-					backgroundClass="bg-blue-600"
-				/>
+				<HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600" />
 			</div>
 			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-				<EditableList ></EditableList>
+				<EditableList
+					editable={false}
+					items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}
+					on:info={(event) => displayWorkerInfo(event.detail)}
+				/>
 			</div>
 		</div>
 	</div>

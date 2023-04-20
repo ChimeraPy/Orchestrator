@@ -13,12 +13,12 @@ export function populateStores() {
 	const networkStore = readableWebSocketStore<ClusterState>(
 		'/cluster-updates',
 		null,
-		(data) => data,
+		(data) => data
 	);
 
 	stores.set('network', networkStore);
 }
 
-export function getStore<T>(name: string): T|null {
+export function getStore<T>(name: string): T | null {
 	return stores.get(name);
 }

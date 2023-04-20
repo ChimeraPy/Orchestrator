@@ -4,10 +4,10 @@ import websockets
 from fastapi import APIRouter
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
-from chimerapy_orchestrator.cluster_service.cluster_manager import (
+from chimerapy_orchestrator.models.cluster_models import ClusterState
+from chimerapy_orchestrator.services.cluster_service import (
     ClusterManager,
 )
-from chimerapy_orchestrator.models.cluster_models import ClusterState
 
 
 class ClusterRouter(APIRouter):
@@ -39,9 +39,14 @@ class ClusterRouter(APIRouter):
             while True:
                 try:
                     msg = json.loads(await client_ws.recv())
+                    if self.manager.is_cluster_shutdown_message(msg):
+                        await websocket.close()
+                        break
+
                     if self.manager.is_cluster_update_message(msg):
                         updated = ClusterState.parse_obj(msg["data"]).dict()
                         await websocket.send_json(updated)
+
                 except websockets.exceptions.ConnectionClosedOK:
                     break
                 except websockets.exceptions.ConnectionClosedError:

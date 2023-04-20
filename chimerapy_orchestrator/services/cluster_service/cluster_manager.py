@@ -30,6 +30,10 @@ class ClusterManager:
         """Get the current state of the network."""
         return self._manager.state
 
+    def shutdown(self):
+        """Shutdown the cluster manager."""
+        self._manager.shutdown()
+
     async def get_client_socket(self) -> websockets.WebSocketServerProtocol:
         """Register a socket as a client to the manager for listening to events like network changes."""
         socket = await websockets.connect(
@@ -42,7 +46,8 @@ class ClusterManager:
 
         return socket
 
-    def is_cluster_update_message(self, msg: Dict[str, Any]) -> bool:
+    @staticmethod
+    def is_cluster_update_message(msg: Dict[str, Any]) -> bool:
         """Check if a message is a network update message."""
         return msg.get("signal") in [
             MANAGER_MESSAGE.NETWORK_STATUS_UPDATE.value,
@@ -50,7 +55,17 @@ class ClusterManager:
         ]
 
     @staticmethod
-    def connect_payload(client_id):
+    def is_cluster_shutdown_message(msg: Dict[str, Any]) -> bool:
+        """Check if a message is a network shutdown message."""
+        return msg.get("signal") == GENERAL_MESSAGE.SHUTDOWN.value
+
+    def has_shutdown(self) -> bool:
+        """Check if the manager has shutdown."""
+        return self._manager.has_shutdown
+
+    @staticmethod
+    def connect_payload(client_id: str) -> Dict[str, Any]:
+        """Create a payload for registering a ws client to the manager."""
         return {
             "signal": GENERAL_MESSAGE.CLIENT_REGISTER.value,
             "data": {"client_id": client_id},

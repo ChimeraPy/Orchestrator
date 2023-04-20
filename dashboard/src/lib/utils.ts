@@ -1,7 +1,7 @@
-import type { Worker, Node } from './models';
+import type { WorkerState, NodeState } from './models';
 
 export function networkEntityDetails(
-	entity: Worker | Node,
+	entity: WorkerState | NodeState,
 	index: number,
 	prefix = 'Worker'
 ): string {
@@ -11,7 +11,7 @@ export function networkEntityDetails(
 		'name =',
 		entity.name,
 		'@',
-		`${entity.ip}:${entity.port}`
+		entity.ip ? `${entity.ip}:${entity.port}` : `${entity.port}`
 	];
 	return details.join(' ');
 }
