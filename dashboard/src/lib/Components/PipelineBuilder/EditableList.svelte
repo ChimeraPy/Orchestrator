@@ -8,7 +8,7 @@
 	export let emptyMessage = 'No items';
 </script>
 
-<div
+<div use:addScrollbars
 	class="relative
 			h-full
 			w-full

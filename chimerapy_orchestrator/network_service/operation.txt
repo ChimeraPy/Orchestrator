@@ -1,0 +1,4 @@
+1. The operation is as follows:
+    - A websocket client that listens to ChimeraPy manager's network updates and relays it to the frontend
+    - Routes that adhere to the server's FSM states and have ability to commit a pipeline
+    - Routes to destroy/clear the commit the pipeline

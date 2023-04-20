@@ -42,7 +42,7 @@ class ClusterRouter(APIRouter):
                     if self.manager.is_cluster_update_message(msg):
                         updated = ClusterState.parse_obj(msg["data"]).dict()
                         await websocket.send_json(updated)
-                except websockets.exceptions.ConnectionClosedOk:
+                except websockets.exceptions.ConnectionClosedOK:
                     break
                 except websockets.exceptions.ConnectionClosedError:
                     break
