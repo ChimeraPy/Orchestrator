@@ -13,7 +13,7 @@ export function populateStores() {
 	const networkStore = readableWebSocketStore<ClusterState>(
 		'/cluster-updates',
 		null,
-		(data) => data
+		(payload) => payload.data
 	);
 
 	stores.set('network', networkStore);

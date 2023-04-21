@@ -1,3 +1,4 @@
+import chimerapy as cp
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -34,6 +35,17 @@ class TestNetworkRouter(BaseTest):
     def test_get_network_updates(self, cluster_manager_and_client):
         manager, client = cluster_manager_and_client
 
+        def connect_worker():
+            w = cp.Worker(
+                name="test_worker",
+            )
+            w.connect(
+                manager.host,
+                manager.port,
+            )
+
+            return w
+
         with client.websocket_connect("/cluster/updates") as ws:
             message = ws.receive_json()
             assert manager.is_cluster_update_message(message)
@@ -42,4 +54,10 @@ class TestNetworkRouter(BaseTest):
                 == ClusterState.from_cp_manager_state(
                     manager.get_network()
                 ).dict()
+            )
+            worker = connect_worker()
+            message = ws.receive_json()
+            assert manager.is_cluster_update_message(message)
+            assert (
+                message["data"]["workers"][worker.id] == worker.state.to_dict()
             )

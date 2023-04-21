@@ -29,6 +29,7 @@ class ClusterRouter(APIRouter):
         return ClusterState.from_cp_manager_state(self.manager.get_network())
 
     async def get_cluster_updates(self, websocket: WebSocket):
+        # FixMe: Is it worth it to have a separate websocket per connection request?
         client_ws = await self.manager.get_client_socket()
 
         await websocket.accept()
@@ -60,7 +61,10 @@ class ClusterRouter(APIRouter):
                     break
 
                 if self.manager.is_cluster_update_message(msg):
-                    updated = ClusterState.parse_obj(msg["data"]).dict()
+                    updated = {
+                        "data": ClusterState.parse_obj(msg["data"]).dict(),
+                        "signal": msg["signal"],
+                    }
                     await websocket.send_json(updated)
 
             except websockets.exceptions.ConnectionClosedOK:

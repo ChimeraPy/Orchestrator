@@ -46,6 +46,18 @@ class ClusterManager:
 
         return socket
 
+    @property
+    def host(self):
+        return self._manager.host
+
+    @property
+    def port(self):
+        return self._manager.port
+
+    def has_shutdown(self) -> bool:
+        """Check if the manager has shutdown."""
+        return self._manager.has_shutdown
+
     @staticmethod
     def is_cluster_update_message(msg: Dict[str, Any]) -> bool:
         """Check if a message is a network update message."""
@@ -63,10 +75,6 @@ class ClusterManager:
     def is_cluster_shutdown_message(msg: Dict[str, Any]) -> bool:
         """Check if a message is a network shutdown message."""
         return msg.get("signal") == GENERAL_MESSAGE.SHUTDOWN.value
-
-    def has_shutdown(self) -> bool:
-        """Check if the manager has shutdown."""
-        return self._manager.has_shutdown
 
     @staticmethod
     def connect_payload(client_id: str) -> Dict[str, Any]:
