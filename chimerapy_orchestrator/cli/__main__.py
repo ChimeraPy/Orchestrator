@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
+from chimerapy_orchestrator.orchestrator_config import OrchestratorConfig
 
 
 def orchestrate(config: ChimeraPyPipelineConfig):
@@ -174,6 +175,28 @@ def add_server_parser(subparsers):
         default=8000,
     )
 
+    server_parser.add_argument(
+        "--server-mode",
+        help="The mode to run the server in",
+        type=str,
+        default="dev",
+        choices=["dev", "prod"],
+    )
+
+    for field, model_field in OrchestratorConfig.__fields__.items():
+        if field == "mode":
+            continue
+
+        server_parser.add_argument(
+            f"--{field.replace('_', '-')}",
+            help=model_field.field_info.description,
+            type=model_field.type_,
+            required=False,
+            default=model_field.default,
+        )
+
+    return server_parser
+
 
 def run(args=None):
     parser = ArgumentParser(
@@ -205,12 +228,14 @@ def run(args=None):
 
     if args.mode == "orchestrate":
         orchestrate(cp_config)
+
     elif args.mode == "orchestrate-worker":
         kwargs = {
             "wait_until_connected": not args.no_wait,
             "max_retries": args.max_retries,
         }
         orchestrate_worker(cp_config, args.worker_id, **kwargs)
+
     elif args.mode == "list-remote-workers":
         print("=== Remote Workers ===")
         cp_config.list_remote_workers()
@@ -218,11 +243,21 @@ def run(args=None):
     elif args.mode == "server":
         from uvicorn import run
 
+        kwargs = {}
+        for field in OrchestratorConfig.__fields__.keys():
+            if field == "mode":
+                continue
+
+            if getattr(args, field) is not None:
+                kwargs[field] = getattr(args, field)
+        config = OrchestratorConfig(mode=args.server_mode, **kwargs)
+        config.dump_env()
         run(
             "chimerapy_orchestrator.orchestrator:create_orchestrator_app",
             port=args.server_port,
             factory=True,
             reload=True,
+            lifespan="on",
         )
 
     else:

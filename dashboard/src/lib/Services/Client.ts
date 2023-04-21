@@ -1,5 +1,5 @@
 import type { Result } from 'ts-monads/lib/Result';
-import type { PipelineNode, Pipeline, Edge, ResponseError, Manager } from '../models';
+import type { PipelineNode, Pipeline, Edge, ResponseError, ClusterState } from '../models';
 import { Err, Ok } from 'ts-monads';
 
 class Client {
@@ -159,7 +159,7 @@ export class NetworkClient extends Client {
 
 	async getNetworkMap(
 		fetch: (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response>
-	): Promise<Ok<Manager> | Err<ResponseError>> {
+	): Promise<Ok<ClusterState> | Err<ResponseError>> {
 		const res = await fetch('/mocks/networkMap.json');
 		if (res.ok) {
 			return new Ok(await res.json());

@@ -73,3 +73,8 @@ fixable = ["I001"]  # isort fix only
 "__init__.py" = ["E402", "F401"]
 "chimerapy/__version__.py" = ["E402"]
 "docs/conf.py" = ["E402"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

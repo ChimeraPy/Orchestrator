@@ -221,6 +221,5 @@
 	bind:this={paperContainer}
 	class="w-full h-full overflow-scroll scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-100 "
 >
-	<div bind:this={paperEl}>
-	</div>
+	<div bind:this={paperEl} />
 </div>

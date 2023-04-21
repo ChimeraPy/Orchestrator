@@ -7,8 +7,8 @@ from chimerapy_orchestrator.models.pipeline_models import (
     WebEdge,
     WebNode,
 )
-from chimerapy_orchestrator.pipeline_service.pipelines import Pipelines
 from chimerapy_orchestrator.registry import all_nodes
+from chimerapy_orchestrator.services.pipeline_service import Pipelines
 
 
 class PipelineRouter(APIRouter):

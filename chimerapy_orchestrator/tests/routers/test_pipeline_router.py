@@ -2,9 +2,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from chimerapy_orchestrator.pipeline_service.pipelines import Pipelines
 from chimerapy_orchestrator.registry import nodes_registry
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
+from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
 from chimerapy_orchestrator.utils import uuid
 

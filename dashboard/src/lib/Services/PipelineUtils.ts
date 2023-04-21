@@ -1,8 +1,7 @@
 import * as joint from 'jointjs';
 import type { Result } from 'ts-monads/lib/Result';
-import type { PipelineNode, Pipeline } from '../models';
+import type { PipelineNode, Pipeline, ResponseError } from '../models';
 import { NodeType } from '../models';
-import type { ResponseError } from './NetworkApi';
 
 export class PipelineUtils {
 	static validLinkTypes = [

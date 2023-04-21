@@ -10,19 +10,23 @@
 <script lang="ts">
 	import { pipelineClient } from '$lib/services';
 	import { onMount } from 'svelte';
+	import { getStore } from '$lib/stores';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
+	import { ClusterUtils } from '$lib/Services/ClusterUtils';
 	import { debounce } from '$lib/utils';
+
 	import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
 	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import { CreatePipelineStages } from '$lib/models';
-	import type { Pipeline } from '$lib/models';
+	import type { Pipeline, ClusterState } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
 	import { Icons } from '$lib/Icons';
 
 	import { Input, Label, Spinner } from 'flowbite-svelte';
+	let networkStore = getStore('network');
 
 	let nodeCells: joint.dia.Cell[];
 	let pipelineName: string = '',
@@ -57,7 +61,6 @@
 	onMount(async () => {
 		await fetchPartBrowserNodes();
 		await fetchPipelines();
-
 		const observer = new ResizeObserver((entries) => {
 			entries.forEach((entry) => {
 				if (entry.target === editorContainer) {
@@ -291,6 +294,25 @@
 		activePipeline = pipelines.find((p) => p.id === item.id);
 		renderActivePipelineGraph();
 	}
+
+	function getNetworkTitle(clusterState: ClusterState | null) {
+		if (!clusterState) {
+			return 'No active network';
+		}
+		return `${clusterState.id}#${clusterState.ip}`;
+	}
+
+	function displayWorkerInfo(worker) {
+		const workerDetails = Object.values($networkStore?.workers || []).find(
+			(w) => w.id === worker.id
+		);
+		if (workerDetails) {
+			infoModalContent = {
+				title: workerDetails.name,
+				content: workerDetails
+			};
+		}
+	}
 </script>
 
 <div class="h-full flex">
@@ -313,10 +335,14 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu title="Network" refreshBtn={false} backgroundClass="bg-blue-600" />
+				<HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600" />
 			</div>
 			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-				<p>Networks view goes here</p>
+				<EditableList
+					editable={false}
+					items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}
+					on:info={(event) => displayWorkerInfo(event.detail)}
+				/>
 			</div>
 		</div>
 	</div>
