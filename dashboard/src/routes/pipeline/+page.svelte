@@ -20,7 +20,8 @@
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
-	import PipelineCommitter from '$lib/Components/PipelineCommitter/PipelineCommitter.svelte';
+	import TabbedOrchestrationViews from "$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte";
+
 	import { CreatePipelineStages } from '$lib/models';
 	import type { Pipeline, ClusterState, NodeState } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
@@ -422,13 +423,8 @@
 				/>
 			</div>
 		</div>
-		<div class="flex-1 flex flex-col">
-			<div>
-				<HorizontalMenu title="Active Jobs" />
-			</div>
-			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-				<p>Active Jobs go here</p>
-			</div>
+		<div class="flex-1 flex flex-col bg-[#F3F7F6]">
+			<TabbedOrchestrationViews/>
 		</div>
 	</div>
 	<div class="w-1/5 flex flex-col bg-indigo-50">
@@ -534,5 +530,3 @@
 		<pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
 	</div>
 </Modal>
-
-<PipelineCommitter bind:committablePipeline></PipelineCommitter>
