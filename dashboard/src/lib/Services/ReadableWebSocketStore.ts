@@ -51,6 +51,7 @@ export default function readableWebSocketStore<T>(
 		openPromise = new Promise((resolve, reject) => {
 			if (socket) {
 				socket.onerror = (event) => {
+					update(() => null);
 					reject(event);
 					openPromise = null;
 				};
