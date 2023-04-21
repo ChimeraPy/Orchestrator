@@ -207,11 +207,8 @@
 	}
 
 	export function resize() {
-		const width = (paper?.options.width as number) || 0;
-		const height = (paper?.options.height as number) || 0;
-		const w = Math.max(width, paperContainer?.clientWidth);
-		const h = Math.max(height, paperContainer?.clientHeight);
-		paper?.setDimensions(w, h);
+		if(!paperContainer) return;
+		paper?.setDimensions(paperContainer.clientWidth, paperContainer.clientHeight);
 	}
 
 	export function scaleContentToFit() {
