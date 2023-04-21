@@ -6,25 +6,29 @@ from chimerapy.manager import Manager
 from chimerapy.networking.enums import GENERAL_MESSAGE, MANAGER_MESSAGE
 from chimerapy.states import ManagerState
 
+from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.utils import uuid
 
 
 class ClusterManager:
-    def __init__(
-        self,
-        logdir: str,
-        port: int = 9000,
-        max_num_of_workers: int = 50,
-        publish_logs_via_zmq: bool = False,
-    ):
-        self._manager = Manager(
-            logdir=logdir,
-            port=port,
-            max_num_of_workers=max_num_of_workers,
-            publish_logs_via_zmq=publish_logs_via_zmq,
-            enable_api=True,
-        )  # Here, we want to refactor this after we have a
+    def __init__(self, pipeline_service: Pipelines, **manager_kwargs):
+        """A service for managing the cluster manager."""
+        kwargs = {
+            "logdir": "logs",
+            "port": 9000,
+            "max_num_of_workers": 50,
+            "publish_logs_via_zmq": False,
+            "enable_api": True,
+        }
+        manager_kwargs.pop("enable_api", None)
+        kwargs.update(manager_kwargs)
+        # Here, we want to refactor this after we have a
         # better understanding of the Manager class into a duck-typed interface.
+        self._manager = Manager(**kwargs)
+
+        self._pipeline_service = pipeline_service
+
+        self.committed_pipeline = None
 
     def get_network(self) -> ManagerState:
         """Get the current state of the network."""
@@ -57,6 +61,10 @@ class ClusterManager:
     def has_shutdown(self) -> bool:
         """Check if the manager has shutdown."""
         return self._manager.has_shutdown
+
+    def commit_pipeline(self, pipeline_id: str) -> None:
+        """Commit a pipeline to the manager."""
+        self._pipeline_service.get_pipeline(pipeline_id)
 
     @staticmethod
     def is_cluster_update_message(msg: Dict[str, Any]) -> bool:

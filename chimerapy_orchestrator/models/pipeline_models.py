@@ -40,6 +40,11 @@ class WebNode(BaseModel):
         default=None, description="The type of the node."
     )
 
+    worker_id: Optional[str] = Field(
+        default=None,
+        description="The id of the worker once the node get committed.",
+    )
+
     class Config:
         allow_extra = False
 
@@ -76,6 +81,11 @@ class WrappedNode(BaseModel):
         default_factory=uuid, description="The id of the node."
     )
 
+    worker_id: Optional[str] = Field(
+        default=None,
+        description="The id of the worker once the node get committed.",
+    )
+
     @property
     def instantiated(self) -> bool:
         return self.instance is not None
@@ -106,6 +116,7 @@ class WrappedNode(BaseModel):
             registry_name=self.NodeClass.__name__,
             id=self.id,
             type=get_node_type(self),
+            worker_id=self.worker_id,
         )
 
     def __repr__(self):

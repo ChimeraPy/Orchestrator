@@ -35,6 +35,7 @@ class Orchestrator(FastAPI):
         # Services
         self.pipelines = Pipelines()
         self.cluster_manager = ClusterManager(
+            pipeline_service=self.pipelines,
             logdir=config.cluster_manager_logdir,
             port=config.cluster_manager_port,
             max_num_of_workers=config.cluster_manager_max_num_of_workers,

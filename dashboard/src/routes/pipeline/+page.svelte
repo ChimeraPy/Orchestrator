@@ -20,8 +20,9 @@
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
+	import PipelineCommitter from '$lib/Components/PipelineCommitter/PipelineCommitter.svelte';
 	import { CreatePipelineStages } from '$lib/models';
-	import type { Pipeline, ClusterState } from '$lib/models';
+	import type { Pipeline, ClusterState, NodeState } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
 	import { Icons } from '$lib/Icons';
 
@@ -41,9 +42,11 @@
 		pipelineListItems = [];
 	let activePipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
-	let infoModalContent: { title: string; content: any } | null = null;
+	let infoModalContent: { title: string; content: any, alertMessage?: string } | null = null;
+	let selectedNode: NodeState | null = null;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
+	let committablePipeline: Pipeline | null = null;
 
 	$: {
 		modalOpen = createPipelineStage !== CreatePipelineStages.INACTIVE;
@@ -193,22 +196,47 @@
 	}
 
 	function highlightPipelineEdge(link: joint.dia.Link) {
-		const otherLinks = activePipeline?.edges.filter((e) => {
+		const otherCells = activePipeline?.edges.filter((e) => {
 			return e.id !== link.id;
-		});
+		}).concat(activePipeline?.nodes);
 
-		otherLinks.forEach((l) => {
+		otherCells.forEach((l) => {
 			pipelineGraph?.setCellStrokeWidth(l.id, 2);
 		});
 
 		pipelineGraph?.setCellStrokeWidth(link.id, 4);
+		selectedNode = null;
 	}
 
-	function clearPipelineEdgeHighlight() {
+	function highlightPipelineNode(node: joint.dia.Element) {
+		const otherCells = activePipeline?.nodes.filter((n) => {
+			return n.id !== node.id;
+		}).concat(activePipeline?.edges);
+
+		const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
+		if (pipelineNode) {
+			selectedNode = pipelineNode;
+		}
+
+		otherCells.forEach((n) => {
+			pipelineGraph?.setCellStrokeWidth(n.id, 2);
+		});
+
+		pipelineGraph?.setCellStrokeWidth(node.id, 4);
+	}
+
+	function clearPipelineHighlights() {
 		activePipeline?.edges.forEach((l) => {
 			pipelineGraph?.setCellStrokeWidth(l.id, 2);
 		});
+
+		activePipeline?.nodes.forEach((n) => {
+			pipelineGraph?.setCellStrokeWidth(n.id, 2);
+		});
+
+		selectedNode = null;
 	}
+
 
 	function showNodeInfo(node) {
 		const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
@@ -313,6 +341,10 @@
 			};
 		}
 	}
+
+	function displayCommitIntent() {
+		committablePipeline = activePipeline;
+	}
 </script>
 
 <div class="h-full flex">
@@ -354,6 +386,7 @@
 					on:magnify={() => pipelineGraph?.zoomIn()}
 					on:reduce={() => pipelineGraph?.zoomOut()}
 					on:refresh={() => pipelineGraph?.scaleContentToFit()}
+					on:bolt={() => displayCommitIntent()}
 					icons={[
 						{
 							type: Icons.magnify,
@@ -366,6 +399,10 @@
 						{
 							type: Icons.refresh,
 							tooltip: 'Fit to screen'
+						},
+						{
+							type: Icons.bolt,
+							tooltip: 'Commit pipeline',
 						}
 					]}
 					title="Pipeline Editor"
@@ -380,7 +417,8 @@
 					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
 					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
 					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-					on:blankClick={(event) => clearPipelineEdgeHighlight()}
+					on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
+					on:blankClick={(event) => clearPipelineHighlights()}
 				/>
 			</div>
 		</div>
@@ -418,7 +456,7 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu title="Selected Node" backgroundClass="bg-blue-600" />
+				<HorizontalMenu title="{selectedNode?.name || 'Selected Node'}" backgroundClass="bg-blue-600" />
 			</div>
 			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
 				<p>Selected Node attributes</p>
@@ -481,13 +519,13 @@
 	</div>
 </Modal>
 
-<!-- Alert Modal -->
+<!-- Info Modal -->
 <Modal
 	type="alert"
 	title={infoModalContent?.title}
 	bind:modalOpen={infoModalContent}
 	autoclose={true}
-	alertMessage="Close"
+	alertMessage="{infoModalContent?.alertMessage || 'Close'}"
 	on:cancel={() => (infoModalContent = null)}
 	on:alert={() => (infoModalContent = null)}
 >
@@ -496,3 +534,5 @@
 		<pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
 	</div>
 </Modal>
+
+<PipelineCommitter bind:committablePipeline></PipelineCommitter>
