@@ -155,6 +155,8 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[0][0].id,
                         "kwargs": {},
                         "type": "SOURCE",
+                        "worker_id": None,
+                        "instance_id": None,
                     },
                     {
                         "name": "ShowWindow",
@@ -162,6 +164,8 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[0][1].id,
                         "kwargs": {},
                         "type": "SINK",
+                        "worker_id": None,
+                        "instance_id": None,
                     },
                 ],
                 "edges": [
@@ -184,6 +188,8 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[1][0].id,
                         "kwargs": {},
                         "type": "SOURCE",
+                        "worker_id": None,
+                        "instance_id": None,
                     },
                     {
                         "name": "ShowWindow",
@@ -191,6 +197,8 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[1][1].id,
                         "kwargs": {},
                         "type": "SINK",
+                        "worker_id": None,
+                        "instance_id": None,
                     },
                 ],
                 "edges": [

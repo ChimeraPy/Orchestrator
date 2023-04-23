@@ -126,6 +126,19 @@ class Pipeline(nx.DiGraph):
         """Returns True if the pipeline_service is a DAG, False otherwise."""
         return nx.is_directed_acyclic_graph(self)
 
+    def instantiate(self, update_queue) -> None:
+        """Instantiates the pipeline_service."""
+        if self.instantiated:
+            raise ValueError("Pipeline is already instantiated")
+
+        for _, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            wrapped_node.instantiate()
+            if update_queue is not None:
+                update_queue.put(self.to_web_json())
+
+        self.instantiated = True
+
     def __repr__(self) -> str:
         return f"Pipeline<{self.name}>"
 

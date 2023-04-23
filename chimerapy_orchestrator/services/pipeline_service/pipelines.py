@@ -1,3 +1,4 @@
+from queue import Queue
 from typing import Any, Dict, List, Tuple
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
@@ -71,6 +72,11 @@ class Pipelines:
                 pipelines.append(pipeline)
 
         return pipelines
+
+    def instantiate(self, pipeline_id: str, update_queue: Queue = None):
+        """Instantiate the pipelines."""
+        pipeline = self.get_pipeline(pipeline_id)
+        pipeline.instantiate(update_queue=update_queue)
 
     def web_json(self, pipeline_id=None) -> List[Dict[str, Any]]:
         """Returns a JSON representation of the pipelines for the web interface."""

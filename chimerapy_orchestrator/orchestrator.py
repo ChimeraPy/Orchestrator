@@ -1,3 +1,4 @@
+import asyncio
 import signal
 from contextlib import asynccontextmanager
 from types import FrameType
@@ -15,15 +16,16 @@ from chimerapy_orchestrator.services.pipeline_service import Pipelines
 @asynccontextmanager
 async def lifespan(app: "Orchestrator"):
     default_sigint_handler = signal.getsignal(signal.SIGINT)
+    task1 = asyncio.create_task(app.cluster_manager.start_updates_broadcaster())
 
     def shutdown_on_sigint(signum: int, frame: FrameType = None):
         app.cluster_manager.shutdown()
+        if not task1.done():
+            task1.cancel()
         default_sigint_handler(signum, frame)
 
     signal.signal(signal.SIGINT, shutdown_on_sigint)
-
     yield
-
     if not app.cluster_manager.has_shutdown():
         app.cluster_manager.shutdown()
 
