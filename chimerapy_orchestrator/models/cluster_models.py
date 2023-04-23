@@ -1,4 +1,5 @@
-from typing import Dict, Literal, Optional
+from enum import Enum
+from typing import Any, Dict, Literal, Optional, Union
 
 from chimerapy.states import (
     ManagerState,
@@ -64,6 +65,34 @@ class ClusterState(BaseModel):
     def from_cp_manager_state(cls, state: ManagerState):
         state_dict = state.to_dict()
         return cls(**state_dict)
+
+    class Config:
+        allow_extra = False
+        allow_mutation = False
+
+
+class UpdateMessageType(str, Enum):
+    NETWORK_UPDATE = "NETWORK_UPDATE"
+    SHUTDOWN = "SHUTDOWN"
+
+
+class UpdateMessage(BaseModel):
+    signal: UpdateMessageType = Field(
+        ..., description="The signal of the update message."
+    )
+    data: Union[ClusterState, None] = Field(
+        default=None, description="The data of the update message."
+    )
+
+    @classmethod
+    def from_updates_dict(
+        cls, msg: Dict[str, Any], signal: UpdateMessageType
+    ) -> "UpdateMessage":
+        if (data := msg.get("data")) is not None:
+            data = ManagerState.from_dict(data)
+            data = ClusterState.from_cp_manager_state(data)
+
+        return cls(signal=signal, data=data)
 
     class Config:
         allow_extra = False
