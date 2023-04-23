@@ -63,7 +63,9 @@ class ClusterRouter(APIRouter):
         await self.manager.subscribe_to_updates(
             update_queue,
             UpdateMessage(
-                data=self.get_manager_state(),
+                data=ClusterState.from_cp_manager_state(
+                    self.manager.get_network()
+                ),
                 signal=UpdateMessageType.NETWORK_UPDATE,
             ),
         )
@@ -79,6 +81,6 @@ class ClusterRouter(APIRouter):
         finally:
             await on_disconnect()
 
-    def get_manager_state(self) -> ClusterState:
+    async def get_manager_state(self) -> ClusterState:
         """Get the current state of the cluster."""
         return ClusterState.from_cp_manager_state(self.manager.get_network())
