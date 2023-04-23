@@ -1,12 +1,12 @@
-import json
-from typing import Any, Dict
+import asyncio
 
-import websockets
 from chimerapy.manager import Manager
-from chimerapy.networking.enums import GENERAL_MESSAGE, MANAGER_MESSAGE
 from chimerapy.states import ManagerState
 
-from chimerapy_orchestrator.utils import uuid
+from chimerapy_orchestrator.models.cluster_models import UpdateMessage
+from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import (
+    ClusterUpdatesBroadCaster,
+)
 
 
 class ClusterManager:
@@ -25,26 +25,10 @@ class ClusterManager:
             enable_api=True,
         )  # Here, we want to refactor this after we have a
         # better understanding of the Manager class into a duck-typed interface.
-
-    def get_network(self) -> ManagerState:
-        """Get the current state of the network."""
-        return self._manager.state
-
-    def shutdown(self):
-        """Shutdown the cluster manager."""
-        self._manager.shutdown()
-
-    async def get_client_socket(self) -> websockets.WebSocketServerProtocol:
-        """Register a socket as a client to the manager for listening to events like network changes."""
-        socket = await websockets.connect(
-            f"ws://{self._manager.host}:{self._manager.port}/ws"
+        self._updates_broadcaster = ClusterUpdatesBroadCaster(
+            self._manager.host, self._manager.port
         )
-
-        payload = self.connect_payload(client_id=str(id(socket)))
-
-        await socket.send(json.dumps(payload))
-
-        return socket
+        asyncio.create_task(self.start_updates_broadcaster())
 
     @property
     def host(self):
@@ -54,34 +38,33 @@ class ClusterManager:
     def port(self):
         return self._manager.port
 
+    def get_network(self) -> ManagerState:
+        """Get the current state of the network."""
+        return self._manager.state
+
+    async def start_updates_broadcaster(self):
+        """Begin the updates broadcaster."""
+        await self._updates_broadcaster.initialize()
+        await self._updates_broadcaster.broadcast_updates()
+
+    def shutdown(self):
+        """Shutdown the cluster manager."""
+        self._manager.shutdown()
+
+    async def subscribe_to_updates(
+        self, q: asyncio.Queue, message: UpdateMessage = None
+    ):
+        """Subscribe to updates from the cluster manager."""
+        await self._updates_broadcaster.add_client(q, message)
+
+    async def unsubscribe_from_updates(self, q: asyncio.Queue):
+        """Unsubscribe from updates from the cluster manager."""
+        await self._updates_broadcaster.remove_client(q)
+
     def has_shutdown(self) -> bool:
         """Check if the manager has shutdown."""
         return self._manager.has_shutdown
 
-    @staticmethod
-    def is_cluster_update_message(msg: Dict[str, Any]) -> bool:
-        """Check if a message is a network update message."""
-        return msg.get("signal") in [
-            MANAGER_MESSAGE.NETWORK_STATUS_UPDATE.value,
-            MANAGER_MESSAGE.NODE_STATUS_UPDATE.value,
-        ]
-
-    @staticmethod
-    def get_network_update_signal() -> int:
-        """Generate a network update message."""
-        return MANAGER_MESSAGE.NETWORK_STATUS_UPDATE.value
-
-    @staticmethod
-    def is_cluster_shutdown_message(msg: Dict[str, Any]) -> bool:
-        """Check if a message is a network shutdown message."""
-        return msg.get("signal") == GENERAL_MESSAGE.SHUTDOWN.value
-
-    @staticmethod
-    def connect_payload(client_id: str) -> Dict[str, Any]:
-        """Create a payload for registering a ws client to the manager."""
-        return {
-            "signal": GENERAL_MESSAGE.CLIENT_REGISTER.value,
-            "data": {"client_id": client_id},
-            "ok": True,
-            "uuid": uuid(),
-        }
+    def is_sentinel(self, msg: str):
+        """Check if the message is a sentinel message."""
+        return msg == self._updates_broadcaster._sentinel
