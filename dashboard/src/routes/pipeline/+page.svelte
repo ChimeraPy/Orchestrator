@@ -423,7 +423,7 @@
 				/>
 			</div>
 		</div>
-		<div class="flex-1 flex flex-col bg-[#F3F7F6]">
+		<div class="flex-1 flex flex-col bg-[#F3F7F6] border-t-2 border-gray-400">
 			<TabbedOrchestrationViews/>
 		</div>
 	</div>
