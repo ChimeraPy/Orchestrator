@@ -28,7 +28,6 @@ class ClusterManager:
         self._updates_broadcaster = ClusterUpdatesBroadCaster(
             self._manager.host, self._manager.port
         )
-        asyncio.create_task(self.start_updates_broadcaster())
 
     @property
     def host(self):
