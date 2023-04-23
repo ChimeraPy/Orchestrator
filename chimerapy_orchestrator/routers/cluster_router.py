@@ -76,8 +76,6 @@ class ClusterRouter(APIRouter):
             for task in pending:
                 task.cancel()
 
-        except WebSocketDisconnect:
-            await on_disconnect()
         finally:
             await on_disconnect()
 

@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 import pytest
 from fastapi import FastAPI
@@ -42,7 +43,11 @@ class TestNetworkRouter(BaseTest):
 
     @pytest.mark.asyncio
     async def test_get_network(self, cluster_manager_and_client):
-        manager, client = await anext(cluster_manager_and_client)
+        # Python 3.9 and lower:
+        if sys.version_info < (3, 10):
+            manager, client = await cluster_manager_and_client.__anext__()
+        else:
+            manager, client = await next(cluster_manager_and_client)
 
         response = client.get("/cluster/state")
         assert response.status_code == 200
