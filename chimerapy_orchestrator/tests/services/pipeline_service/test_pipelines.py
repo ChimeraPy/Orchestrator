@@ -157,6 +157,7 @@ class TestPipelines(BaseTest):
                         "type": "SOURCE",
                         "worker_id": None,
                         "instance_id": None,
+                        "committed": False,
                     },
                     {
                         "name": "ShowWindow",
@@ -166,6 +167,7 @@ class TestPipelines(BaseTest):
                         "type": "SINK",
                         "worker_id": None,
                         "instance_id": None,
+                        "committed": False,
                     },
                 ],
                 "edges": [
@@ -190,6 +192,7 @@ class TestPipelines(BaseTest):
                         "type": "SOURCE",
                         "worker_id": None,
                         "instance_id": None,
+                        "committed": False,
                     },
                     {
                         "name": "ShowWindow",
@@ -199,6 +202,7 @@ class TestPipelines(BaseTest):
                         "type": "SINK",
                         "worker_id": None,
                         "instance_id": None,
+                        "committed": False,
                     },
                 ],
                 "edges": [

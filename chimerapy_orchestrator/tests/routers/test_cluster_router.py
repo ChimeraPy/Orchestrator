@@ -12,6 +12,7 @@ from chimerapy_orchestrator.models.cluster_models import (
 )
 from chimerapy_orchestrator.routers.cluster_router import ClusterRouter
 from chimerapy_orchestrator.services.cluster_service import ClusterManager
+from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 
@@ -30,6 +31,7 @@ class TestNetworkRouter(BaseTest):
         app = FastAPI()
 
         manager = ClusterManager(
+            pipeline_service=Pipelines(),
             logdir="./logs",
             port=6000,
         )

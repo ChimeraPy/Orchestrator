@@ -2,6 +2,7 @@ import pytest
 from chimerapy.utils import get_ip_address
 
 from chimerapy_orchestrator.services.cluster_service import ClusterManager
+from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 
@@ -10,6 +11,7 @@ class TestClusterManager(BaseTest):
     @pytest.fixture(scope="class")
     def cluster_manager(self):
         manager = ClusterManager(
+            pipeline_service=Pipelines(),
             logdir="./logs",
             port=0,
         )
