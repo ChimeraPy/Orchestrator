@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
 from chimerapy_orchestrator.models.cluster_models import (
@@ -24,7 +24,33 @@ class ClusterRouter(APIRouter):
             response_description="The current state of the cluster",
             description="The current state of the cluster",
         )
+        self.add_api_route(
+            "/commit",
+            self.commit_pipeline,
+            methods=["POST"],
+            response_description="The current state of the committed pipeline",
+            description="The current state of the committed pipeline",
+        )
+
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
+        self.add_websocket_route(
+            "/committed-pipeline", self.get_pipeline_updates
+        )
+
+    async def commit_pipeline(self, pipeline_id: str) -> ClusterState:
+        """Commit a pipeline to the cluster."""
+        if not self.manager.can_commit():
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot commit a pipeline at this time, cluster is busy.",
+            )
+
+        asyncio.create_task(self.manager.commit_pipeline(pipeline_id))
+
+        return ClusterState.from_cp_manager_state(self.manager.get_network())
+
+    async def get_pipeline_updates(self, websocket: WebSocket) -> None:
+        pass
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
         """Get updates from the cluster manager and relay them to the client websocket."""
@@ -45,7 +71,7 @@ class ClusterRouter(APIRouter):
 
         async def on_disconnect() -> None:
             """Handle the disconnect of the client websocket."""
-            await self.manager.unsubscribe_from_updates(update_queue)
+            await self.manager.unsubscribe_from_network_updates(update_queue)
             if not relay_task.cancelled():
                 relay_task.cancel()
 
@@ -60,7 +86,7 @@ class ClusterRouter(APIRouter):
         update_queue = asyncio.Queue()
         relay_task = asyncio.create_task(relay(update_queue, websocket))
         poll_task = asyncio.create_task(poll(websocket))
-        await self.manager.subscribe_to_updates(
+        await self.manager.subscribe_to_network_updates(
             update_queue,
             UpdateMessage(
                 data=ClusterState.from_cp_manager_state(

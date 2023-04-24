@@ -13,6 +13,42 @@ from chimerapy_orchestrator.models.cluster_models import (
 from chimerapy_orchestrator.utils import uuid
 
 
+class UpdatesBroadcaster:
+    """A Queue based updates broadcaster
+
+    Parameters
+    ----------
+    sentinel : str
+        The sentinel message to stop the broadcaster.
+    """
+
+    def __init__(self, sentinel: str) -> None:
+        self.update_queue = asyncio.Queue()
+        self.sentinel = sentinel
+        self.clients: Set[asyncio.Queue] = set()
+
+    async def add_client(self, q: asyncio.Queue) -> None:
+        """Add a client queue to the broadcaster."""
+        self.clients.add(q)
+
+    async def remove_client(self, q: asyncio.Queue) -> None:
+        """Remove a client queue from the broadcaster."""
+        self.clients.remove(q)
+
+    async def put_update(self, msg: Dict[str, Any]) -> None:
+        """Put an update message to the broadcaster."""
+        self.update_queue.put_nowait(msg)
+
+    async def start_broadcast(self) -> None:
+        """Start the broadcaster."""
+        while True:
+            msg = await self.update_queue.get()
+            if msg == self.sentinel:
+                break
+            for q in self.clients:
+                q.put_nowait(msg)
+
+
 class ClusterUpdatesBroadCaster:
     """A Queue based updates broadcaster from chimerapy manager to connected client queues.
 

@@ -73,10 +73,10 @@ class Pipelines:
 
         return pipelines
 
-    def instantiate(self, pipeline_id: str, update_queue: Queue = None):
+    def instantiate(self, pipeline_id: str, updater=None) -> None:
         """Instantiate the pipelines."""
         pipeline = self.get_pipeline(pipeline_id)
-        pipeline.instantiate(update_queue=update_queue)
+        pipeline.instantiate(updater=updater)
 
     def web_json(self, pipeline_id=None) -> List[Dict[str, Any]]:
         """Returns a JSON representation of the pipelines for the web interface."""
