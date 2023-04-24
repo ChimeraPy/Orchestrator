@@ -8,9 +8,33 @@ from chimerapy_orchestrator.models.cluster_models import (
     UpdateMessage,
     UpdateMessageType,
 )
+from chimerapy_orchestrator.models.pipeline_models import WebNode
 from chimerapy_orchestrator.services.cluster_service import (
     ClusterManager,
 )
+
+
+async def relay(q: asyncio.Queue, ws: WebSocket, is_sentinel) -> None:
+    """Relay messages from the queue to the websocket."""
+    while True:
+        message = await q.get()
+        if message is None:
+            break
+        if is_sentinel(message):  # Received Sentinel
+            break
+        try:
+            await ws.send_json(message)
+        except WebSocketDisconnect:
+            break
+
+
+async def poll(ws: WebSocket) -> None:
+    """Continuously poll the websocket for messages."""
+    while True:
+        try:
+            await ws.receive_json()  # FixMe: What is the best way of polling?
+        except WebSocketDisconnect:
+            break
 
 
 class ClusterRouter(APIRouter):
@@ -25,66 +49,63 @@ class ClusterRouter(APIRouter):
             description="The current state of the cluster",
         )
         self.add_api_route(
-            "/commit",
+            "/commit/{pipeline_id}",
             self.commit_pipeline,
             methods=["POST"],
             response_description="The current state of the committed pipeline",
             description="The current state of the committed pipeline",
         )
-
-        self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
         self.add_websocket_route(
-            "/committed-pipeline", self.get_pipeline_updates
+            "/cluster/committed-pipeline", self.get_pipeline_updates
         )
+        self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
 
-    async def commit_pipeline(self, pipeline_id: str) -> ClusterState:
+    async def commit_pipeline(self, pipeline_id: str):
         """Commit a pipeline to the cluster."""
-        if not self.manager.can_commit():
+        can_commit, reason = await self.manager.can_commit()
+        if not can_commit:
+            print(f"Cannot commit pipeline: {reason}")
             raise HTTPException(
-                status_code=403,
-                detail="Cannot commit a pipeline at this time, cluster is busy.",
+                status_code=403, detail=f"Cannot commit pipeline: {reason}"
             )
 
-        asyncio.create_task(self.manager.commit_pipeline(pipeline_id))
+        pipeline = await self.manager.commit_pipeline(pipeline_id)
 
-        return ClusterState.from_cp_manager_state(self.manager.get_network())
+        return pipeline.to_web_json()
 
     async def get_pipeline_updates(self, websocket: WebSocket) -> None:
-        pass
+        await websocket.accept()
+
+        update_queue = asyncio.Queue()
+        relay_task = asyncio.create_task(
+            relay(update_queue, websocket, self.manager.is_sentinel)
+        )
+        poll_task = asyncio.create_task(poll(websocket))
+        await self.manager.subscribe_to_commit_updates(update_queue)
+        try:
+            done, pending = await asyncio.wait(
+                [relay_task, poll_task], return_when=asyncio.FIRST_COMPLETED
+            )
+            for task in pending:
+                task.cancel()
+
+        finally:
+            await self.manager.unsubscribe_from_commit_updates(update_queue)
+            if not relay_task.done():
+                relay_task.cancel()
+
+    def assign_worker(self, pipeline_id: str, web_node: WebNode) -> WebNode:
+        """Assign a worker to a pipeline."""
+        self.manager.assign_worker(pipeline_id, web_node.id, web_node.worker_id)
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
         """Get updates from the cluster manager and relay them to the client websocket."""
         await websocket.accept()
 
-        async def relay(q: asyncio.Queue, ws: WebSocket) -> None:
-            """Relay messages from the queue to the websocket."""
-            while True:
-                message = await q.get()
-                if message is None:
-                    break
-                if self.manager.is_sentinel(message):  # Received Sentinel
-                    break
-                try:
-                    await ws.send_json(message)
-                except WebSocketDisconnect:
-                    break
-
-        async def on_disconnect() -> None:
-            """Handle the disconnect of the client websocket."""
-            await self.manager.unsubscribe_from_network_updates(update_queue)
-            if not relay_task.cancelled():
-                relay_task.cancel()
-
-        async def poll(ws: WebSocket) -> None:
-            """Continuously poll the websocket for messages."""
-            while True:
-                try:
-                    await ws.receive_json()  # FixMe: What is the best way of polling?
-                except WebSocketDisconnect:
-                    break
-
         update_queue = asyncio.Queue()
-        relay_task = asyncio.create_task(relay(update_queue, websocket))
+        relay_task = asyncio.create_task(
+            relay(update_queue, websocket, self.manager.is_sentinel)
+        )
         poll_task = asyncio.create_task(poll(websocket))
         await self.manager.subscribe_to_network_updates(
             update_queue,
@@ -103,7 +124,9 @@ class ClusterRouter(APIRouter):
                 task.cancel()
 
         finally:
-            await on_disconnect()
+            await self.manager.unsubscribe_from_network_updates(update_queue)
+            if not relay_task.done():
+                relay_task.cancel()
 
     async def get_manager_state(self) -> ClusterState:
         """Get the current state of the cluster."""

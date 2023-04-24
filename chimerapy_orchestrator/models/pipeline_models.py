@@ -50,6 +50,11 @@ class WebNode(BaseModel):
         description="The id of the instance once the node get committed.",
     )
 
+    committed: bool = Field(
+        default=False,
+        description="Whether the node has been committed to a worker.",
+    )
+
     class Config:
         allow_extra = False
 
@@ -91,10 +96,14 @@ class WrappedNode(BaseModel):
         description="The id of the worker once the node get committed.",
     )
 
-    instance_id: Optional[str] = Field(
-        default=None,
-        description="The id of the instance once the node get committed.",
+    committed: bool = Field(
+        default=False,
+        description="Whether the node has been committed to a worker.",
     )
+
+    @property
+    def instance_id(self) -> Optional[str]:
+        return self.instance.id if self.instance else None
 
     @property
     def instantiated(self) -> bool:
@@ -108,9 +117,6 @@ class WrappedNode(BaseModel):
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
         return WrappedNode(NodeClass=self.NodeClass, kwargs=kwargs)
-
-    def assign_worker(self, worker_id: str):
-        self.worker_id = worker_id
 
     @classmethod
     def from_node_class(
@@ -131,6 +137,7 @@ class WrappedNode(BaseModel):
             type=get_node_type(self),
             worker_id=self.worker_id,
             instance_id=self.instance_id,
+            committed=self.committed,
         )
 
     def __repr__(self):

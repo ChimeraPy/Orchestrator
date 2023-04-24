@@ -1,5 +1,6 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
+import chimerapy as cp
 import networkx as nx
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
@@ -126,17 +127,64 @@ class Pipeline(nx.DiGraph):
         """Returns True if the pipeline_service is a DAG, False otherwise."""
         return nx.is_directed_acyclic_graph(self)
 
-    async def instantiate(self, updater) -> None:
-        """Instantiates the pipeline_service."""
-        if self.instantiated:
-            raise ValueError("Pipeline is already instantiated")
+    def doesnt_have_worker_mapping(self) -> bool:
+        for _, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            if wrapped_node.worker_id is None:
+                return True
+
+    def assign_commit_success(self):
+        for _, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            wrapped_node.committed = True
+
+    async def _instantiate(self, updater):
+        worker_graph_mapping = {}
 
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
             wrapped_node.instantiate()
+
+            if wrapped_node.worker_id not in worker_graph_mapping:
+                worker_graph_mapping[wrapped_node.worker_id] = []
+
+            worker_graph_mapping[wrapped_node.worker_id].append(
+                wrapped_node.instance_id
+            )
+
             await updater(self.to_web_json())
 
+    async def instantiate_and_commit(
+        self, updater, committer
+    ) -> Tuple[nx.DiGraph, Dict[str, List[str]]]:
+        """Instantiates the pipeline_service."""
+        if self.instantiated:
+            raise ValueError("Pipeline is already instantiated")
+
+        if self.doesnt_have_worker_mapping():
+            raise ValueError("Pipeline does not have worker mapping")
+
+        worker_graph_mapping = await self._instantiate(updater)
+
+        chimerapy_graph = cp.Graph()
+        for _, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            chimerapy_graph.add_node(wrapped_node.instance)
+
+        for (source, sink, _) in self.edges(data=True):
+            src_wrapped_node = self.nodes[source]["wrapped_node"]
+            sink_wrapped_node = self.nodes[sink]["wrapped_node"]
+            chimerapy_graph.add_edge(
+                src_wrapped_node.instance, sink_wrapped_node.instance
+            )
+
         self.instantiated = True
+
+        await committer(chimerapy_graph, worker_graph_mapping)
+
+    async def assign_worker(self, node_id, worker_id):
+        wrapped_node = self.nodes[node_id]["wrapped_node"]
+        wrapped_node.worker_id = worker_id
 
     def __repr__(self) -> str:
         return f"Pipeline<{self.name}>"

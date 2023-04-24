@@ -1,6 +1,7 @@
 import asyncio
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
+import networkx as nx
 from chimerapy.manager import Manager
 from chimerapy.states import ManagerState
 
@@ -9,7 +10,7 @@ from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import 
     ClusterUpdatesBroadCaster,
     UpdatesBroadcaster,
 )
-from chimerapy_orchestrator.services.pipeline_service import Pipelines
+from chimerapy_orchestrator.services.pipeline_service import Pipeline, Pipelines
 
 
 class ClusterManager:
@@ -53,15 +54,16 @@ class ClusterManager:
     async def start_updates_broadcaster(self):
         """Begin the updates broadcaster."""
         await self._network_updates_broadcaster.initialize()
-        network_updates_task = asyncio.create_task(
+        asyncio.create_task(
             self._network_updates_broadcaster.broadcast_updates()
         )
-        commit_updates_task = asyncio.create_task(
-            self._commit_updates_broadcaster.start_broadcast()
-        )
+        asyncio.create_task(self._commit_updates_broadcaster.start_broadcast())
 
     def shutdown(self):
         """Shutdown the cluster manager."""
+        asyncio.ensure_future(
+            self._commit_updates_broadcaster.put_update(self._sentinel)
+        )
         self._manager.shutdown()
 
     async def subscribe_to_network_updates(
@@ -84,28 +86,57 @@ class ClusterManager:
 
     def has_shutdown(self) -> bool:
         """Check if the manager has shutdown."""
-        self._commit_updates_broadcaster.put_update(self._sentinel)
         return self._manager.has_shutdown
 
     def is_sentinel(self, msg: str):
         """Check if the message is a sentinel message."""
         return msg == self._network_updates_broadcaster._sentinel
 
-    async def commit_pipeline(self, pipeline_id: str):
+    async def commit_pipeline(self, pipeline_id: str) -> Pipeline:
         """Commit a pipeline."""
         if self.committed_pipeline:
             raise ValueError("A pipeline is already committed.")
 
-        self.committed_pipeline = self._pipeline_service.get_pipeline(
-            pipeline_id
-        )
+        pipeline = self._pipeline_service.get_pipeline(pipeline_id)
 
+        asyncio.create_task(self._commit_pipeline(pipeline))
+
+        return pipeline
+
+    async def _commit_pipeline(self, pipeline: Pipeline) -> None:
         async def update_pipeline_commit_state(msg: Dict[str, Any]) -> None:
             msg["state"] = "Instantiating Nodes"
-            await self._commit_updates_broadcaster.update_queue(msg)
+            await self._commit_updates_broadcaster.put_update(msg)
 
-        await self.committed_pipeline.instantiate(update_pipeline_commit_state)
+        async def commit_pipeline(
+            graph: nx.DiGraph, worker_graph_mapping: Dict[str, List[str]]
+        ):
+            self._manager.commit_graph(graph, worker_graph_mapping)
 
-    async def can_commit(self):
+        cp_graph, mapping = await pipeline.instantiate_and_commit(
+            update_pipeline_commit_state, commit_pipeline
+        )
+        self._manager.commit_graph(cp_graph, mapping)
+        pipeline.assign_commit_success()
+        await update_pipeline_commit_state(pipeline.assign_commit_success())
+
+    async def assign_worker(
+        self, pipeline_id: str, node_id: str, worker_id: str
+    ) -> Pipeline:
+        """Assign worker to a pipeline node."""
+        pipeline = self._pipeline_service.get_pipeline(pipeline_id)
+
+        await pipeline.assign_worker(node_id, worker_id)
+
+        return pipeline
+
+    async def can_commit(self) -> Tuple[bool, str]:
         """Check if we can commit a pipeline."""
-        return not self.committed_pipeline
+
+        if len(self._manager.state.workers) == 0:
+            return False, "No workers are available."
+
+        if self.committed_pipeline:
+            return False, "A pipeline is already committed."
+
+        return True, "Pipeline can be committed."

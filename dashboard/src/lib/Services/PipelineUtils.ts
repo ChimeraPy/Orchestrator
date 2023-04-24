@@ -97,6 +97,41 @@ export class PipelineUtils {
 		return cells;
 	}
 
+	static committablePipelineToJointCells(pipeline: Pipeline): joint.dia.Cell[] {
+		const getNodeColor = (node: PipelineNode): string => {
+			if (node.committed) return 'green';
+			if (node.instance_id) return 'yellow';
+			return 'gray';
+		};
+
+		const getTextColor = (node: PipelineNode): string => {
+			if (node.instance_id) return 'black';
+			return 'white';
+		};
+
+		return pipeline.nodes
+			.map((node) => {
+				const rect = PipelineUtils.rectangle(node.name, getNodeColor(node), node.id);
+				rect.prop('nodeId', node.id);
+				rect.prop('instanceId', node.instance_id);
+				rect.prop('workerId', node.worker_id);
+				rect.prop('nodeType', node.type);
+				rect.prop('registryName', node.registry_name);
+				rect.attr('label/fill', getTextColor(node));
+				return rect as joint.dia.Cell;
+			})
+			.concat(
+				pipeline.edges.map((edge) => {
+					const link = new joint.shapes.standard.Link({
+						id: edge.id,
+						source: { id: edge.source },
+						target: { id: edge.sink }
+					});
+					return link as joint.dia.Cell;
+				})
+			);
+	}
+
 	static pipelinesResultToEditableListItems(
 		result: Result<Pipeline[], ResponseError>,
 		activePipeline: Pipeline | null | undefined

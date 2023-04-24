@@ -14,7 +14,7 @@ class Client {
 		if (res.ok) {
 			return new Ok<T>(await res.json());
 		} else {
-			return new Err({ message: res.statusText, code: res.status });
+			return new Err({ message: res.statusText, code: res.status, body: await res.json() });
 		}
 	}
 }
@@ -147,6 +147,26 @@ export class PipelineClient extends Client {
 			body: JSON.stringify(requestBody),
 			headers: new Headers({ 'Content-Type': 'application/json' })
 		});
+
+		return response;
+	}
+}
+
+export class ClusterClient extends Client {
+	constructor(serverURL: string, prefix: string = '/cluster') {
+		super(serverURL + prefix);
+	}
+
+	async getClusterState(): Promise<Result<ClusterState, ResponseError>> {
+		const prefix = '/state';
+		const response = await this._fetch<ClusterState>(prefix, { method: 'GET' });
+
+		return response;
+	}
+
+	async commitPipeline(pipelineId: string): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/commit/${pipelineId}`);
+		const response = await this._fetch<Pipeline>(prefix, { method: 'POST' });
 
 		return response;
 	}

@@ -20,14 +20,14 @@
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
-	import TabbedOrchestrationViews from "$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte";
+	import TabbedOrchestrationViews from '$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte';
 
 	import { CreatePipelineStages } from '$lib/models';
 	import type { Pipeline, ClusterState, NodeState } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
 	import { Icons } from '$lib/Icons';
 
-	import { Input, Label, Spinner } from 'flowbite-svelte';
+	import { Input, Select, Label, Spinner } from 'flowbite-svelte';
 	let networkStore = getStore('network');
 
 	let nodeCells: joint.dia.Cell[];
@@ -43,11 +43,12 @@
 		pipelineListItems = [];
 	let activePipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
-	let infoModalContent: { title: string; content: any, alertMessage?: string } | null = null;
+	let infoModalContent: { title: string; content: any; alertMessage?: string } | null = null;
 	let selectedNode: NodeState | null = null;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
 	let committablePipeline: Pipeline | null = null;
+	let workers = [];
 
 	$: {
 		modalOpen = createPipelineStage !== CreatePipelineStages.INACTIVE;
@@ -60,6 +61,15 @@
 		[CreatePipelineStages.OK, CreatePipelineStages.ERROR].includes(createPipelineStage)
 			? fetchPipelines()
 			: null;
+
+		workers = Object.values($networkStore?.workers || {})
+			.map((w) => {
+				return {
+					name: w.name,
+					value: w.value
+				};
+			})
+			.concat([{ name: 'No worker selected', value: null }]);
 	}
 
 	onMount(async () => {
@@ -197,9 +207,11 @@
 	}
 
 	function highlightPipelineEdge(link: joint.dia.Link) {
-		const otherCells = activePipeline?.edges.filter((e) => {
-			return e.id !== link.id;
-		}).concat(activePipeline?.nodes);
+		const otherCells = activePipeline?.edges
+			.filter((e) => {
+				return e.id !== link.id;
+			})
+			.concat(activePipeline?.nodes);
 
 		otherCells.forEach((l) => {
 			pipelineGraph?.setCellStrokeWidth(l.id, 2);
@@ -210,9 +222,11 @@
 	}
 
 	function highlightPipelineNode(node: joint.dia.Element) {
-		const otherCells = activePipeline?.nodes.filter((n) => {
-			return n.id !== node.id;
-		}).concat(activePipeline?.edges);
+		const otherCells = activePipeline?.nodes
+			.filter((n) => {
+				return n.id !== node.id;
+			})
+			.concat(activePipeline?.edges);
 
 		const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
 		if (pipelineNode) {
@@ -237,7 +251,6 @@
 
 		selectedNode = null;
 	}
-
 
 	function showNodeInfo(node) {
 		const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
@@ -403,7 +416,7 @@
 						},
 						{
 							type: Icons.bolt,
-							tooltip: 'Commit pipeline',
+							tooltip: 'Commit pipeline'
 						}
 					]}
 					title="Pipeline Editor"
@@ -424,7 +437,7 @@
 			</div>
 		</div>
 		<div class="flex-1 flex flex-col bg-[#F3F7F6] border-t-2 border-gray-400">
-			<TabbedOrchestrationViews/>
+			<TabbedOrchestrationViews {committablePipeline} committedPipeline={null} />
 		</div>
 	</div>
 	<div class="w-1/5 flex flex-col bg-indigo-50">
@@ -452,9 +465,22 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu title="{selectedNode?.name || 'Selected Node'}" backgroundClass="bg-blue-600" />
+				<HorizontalMenu
+					title={selectedNode?.name || 'Selected Node'}
+					backgroundClass="bg-blue-600"
+				/>
 			</div>
-			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+			<div class="flex-1 flex-col justify-center items-center bg-[#F3F7F6]">
+				{#if selectedNode}
+					{#if workers.length > 0}
+						<div class="p-2">
+							<Label>Select a worker</Label>
+							<Select mt-2 items={workers} bind:value={selectedNode.worker_id} />
+						</div>
+					{:else}
+						<p>No workers available</p>
+					{/if}
+				{/if}
 				<p>Selected Node attributes</p>
 			</div>
 		</div>
@@ -521,7 +547,7 @@
 	title={infoModalContent?.title}
 	bind:modalOpen={infoModalContent}
 	autoclose={true}
-	alertMessage="{infoModalContent?.alertMessage || 'Close'}"
+	alertMessage={infoModalContent?.alertMessage || 'Close'}
 	on:cancel={() => (infoModalContent = null)}
 	on:alert={() => (infoModalContent = null)}
 >

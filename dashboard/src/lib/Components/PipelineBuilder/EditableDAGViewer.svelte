@@ -21,6 +21,8 @@
 		[ToolViewType.HOVER_CONNECT]: {}
 	};
 
+	export let editable = true;
+
 	let cells: joint.dia.Cell[] = [];
 	const dispatchers: { [key in ToolViewType]: DispatcherFunc | null } = {
 		[ToolViewType.DELETE]: deleteEvent,
@@ -52,7 +54,7 @@
 					thickness: 1
 				}
 			},
-			interactive: true,
+			interactive: editable,
 			allowLink: validator.isValidLink.bind(validator),
 			defaultRouter: {
 				name: 'manhattan',
@@ -207,7 +209,7 @@
 	}
 
 	export function resize() {
-		if(!paperContainer) return;
+		if (!paperContainer) return;
 		paper?.setDimensions(paperContainer.clientWidth, paperContainer.clientHeight);
 	}
 

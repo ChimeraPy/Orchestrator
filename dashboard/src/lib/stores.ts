@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { ClusterState, ResponseError } from './models';
+import type { ClusterState, Pipeline, ResponseError } from './models';
 import readableWebSocketStore from './Services/ReadableWebSocketStore';
 
 import { networkClient } from './services';
@@ -11,12 +11,19 @@ const stores = new Map<string, any>();
 
 export function populateStores() {
 	const networkStore = readableWebSocketStore<ClusterState>(
-		'/cluster-updates',
+		'/cluster/updates',
 		null,
 		(payload) => payload.data
 	);
 
+	const committedPipelineStore = readableWebSocketStore<Pipeline>(
+		'/cluster/committed-pipeline',
+		null,
+		(payload) => payload
+	);
+
 	stores.set('network', networkStore);
+	stores.set('committedPipeline', committedPipelineStore);
 }
 
 export function getStore<T>(name: string): T | null {

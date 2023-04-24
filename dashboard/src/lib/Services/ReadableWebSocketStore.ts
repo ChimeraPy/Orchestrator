@@ -27,7 +27,6 @@ export default function readableWebSocketStore<T>(
 			clearTimeout(reopenTimeoutHandler);
 			reopenTimeoutHandler = null;
 		}
-
 		if (openPromise) {
 			return openPromise;
 		}
