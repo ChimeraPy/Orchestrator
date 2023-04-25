@@ -207,7 +207,7 @@
 	}
 
 	export function resize() {
-		if(!paperContainer) return;
+		if (!paperContainer) return;
 		paper?.setDimensions(paperContainer.clientWidth, paperContainer.clientHeight);
 	}
 
