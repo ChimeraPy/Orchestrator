@@ -404,19 +404,23 @@
 					icons={[
 						{
 							type: Icons.magnify,
-							tooltip: 'Zoom in'
+							tooltip: 'Zoom in',
+							disabled: !activePipeline
 						},
 						{
 							type: Icons.reduce,
-							tooltip: 'Zoom out'
+							tooltip: 'Zoom out',
+							disabled: !activePipeline
 						},
 						{
 							type: Icons.refresh,
-							tooltip: 'Fit to screen'
+							tooltip: 'Fit to screen',
+							disabled: !activePipeline
 						},
 						{
 							type: Icons.bolt,
-							tooltip: 'Commit pipeline'
+							tooltip: 'Commit pipeline',
+							disabled: !activePipeline
 						}
 					]}
 					title="Pipeline Editor"
