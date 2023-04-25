@@ -5,7 +5,7 @@
 
 	import { createEventDispatcher } from 'svelte';
 
-	export let icons: { type: Icons; tooltip?: string }[] = [];
+	export let icons: { type: Icons; tooltip?: string; disabled?: boolean }[] = [];
 	export let title: string = 'Menu';
 	export let backgroundClass: string = 'bg-green-800';
 
@@ -23,7 +23,11 @@
 			{#each icons as icon, index}
 				<span
 					role="button"
-					class="mr-{index === icons.length - 1 ? 0 : 2} hover:text-gray-900 text-xl"
+					class="mr-{index === icons.length - 1 ? 0 : 2}
+						   hover:text-gray-900
+						   text-xl
+						   {icon.disabled ? 'pointer-events-none' : 'pointer-events-auto'}
+						   {icon.disabled ? 'opacity-50' : 'opacity-100'}"
 					on:click={() => dispatchEvent(icon.type)}
 				>
 					<svg
