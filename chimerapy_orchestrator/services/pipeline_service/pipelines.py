@@ -1,5 +1,5 @@
 from queue import Queue
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
@@ -11,10 +11,13 @@ class Pipelines:
     def __init__(self) -> None:
         self._pipelines = {}
 
-    def get_pipeline(self, pipeline_id: str) -> Pipeline:
+    def get_pipeline(self, pipeline_id: str, throw: bool = True) -> Optional[Pipeline]:
         """Get a pipeline_service by its ID."""
         if pipeline_id not in self._pipelines:
-            raise ValueError(f"Pipeline {pipeline_id} does not exist")
+            if throw:
+                raise ValueError(f"Pipeline {pipeline_id} does not exist")
+            else:
+                return None
 
         return self._pipelines[pipeline_id]
 

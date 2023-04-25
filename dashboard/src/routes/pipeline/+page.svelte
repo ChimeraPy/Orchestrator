@@ -8,7 +8,7 @@
 	5. Accessibility improvements.
 -->
 <script lang="ts">
-	import { pipelineClient } from '$lib/services';
+	import { pipelineClient, clusterClient } from '$lib/services';
 	import { onMount } from 'svelte';
 	import { getStore } from '$lib/stores';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
@@ -43,10 +43,14 @@
 		pipelineListItems = [];
 	let activePipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
+	let tabbedOrchestrationViews: TabbedOrchestrationViews;
 	let infoModalContent: { title: string; content: any; alertMessage?: string } | null = null;
 	let selectedNode: NodeState | null = null;
+	let selectedWorkerId: string | null = null;
 
-	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
+	let editorContainer: HTMLElement,
+		horizontalMenu: HTMLElement,
+		tabbedOrchestrationViewsContainer: HTMLElement;
 	let committablePipeline: Pipeline | null = null;
 	let workers = [];
 
@@ -66,7 +70,7 @@
 			.map((w) => {
 				return {
 					name: w.name,
-					value: w.value
+					value: w.id
 				};
 			})
 			.concat([{ name: 'No worker selected', value: null }]);
@@ -80,10 +84,14 @@
 				if (entry.target === editorContainer) {
 					pipelineGraph?.resize();
 				}
+				if (entry.target === tabbedOrchestrationViewsContainer) {
+					tabbedOrchestrationViews?.resize();
+				}
 			});
 		});
 
 		observer.observe(editorContainer);
+		observer.observe(tabbedOrchestrationViewsContainer);
 	});
 
 	// Part Browser
@@ -218,10 +226,10 @@
 		});
 
 		pipelineGraph?.setCellStrokeWidth(link.id, 4);
-		selectedNode = null;
 	}
 
 	function highlightPipelineNode(node: joint.dia.Element) {
+		selectedWorkerId = null;
 		const otherCells = activePipeline?.nodes
 			.filter((n) => {
 				return n.id !== node.id;
@@ -231,6 +239,14 @@
 		const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
 		if (pipelineNode) {
 			selectedNode = pipelineNode;
+			console.log(selectedNode);
+			if (selectedNode.worker_id) {
+				const foundWorker = workers.find((w) => w.value === selectedNode.worker_id);
+
+				if (foundWorker) {
+					selectedWorkerId = foundWorker.value;
+				}
+			}
 		}
 
 		otherCells.forEach((n) => {
@@ -248,8 +264,8 @@
 		activePipeline?.nodes.forEach((n) => {
 			pipelineGraph?.setCellStrokeWidth(n.id, 2);
 		});
-
 		selectedNode = null;
+		selectedWorkerId = null;
 	}
 
 	function showNodeInfo(node) {
@@ -356,8 +372,17 @@
 		}
 	}
 
-	function displayCommitIntent() {
+	async function displayCommitIntent() {
+		if (!activePipeline) return;
+		console.log(activePipeline, selectedNode);
+		await clusterClient.assignWorkers(activePipeline);
 		committablePipeline = activePipeline;
+	}
+
+	function onWorkerIdSelectionChange() {
+		if (!selectedNode) return;
+		selectedNode.worker_id = selectedWorkerId;
+		selectedNode = selectedNode;
 	}
 </script>
 
@@ -393,7 +418,7 @@
 		</div>
 	</div>
 	<div class="flex flex-col w-3/5 h-full bg-indigo-100 border-r-2 border-gray-400">
-		<div bind:this={editorContainer} class="flex-1 flex flex-col overflow-hidden">
+		<div bind:this={editorContainer} class="flex-1 flex h-0.5 flex-col overflow-hidden">
 			<div>
 				<HorizontalMenu
 					bind:this={horizontalMenu}
@@ -440,8 +465,12 @@
 				/>
 			</div>
 		</div>
-		<div class="flex-1 flex flex-col bg-[#F3F7F6] border-t-2 border-gray-400">
-			<TabbedOrchestrationViews {committablePipeline} committedPipeline={null} />
+		<div class="flex-1 flex flex-col h-0.5" bind:this={tabbedOrchestrationViewsContainer}>
+			<TabbedOrchestrationViews
+				bind:this={tabbedOrchestrationViews}
+				{committablePipeline}
+				committedPipeline={null}
+			/>
 		</div>
 	</div>
 	<div class="w-1/5 flex flex-col bg-indigo-50">
@@ -479,7 +508,12 @@
 					{#if workers.length > 0}
 						<div class="p-2">
 							<Label>Select a worker</Label>
-							<Select mt-2 items={workers} bind:value={selectedNode.worker_id} />
+							<Select
+								mt-2
+								items={workers}
+								bind:value={selectedWorkerId}
+								on:change={onWorkerIdSelectionChange}
+							/>
 						</div>
 					{:else}
 						<p>No workers available</p>

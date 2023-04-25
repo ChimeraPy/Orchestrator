@@ -1,5 +1,6 @@
 import asyncio
 
+from typing import List, Dict
 from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
@@ -55,6 +56,16 @@ class ClusterRouter(APIRouter):
             response_description="The current state of the committed pipeline",
             description="The current state of the committed pipeline",
         )
+
+        self.add_api_route(
+            "/assign-workers/{pipeline_id}",
+            self.assign_workers,
+            methods=["POST"],
+            response_description="The state of nodes with the assigned workers",
+            description="The state of nodes with the assigned workers",
+        )
+
+        # Websocket routes
         self.add_websocket_route(
             "/cluster/committed-pipeline", self.get_pipeline_updates
         )
@@ -62,7 +73,7 @@ class ClusterRouter(APIRouter):
 
     async def commit_pipeline(self, pipeline_id: str):
         """Commit a pipeline to the cluster."""
-        can_commit, reason = await self.manager.can_commit()
+        can_commit, reason = await self.manager.can_commit(pipeline_id)
         if not can_commit:
             print(f"Cannot commit pipeline: {reason}")
             raise HTTPException(
@@ -94,9 +105,14 @@ class ClusterRouter(APIRouter):
             if not relay_task.done():
                 relay_task.cancel()
 
-    def assign_worker(self, pipeline_id: str, web_node: WebNode) -> WebNode:
+    async def assign_workers(self, pipeline_id: str, web_nodes: List[WebNode]) -> List[WebNode]:
         """Assign a worker to a pipeline."""
-        self.manager.assign_worker(pipeline_id, web_node.id, web_node.worker_id)
+        nodes = []
+        for node in web_nodes:
+            wrapped_node = await self.manager.assign_worker(pipeline_id, node.id, node.worker_id)
+            nodes.append(wrapped_node.to_web_node())
+
+        return nodes
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
         """Get updates from the cluster manager and relay them to the client websocket."""

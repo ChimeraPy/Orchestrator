@@ -170,6 +170,19 @@ export class ClusterClient extends Client {
 
 		return response;
 	}
+
+	async assignWorkers(pipeline: Pipeline): Promise<Result<PipelineNode[], ResponseError>> {
+		const nodes = pipeline.nodes;
+
+		const prefix = encodeURIComponent(`/assign-workers/${pipeline.id}`);
+		const response = await this._fetch<PipelineNode[]>(prefix, {
+			method: 'POST',
+			body: JSON.stringify(nodes),
+			headers: new Headers({ 'Content-Type': 'application/json' })
+		});
+
+		return response;
+	}
 }
 
 export class NetworkClient extends Client {

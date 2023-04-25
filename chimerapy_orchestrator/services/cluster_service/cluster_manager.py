@@ -113,30 +113,43 @@ class ClusterManager:
         ):
             self._manager.commit_graph(graph, worker_graph_mapping)
 
-        cp_graph, mapping = await pipeline.instantiate_and_commit(
+        await pipeline.instantiate_and_commit(
             update_pipeline_commit_state, commit_pipeline
         )
-        self._manager.commit_graph(cp_graph, mapping)
         pipeline.assign_commit_success()
         await update_pipeline_commit_state(pipeline.assign_commit_success())
 
     async def assign_worker(
         self, pipeline_id: str, node_id: str, worker_id: str
-    ) -> Pipeline:
+    ) -> "WrappedNode":
         """Assign worker to a pipeline node."""
         pipeline = self._pipeline_service.get_pipeline(pipeline_id)
 
         await pipeline.assign_worker(node_id, worker_id)
 
-        return pipeline
+        return pipeline.nodes[node_id]["wrapped_node"]
 
-    async def can_commit(self) -> Tuple[bool, str]:
+    async def can_commit(self, pipeline_id: str) -> Tuple[bool, str]:
         """Check if we can commit a pipeline."""
+        pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
+
+        if pipeline is None:
+            return False, f"Pipeline {pipeline_id} does not exist."
+
+        if self.committed_pipeline:
+            return False, "A pipeline is already committed."
 
         if len(self._manager.state.workers) == 0:
             return False, "No workers are available."
 
-        if self.committed_pipeline:
-            return False, "A pipeline is already committed."
+        for _, data in pipeline.nodes(data=True):
+            wrapped_node = data["wrapped_node"]
+            if wrapped_node.worker_id is None:
+                return False, f"All nodes are not assigned a worker"
+            if wrapped_node.worker_id not in self._manager.state.workers:
+                return False, f"Worker {wrapped_node.worker_id} is not available"
+
+        if len(pipeline.nodes) == 0:
+            return False, "Pipeline has no nodes."
 
         return True, "Pipeline can be committed."

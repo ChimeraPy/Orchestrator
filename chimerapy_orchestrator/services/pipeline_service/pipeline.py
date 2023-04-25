@@ -137,6 +137,7 @@ class Pipeline(nx.DiGraph):
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
             wrapped_node.committed = True
+        return self.to_web_json()
 
     async def _instantiate(self, updater):
         worker_graph_mapping = {}

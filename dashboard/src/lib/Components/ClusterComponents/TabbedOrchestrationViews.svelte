@@ -4,6 +4,7 @@
 	import { Tabs, TabItem } from 'flowbite-svelte';
 	import { ToolViewType } from '$lib/Components/PipelineBuilder/utils';
 	import { getIconPath, Icons } from '$lib/Icons';
+	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
 
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
 	import { onMount } from 'svelte';
@@ -45,22 +46,13 @@
 		committablePipeline = null;
 	}
 
-	onMount(async () => {
-		const observer = new ResizeObserver((entries) => {
-			entries.forEach((entry) => {
-				if (entry.target === committedPipelineGraphContainer) {
-					// committedPipelineGraph?.resize(
-					// );
-				}
-			});
-		});
-
-		observer.observe(committedPipelineGraphContainer);
-		if (committedPipelineGraphContainer) {
-			committedPipelineGraphContainer.parentNode.classList.add('h-full');
-			committedPipelineGraphContainer.parentNode.classList.add('w-full');
+	let icons = [
+		{
+			type: Icons.play,
+			tooltip: 'Run',
+			disabled: !committablePipeline
 		}
-	});
+	];
 
 	$: committablePipeline && onConfirmCommit();
 
@@ -69,39 +61,36 @@
 			? PipelineUtils.committablePipelineToJointCells($pipelineStore)
 			: [];
 		pipelineCells = pipelineCells;
-		console.log('pipelineCells', pipelineCells);
 		committedPipelineGraph?.render(pipelineCells, pipelineCells.length === 0);
 		committedPipelineGraph?.layout();
 	}
+
+	function beginPipelineExecution() {
+		if (!committablePipeline) {
+			return;
+		}
+		// clusterClient.beginPipelineExecution(committablePipeline?.id);
+	}
+
+	export function resize() {
+		committedPipelineGraph?.resize();
+	}
 </script>
 
-<Tabs style="underline" contentClass="h-full w-full flex flex-col">
-	<TabItem open>
-		<div slot="title" class="flex items-center gap-2">
-			<svg
-				aria-hidden="true"
-				class="w-5 h-5"
-				fill="currentColor"
-				viewBox="0 0 20 20"
-				xmlns="http://www.w3.org/2000/svg"
-			>
-				<path fill-rule="evenodd" d={getIconPath(Icons.bolt)} clip-rule="evenodd" />
-			</svg>
-			Committed Pipeline
-		</div>
-		<div class="w-full h-full" bind:this={committedPipelineGraphContainer}>
-			<EditableDagViewer
-				editable={false}
-				bind:this={committedPipelineGraph}
-				additionalLinkValidators={[]}
-				toolViewAttachments={[ToolViewType.INFO]}
-				on:info={(event) => {
-					console.log('info', event.detail);
-				}}
-			/>
-		</div>
-	</TabItem>
-</Tabs>
+<div>
+	<HorizontalMenu title="Orchestration" {icons} on:play={beginPipelineExecution} />
+</div>
+<div class="flex-1 flex justify-center items-center bg-[#F3F7F6] overflow-hidden">
+	<EditableDagViewer
+		editable={false}
+		bind:this={committedPipelineGraph}
+		additionalLinkValidators={[]}
+		toolViewAttachments={[ToolViewType.INFO]}
+		on:info={(event) => {
+			console.log('info', event.detail);
+		}}
+	/>
+</div>
 
 <!-- Info Modal -->
 <Modal

@@ -210,7 +210,19 @@
 
 	export function resize() {
 		if (!paperContainer) return;
-		paper?.setDimensions(paperContainer.clientWidth, paperContainer.clientHeight);
+		const paperWidth = paper.options.width;
+		const paperHeight = paper.options.height;
+		// Check if paperWidth is a string
+		if (typeof paperWidth === 'string' || typeof paperHeight === 'string') {
+			const width = paperContainer.clientWidth;
+			const height = paperContainer.clientHeight;
+			paper?.setDimensions(width, height);
+			scaleContentToFit();
+		} else {
+			const width = Math.max(paperContainer.clientWidth, paperWidth as number);
+			const height = Math.max(paperContainer.clientHeight, paperHeight as number);
+			paper?.setDimensions(width, height);
+		}
 	}
 
 	export function scaleContentToFit() {
