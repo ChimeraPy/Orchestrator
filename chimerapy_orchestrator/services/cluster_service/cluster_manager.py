@@ -1,7 +1,9 @@
 import asyncio
+import socket
 
 from chimerapy.manager import Manager
 from chimerapy.states import ManagerState
+from zeroconf import ServiceInfo, Zeroconf
 
 from chimerapy_orchestrator.models.cluster_models import UpdateMessage
 from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import (
@@ -28,6 +30,28 @@ class ClusterManager:
         self._updates_broadcaster = ClusterUpdatesBroadCaster(
             self._manager.host, self._manager.port
         )
+
+    async def _start_zeroconf(self):
+        # Set Zeroconf Info
+        parsed_rand_num = int(self._manager.logdir.name.split("-")[-1])
+        parsed_timestamp = self._manager.logdir.name.split("-")[-2]
+        self._manager.zeroconf_info = ServiceInfo(
+            "_http._tcp.local.",
+            f"chimerapy-{parsed_rand_num}._http._tcp.local.",
+            addresses=[socket.inet_aton(self._manager.server.host)],
+            port=self._manager.server.port,
+            properties={
+                "path": str(self._manager.logdir),
+                "timestamp": parsed_timestamp,
+            },
+        )
+
+        # Start Zeroconf Service
+        self._manager.zeroconf = Zeroconf()
+        self._manager.zeroconf.register_service(
+            self._manager.zeroconf_info, ttl=60
+        )
+        self._manager.enable_zeroconf = True
 
     @property
     def host(self):
