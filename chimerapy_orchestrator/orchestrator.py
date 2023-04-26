@@ -1,55 +1,48 @@
 import asyncio
+import concurrent.futures
 import signal
 from contextlib import asynccontextmanager
 from types import FrameType
 
 from fastapi import FastAPI
 
+from chimerapy_orchestrator.init_services import get, initialize, teardown
 from chimerapy_orchestrator.routers.cluster_router import ClusterRouter
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
-from chimerapy_orchestrator.services.cluster_service import (
-    ClusterManager,
-)
-from chimerapy_orchestrator.services.pipeline_service import Pipelines
 
 
 @asynccontextmanager
 async def lifespan(app: "Orchestrator"):
     default_sigint_handler = signal.getsignal(signal.SIGINT)
-    task1 = asyncio.create_task(app.cluster_manager.start_updates_broadcaster())
+    cluster_service = get("cluster_manager")
+    task1 = asyncio.create_task(cluster_service.start_updates_broadcaster())
 
-    def shutdown_on_sigint(signum: int, frame: FrameType = None):
-        app.cluster_manager.shutdown()
+    def shutdown():
+        teardown()
         if not task1.done():
             task1.cancel()
+
+    def shutdown_on_sigint(signum: int, frame: FrameType = None):
+        shutdown()
         default_sigint_handler(signum, frame)
 
     signal.signal(signal.SIGINT, shutdown_on_sigint)
     yield
-    if not app.cluster_manager.has_shutdown():
-        app.cluster_manager.shutdown()
+    shutdown()
 
 
 class Orchestrator(FastAPI):
-    def __init__(self, config, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # Services
-        self.pipelines = Pipelines()
-        self.cluster_manager = ClusterManager(
-            pipeline_service=self.pipelines,
-            logdir=config.cluster_manager_logdir,
-            port=config.cluster_manager_port,
-            max_num_of_workers=config.cluster_manager_max_num_of_workers,
-        )
-
-        # Routers
-        self.include_router(PipelineRouter(self.pipelines))
-        self.include_router(ClusterRouter(self.cluster_manager))
+        cluster_manager = get("cluster_manager")
+        pipelines = get("pipelines")
+        self.include_router(PipelineRouter(pipelines))
+        self.include_router(ClusterRouter(cluster_manager))
 
 
 def create_orchestrator_app() -> "Orchestrator":
-    from chimerapy_orchestrator.orchestrator_config import get_config
+    with concurrent.futures.ThreadPoolExecutor() as pool:  # This had to be done because uvicorn blocks the event loop
+        pool.submit(initialize)
 
-    orchestrator = Orchestrator(get_config(), lifespan=lifespan)
+    orchestrator = Orchestrator(lifespan=lifespan)
     return orchestrator
