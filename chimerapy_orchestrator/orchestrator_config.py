@@ -23,6 +23,11 @@ class OrchestratorConfig(BaseSettings):
         description="The maximum number of workers that can be connected to the cluster manager.",
     )
 
+    num_dev_workers: int = Field(
+        default=2,
+        description="The number of workers to start in dev mode.",
+    )
+
     def dump_env(self, file=".env"):
         with open(file, "w") as f:
             for field, value in self.dict().items():
