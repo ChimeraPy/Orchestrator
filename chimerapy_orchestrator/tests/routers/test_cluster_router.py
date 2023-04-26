@@ -17,28 +17,35 @@ from chimerapy_orchestrator.tests.base_test import BaseTest
 
 @pytest.mark.slow
 class TestNetworkRouter(BaseTest):
-    @pytest.fixture(scope="class", autouse=True)
-    def event_loop(self):
+    @pytest.fixture(scope="class")
+    def event_loop_class(self):
         policy = asyncio.get_event_loop_policy()
         loop = policy.new_event_loop()
         yield loop
         loop.close()
 
-    @pytest.mark.asyncio
     @pytest.fixture(scope="class")
-    async def cluster_manager_and_client(self):
-        app = FastAPI()
-
+    def manager(self):
         manager = ClusterManager(
             logdir="./logs",
             port=6000,
         )
+        return manager
+
+    @pytest.fixture(scope="class")
+    async def cluster_manager_and_client(self, manager, event_loop_class):
+        broadcast_task = event_loop_class.create_task(
+            manager.start_updates_broadcaster()
+        )
+        app = FastAPI()
         app.include_router(ClusterRouter(manager))
-        asyncio.create_task(manager.start_updates_broadcaster())
         yield manager, TestClient(app)
         manager.shutdown()
+        await broadcast_task
         assert manager.has_shutdown()
-        for task in asyncio.all_tasks():
+        assert broadcast_task.done()
+        for task in asyncio.all_tasks(event_loop_class):
+            await task
             task.cancel()
 
     @pytest.mark.asyncio
@@ -47,7 +54,7 @@ class TestNetworkRouter(BaseTest):
         if sys.version_info < (3, 10):
             manager, client = await cluster_manager_and_client.__anext__()
         else:
-            manager, client = await next(cluster_manager_and_client)
+            manager, client = await anext(cluster_manager_and_client)
 
         response = client.get("/cluster/state")
         assert response.status_code == 200
