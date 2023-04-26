@@ -1,6 +1,6 @@
 import asyncio
+from typing import List
 
-from typing import List, Dict
 from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
@@ -24,6 +24,7 @@ async def relay(q: asyncio.Queue, ws: WebSocket, is_sentinel) -> None:
         if is_sentinel(message):  # Received Sentinel
             break
         try:
+            print(message, """XXXXXX""", ws.client_state)
             await ws.send_json(message)
         except WebSocketDisconnect:
             break
@@ -105,11 +106,15 @@ class ClusterRouter(APIRouter):
             if not relay_task.done():
                 relay_task.cancel()
 
-    async def assign_workers(self, pipeline_id: str, web_nodes: List[WebNode]) -> List[WebNode]:
+    async def assign_workers(
+        self, pipeline_id: str, web_nodes: List[WebNode]
+    ) -> List[WebNode]:
         """Assign a worker to a pipeline."""
         nodes = []
         for node in web_nodes:
-            wrapped_node = await self.manager.assign_worker(pipeline_id, node.id, node.worker_id)
+            wrapped_node = await self.manager.assign_worker(
+                pipeline_id, node.id, node.worker_id
+            )
             nodes.append(wrapped_node.to_web_node())
 
         return nodes

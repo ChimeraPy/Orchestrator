@@ -155,6 +155,8 @@ class Pipeline(nx.DiGraph):
 
             await updater(self.to_web_json())
 
+        return worker_graph_mapping
+
     async def instantiate_and_commit(
         self, updater, committer
     ) -> Tuple[nx.DiGraph, Dict[str, List[str]]]:
@@ -166,7 +168,7 @@ class Pipeline(nx.DiGraph):
             raise ValueError("Pipeline does not have worker mapping")
 
         worker_graph_mapping = await self._instantiate(updater)
-
+        print(worker_graph_mapping, "worker_graph_mapping")
         chimerapy_graph = cp.Graph()
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]

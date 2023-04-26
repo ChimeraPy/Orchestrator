@@ -61,9 +61,7 @@ class ClusterManager:
 
     def shutdown(self):
         """Shutdown the cluster manager."""
-        asyncio.ensure_future(
-            self._commit_updates_broadcaster.put_update(self._sentinel)
-        )
+        self._commit_updates_broadcaster.enqueue_sentinel()
         self._manager.shutdown()
 
     async def subscribe_to_network_updates(
@@ -119,6 +117,8 @@ class ClusterManager:
         pipeline.assign_commit_success()
         await update_pipeline_commit_state(pipeline.assign_commit_success())
 
+        self._manager.start()
+
     async def assign_worker(
         self, pipeline_id: str, node_id: str, worker_id: str
     ) -> "WrappedNode":
@@ -147,7 +147,10 @@ class ClusterManager:
             if wrapped_node.worker_id is None:
                 return False, f"All nodes are not assigned a worker"
             if wrapped_node.worker_id not in self._manager.state.workers:
-                return False, f"Worker {wrapped_node.worker_id} is not available"
+                return (
+                    False,
+                    f"Worker {wrapped_node.worker_id} is not available",
+                )
 
         if len(pipeline.nodes) == 0:
             return False, "Pipeline has no nodes."

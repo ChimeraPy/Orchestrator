@@ -41,7 +41,7 @@ class Orchestrator(FastAPI):
 
 
 def create_orchestrator_app() -> "Orchestrator":
-    with concurrent.futures.ThreadPoolExecutor() as pool:  # This had to be done because uvicorn blocks the event loop
+    with concurrent.futures.ThreadPoolExecutor() as pool:
         pool.submit(initialize)
 
     orchestrator = Orchestrator(lifespan=lifespan)

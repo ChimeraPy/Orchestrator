@@ -23,9 +23,12 @@ class UpdatesBroadcaster:
     """
 
     def __init__(self, sentinel: str) -> None:
-        self.update_queue = asyncio.Queue()
+        self.update_queue = None
         self.sentinel = sentinel
         self.clients: Set[asyncio.Queue] = set()
+
+    async def _initialize(self):
+        self.update_queue = asyncio.Queue()
 
     async def add_client(self, q: asyncio.Queue) -> None:
         """Add a client queue to the broadcaster."""
@@ -37,16 +40,25 @@ class UpdatesBroadcaster:
 
     async def put_update(self, msg: Dict[str, Any]) -> None:
         """Put an update message to the broadcaster."""
+        if self.update_queue is None:
+            await self._initialize()
         self.update_queue.put_nowait(msg)
+
+    def enqueue_sentinel(self):
+        """Enqueue the sentinel message to stop the broadcaster."""
+        self.update_queue.put_nowait(self.sentinel)
 
     async def start_broadcast(self) -> None:
         """Start the broadcaster."""
+        if self.update_queue is None:
+            await self._initialize()
+
         while True:
             msg = await self.update_queue.get()
-            if msg == self.sentinel:
-                break
             for q in self.clients:
                 q.put_nowait(msg)
+            if msg == self.sentinel:
+                break
 
 
 class ClusterUpdatesBroadCaster:
