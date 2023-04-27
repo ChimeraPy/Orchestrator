@@ -1,3 +1,5 @@
+import logging
+
 from chimerapy_orchestrator.registry.utils import (
     sink_node,
     source_node,
@@ -5,3 +7,5 @@ from chimerapy_orchestrator.registry.utils import (
 )
 
 from . import registered_nodes
+
+logging.disable(logging.DEBUG)

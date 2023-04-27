@@ -58,10 +58,6 @@ class WebNode(BaseModel):
     class Config:
         allow_extra = False
 
-    def parse_obj(*args, **kwargs):
-        print("parse_obj", args, kwargs)
-        super().parse_obj(*args, **kwargs)
-
 
 class WebEdge(BaseModel):
     """An edge for the web interface."""

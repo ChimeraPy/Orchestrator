@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Any, Dict, List, Tuple
 
 import networkx as nx
@@ -88,7 +89,12 @@ class ClusterManager:
 
     def is_sentinel(self, msg: str):
         """Check if the message is a sentinel message."""
-        return msg == self._network_updates_broadcaster._sentinel
+        if msg is self._network_updates_broadcaster._sentinel:
+            return True
+        elif msg is self._sentinel:
+            return True
+        else:
+            return False
 
     async def commit_pipeline(self, pipeline_id: str) -> Pipeline:
         """Commit a pipeline."""
@@ -109,15 +115,24 @@ class ClusterManager:
         async def commit_pipeline(
             graph: nx.DiGraph, worker_graph_mapping: Dict[str, List[str]]
         ):
-            self._manager.commit_graph(graph, worker_graph_mapping)
+            print(
+                self._manager.commit_graph(graph, worker_graph_mapping).result(
+                    timeout=60
+                )
+            )
 
         await pipeline.instantiate_and_commit(
             update_pipeline_commit_state, commit_pipeline
         )
-        pipeline.assign_commit_success()
         await update_pipeline_commit_state(pipeline.assign_commit_success())
-
-        self._manager.start()
+        self._manager.start().result(timeout=60)
+        self._manager.record().result(timeout=60)
+        await asyncio.sleep(20)
+        print("Stopping manager")
+        self._manager.stop().result(timeout=60)
+        print("Stopped manager")
+        self._manager.collect().result(timeout=60)
+        self.committed_pipeline = pipeline
 
     async def assign_worker(
         self, pipeline_id: str, node_id: str, worker_id: str

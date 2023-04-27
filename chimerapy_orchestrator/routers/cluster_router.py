@@ -2,7 +2,7 @@ import asyncio
 from typing import List
 
 from fastapi import APIRouter, HTTPException
-from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 
 from chimerapy_orchestrator.models.cluster_models import (
     ClusterState,
@@ -19,12 +19,13 @@ async def relay(q: asyncio.Queue, ws: WebSocket, is_sentinel) -> None:
     """Relay messages from the queue to the websocket."""
     while True:
         message = await q.get()
+        if ws.client_state == WebSocketState.DISCONNECTED:
+            break
         if message is None:
             break
         if is_sentinel(message):  # Received Sentinel
             break
         try:
-            print(message, """XXXXXX""", ws.client_state)
             await ws.send_json(message)
         except WebSocketDisconnect:
             break
@@ -125,7 +126,11 @@ class ClusterRouter(APIRouter):
 
         update_queue = asyncio.Queue()
         relay_task = asyncio.create_task(
-            relay(update_queue, websocket, self.manager.is_sentinel)
+            relay(
+                update_queue,
+                websocket,
+                lambda msg: self.manager.is_sentinel(msg),
+            )
         )
         poll_task = asyncio.create_task(poll(websocket))
         await self.manager.subscribe_to_network_updates(

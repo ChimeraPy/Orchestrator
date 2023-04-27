@@ -43,7 +43,6 @@ def get(name):
 def teardown():
     """Teardown the services."""
     manager = available_services.get("cluster_manager")
-    print("Received teardown request")
     if manager and not manager.has_shutdown():
         manager.shutdown()
 

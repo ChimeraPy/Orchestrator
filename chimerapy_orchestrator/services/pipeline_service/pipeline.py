@@ -174,6 +174,8 @@ class Pipeline(nx.DiGraph):
             wrapped_node: WrappedNode = data["wrapped_node"]
             chimerapy_graph.add_node(wrapped_node.instance)
 
+        await updater(self.to_web_json())
+
         for (source, sink, _) in self.edges(data=True):
             src_wrapped_node = self.nodes[source]["wrapped_node"]
             sink_wrapped_node = self.nodes[sink]["wrapped_node"]
