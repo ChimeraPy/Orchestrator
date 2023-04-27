@@ -1,6 +1,8 @@
 import asyncio
-import time
-from typing import Any, Dict, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, Callable, Union, Optional
+import json
+
 
 import networkx as nx
 from chimerapy.manager import Manager
@@ -11,11 +13,28 @@ from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import 
     ClusterUpdatesBroadCaster,
     UpdatesBroadcaster,
 )
-from chimerapy_orchestrator.services.pipeline_service import Pipeline, Pipelines
+from chimerapy_orchestrator.services.pipeline_service import Pipelines, Pipeline
+from chimerapy_orchestrator.state_machine.fsm import FSM, StateTransitionError
+from chimerapy_orchestrator.monads import Ok, Err, Result
 
 
-class ClusterManager:
+class PipelineNotFoundError(Exception):
+    """Raised when a pipeline is not found in the cluster."""
+    pass
+
+
+class ClusterManager(FSM):
     def __init__(self, pipeline_service: Pipelines, **manager_kwargs):
+        with (Path(__file__).parent / "states.json").open("r") as f:
+            states = json.load(f)
+
+        state_cache, initial_state = super().parse_dict(dict_obj=states)
+        super().__init__(
+            states=list(state_cache.values()),
+            initial_state=state_cache[states["initial_state"]],
+            description=states["description"]
+        )
+
         kwargs = {
             "logdir": "logs",
             "port": 9000,
@@ -38,7 +57,8 @@ class ClusterManager:
         self._commit_updates_broadcaster = UpdatesBroadcaster(self._sentinel)
 
         self._pipeline_service = pipeline_service
-        self.committed_pipeline = None
+        self.active_pipeline = None
+        self._manager_busy = False
 
     @property
     def host(self):
@@ -96,78 +116,93 @@ class ClusterManager:
         else:
             return False
 
-    async def commit_pipeline(self, pipeline_id: str) -> Pipeline:
-        """Commit a pipeline."""
-        if self.committed_pipeline:
-            raise ValueError("A pipeline is already committed.")
+    async def activate_pipeline(self, pipeline_id: str) -> Result[Pipeline, Union[str, Exception]]:
+        """Activate the pipeline."""
+        can, reason = self.can_transition("/activate")
+        if not can:
+            return Err(StateTransitionError(reason))
 
-        pipeline = self._pipeline_service.get_pipeline(pipeline_id)
+        if not self.current_state.name == self.initial_state.name:
+            return Err(StateTransitionError("Pipeline already activated."))
 
-        asyncio.create_task(self._commit_pipeline(pipeline))
-
-        return pipeline
-
-    async def _commit_pipeline(self, pipeline: Pipeline) -> None:
-        async def update_pipeline_commit_state(msg: Dict[str, Any]) -> None:
-            msg["state"] = "Instantiating Nodes"
-            await self._commit_updates_broadcaster.put_update(msg)
-
-        async def commit_pipeline(
-            graph: nx.DiGraph, worker_graph_mapping: Dict[str, List[str]]
-        ):
-            print(
-                self._manager.commit_graph(graph, worker_graph_mapping).result(
-                    timeout=60
-                )
-            )
-
-        await pipeline.instantiate_and_commit(
-            update_pipeline_commit_state, commit_pipeline
-        )
-        await update_pipeline_commit_state(pipeline.assign_commit_success())
-        self._manager.start().result(timeout=60)
-        self._manager.record().result(timeout=60)
-        await asyncio.sleep(20)
-        print("Stopping manager")
-        self._manager.stop().result(timeout=60)
-        print("Stopped manager")
-        self._manager.collect().result(timeout=60)
-        self.committed_pipeline = pipeline
-
-    async def assign_worker(
-        self, pipeline_id: str, node_id: str, worker_id: str
-    ) -> "WrappedNode":
-        """Assign worker to a pipeline node."""
-        pipeline = self._pipeline_service.get_pipeline(pipeline_id)
-
-        await pipeline.assign_worker(node_id, worker_id)
-
-        return pipeline.nodes[node_id]["wrapped_node"]
-
-    async def can_commit(self, pipeline_id: str) -> Tuple[bool, str]:
-        """Check if we can commit a pipeline."""
         pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
 
         if pipeline is None:
-            return False, f"Pipeline {pipeline_id} does not exist."
+            return Err(StateTransitionError(f"Pipeline with id {pipeline_id} does not exist."))
 
-        if self.committed_pipeline:
-            return False, "A pipeline is already committed."
+        if pipeline.doesnot_have_worker_mapping():
+            return Err(StateTransitionError(f"Pipeline {pipeline_id} does not have proper worker mapping."))
 
-        if len(self._manager.state.workers) == 0:
-            return False, "No workers are available."
+        if self.active_pipeline is not None:
+            asyncio.create_task(self.destroy_pipeline(self.active_pipeline.id))
+
+        self.active_pipeline = pipeline
+
+        task = asyncio.create_task(self.instantiate_pipeline(pipeline))
+
+        task.add_done_callback(lambda result : self.transition_if_success(result, "/activate"))
+
+        return Ok(pipeline)
+
+    async def destroy_pipeline(self, active_pipeline_id):
+        """Destroy the active pipeline."""
+        pipeline = self._pipeline_service.get_pipeline(active_pipeline_id, throw=False)
+
+        self._manager_busy = True
+        if pipeline and pipeline.committed:
+            await self._manager.async_reset(keep_workers=False)
+
+        self._manager_busy = False
+
+    def transition_if_success(self, result, transition: str):
+        if result.exception() is None:
+            self.transitioning = False
+            self.transition(transition)
+            self.transitioning = False
+
+    async def instantiate_pipeline(self, pipeline):
+        """Instantiate the pipeline."""
+        while self._manager_busy:
+            await asyncio.sleep(0.1)
+
+        self._manager_busy = True
+        if not pipeline.instantiated:
+            await pipeline.instantiate(lambda msg: self._commit_updates_broadcaster.put_update(msg))
+
+    def assign_workers(self, pipeline_id: str, node_to_worker_ids: Dict[str, str]) -> Result[Pipeline, Union[str, Exception]]:
+        """Assign workers to the pipeline."""
+        if self.transitioning:
+            return Err(StateTransitionError("Cluster is transitioning."))
+
+        pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
+        if not pipeline:
+            return Err(StateTransitionError(f"Pipeline with id {pipeline_id} does not exist."))
 
         for _, data in pipeline.nodes(data=True):
-            wrapped_node = data["wrapped_node"]
-            if wrapped_node.worker_id is None:
-                return False, f"All nodes are not assigned a worker"
-            if wrapped_node.worker_id not in self._manager.state.workers:
-                return (
-                    False,
-                    f"Worker {wrapped_node.worker_id} is not available",
-                )
+            node = data["wrapped_node"]
 
-        if len(pipeline.nodes) == 0:
-            return False, "Pipeline has no nodes."
+            if node.id not in node_to_worker_ids:
+                return Err(StateTransitionError(f"Node {node.name}/{node.id} does not have a valid worker id."))
 
-        return True, "Pipeline can be committed."
+            if node_to_worker_ids[node.id] is None:
+                return Err(StateTransitionError(f"Node {node.name}/{node.id} does not have a valid worker id."))
+
+            if node_to_worker_ids[node.id] not in self._manager.state.workers:
+                return Err(StateTransitionError(f"Worker {node_to_worker_ids[node.id]} does not exist anymore."))
+
+            node.worker_id = node_to_worker_ids[node.id]
+
+        return Ok(pipeline)
+
+    async def get_active_pipeline(self) -> Result[Pipeline, Union[str, Exception]]:
+        """Get the active pipeline."""
+        if self.active_pipeline is None:
+            return Err(PipelineNotFoundError("No active pipeline."))
+
+        return Ok(self.active_pipeline)
+
+    def get_states_info(self):
+        """Return the FSM states info."""
+        info = self.to_dict()
+        info["current_state"] = self.current_state.name
+        return info

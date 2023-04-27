@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
@@ -13,6 +13,7 @@ from chimerapy_orchestrator.models.pipeline_models import WebNode
 from chimerapy_orchestrator.services.cluster_service import (
     ClusterManager,
 )
+from chimerapy_orchestrator.routers.error_mappers import get_mapping
 
 
 async def relay(q: asyncio.Queue, ws: WebSocket, is_sentinel) -> None:
@@ -51,29 +52,26 @@ class ClusterRouter(APIRouter):
             response_description="The current state of the cluster",
             description="The current state of the cluster",
         )
-        self.add_api_route(
-            "/commit/{pipeline_id}",
-            self.commit_pipeline,
-            methods=["POST"],
-            response_description="The current state of the committed pipeline",
-            description="The current state of the committed pipeline",
-        )
 
         self.add_api_route(
-            "/assign-workers/{pipeline_id}",
-            self.assign_workers,
+            "/activate-pipeline/{pipeline_id}",
+            self.activate_pipeline,
             methods=["POST"],
-            response_description="The state of nodes with the assigned workers",
-            description="The state of nodes with the assigned workers",
+            response_description="Activate a pipeline",
+            description="Activate a pipeline",
         )
+
+        self.add_api_route("/assign-workers/{pipeline_id}", self.assign_workers, methods=["POST"])
+
+        self.add_api_route("/active-pipeline", self.get_active_pipeline, methods=["GET"])
 
         # Websocket routes
         self.add_websocket_route(
-            "/cluster/committed-pipeline", self.get_pipeline_updates
+            "/cluster/pipeline-lifecycle", self.get_pipeline_updates
         )
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
 
-    async def commit_pipeline(self, pipeline_id: str):
+    async def commit_route(self, pipeline_id: str):
         """Commit a pipeline to the cluster."""
         can_commit, reason = await self.manager.can_commit(pipeline_id)
         if not can_commit:
@@ -85,6 +83,35 @@ class ClusterRouter(APIRouter):
         pipeline = await self.manager.commit_pipeline(pipeline_id)
 
         return pipeline.to_web_json()
+
+    async def assign_workers(self, pipeline_id: str, nodes: List[WebNode]) -> Dict[str, Any]:
+        """Assign workers to the given nodes."""
+        node_to_worker_ids = {
+            node.id: node.worker_id for node in nodes
+        }
+
+        return self.manager \
+            .assign_workers(pipeline_id, node_to_worker_ids) \
+            .map(lambda pipeline: pipeline.to_web_json()) \
+            .map_error(get_mapping).unwrap()
+
+    async def get_manager_state(self) -> ClusterState:
+        """Get the current state of the cluster."""
+        return ClusterState.from_cp_manager_state(self.manager.get_network())
+
+    async def activate_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
+        """Activate a pipeline."""
+        result = await self.manager.activate_pipeline(pipeline_id)
+        return result.map(lambda p: p.to_web_json()).map_error(lambda err: get_mapping(err)).unwrap()
+
+    async def get_active_pipeline(self) -> Dict[str, Any]:
+        """Get the active pipeline."""
+        result = await self.manager.get_active_pipeline()
+        return result.map(lambda p: p.to_web_json()).map_error(lambda err: get_mapping(err)).unwrap()
+
+    async def get_states_info(self) -> Dict[str, Any]:
+        """Get the state of the cluster."""
+        return self.manager.get_states_info()
 
     async def get_pipeline_updates(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -106,19 +133,6 @@ class ClusterRouter(APIRouter):
             await self.manager.unsubscribe_from_commit_updates(update_queue)
             if not relay_task.done():
                 relay_task.cancel()
-
-    async def assign_workers(
-        self, pipeline_id: str, web_nodes: List[WebNode]
-    ) -> List[WebNode]:
-        """Assign a worker to a pipeline."""
-        nodes = []
-        for node in web_nodes:
-            wrapped_node = await self.manager.assign_worker(
-                pipeline_id, node.id, node.worker_id
-            )
-            nodes.append(wrapped_node.to_web_node())
-
-        return nodes
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
         """Get updates from the cluster manager and relay them to the client websocket."""
@@ -153,7 +167,3 @@ class ClusterRouter(APIRouter):
             await self.manager.unsubscribe_from_network_updates(update_queue)
             if not relay_task.done():
                 relay_task.cancel()
-
-    async def get_manager_state(self) -> ClusterState:
-        """Get the current state of the cluster."""
-        return ClusterState.from_cp_manager_state(self.manager.get_network())

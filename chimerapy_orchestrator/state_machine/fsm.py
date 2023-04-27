@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Callable, Coroutine, Tuple
 
 from chimerapy_orchestrator.state_machine.exceptions import (
     FSMFinishedError,
@@ -8,7 +8,6 @@ from chimerapy_orchestrator.state_machine.models import (
     State,
     Transition,
 )
-
 
 class FSM:
     """A finite state machine."""
@@ -112,6 +111,14 @@ class FSM:
         for transition in self.current_state.valid_transitions:
             if transition.name == transition_name:
                 return transition
+
+    def can_transition(self, transition_name) -> Tuple[bool, str]:
+        if self.transitioning:
+            return False, "Cannot transition while transitioning"
+        if transition_name in self.allowed_transitions:
+            return True, ""
+        else:
+            return False, f"Invalid transition: {transition_name} from state {self.current_state.name} is not possible"
 
     def get_transition(self, transition_name: str) -> Optional[Transition]:
         # Check if the transition is valid in any state

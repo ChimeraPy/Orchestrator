@@ -35,6 +35,7 @@ class Pipeline(nx.DiGraph):
         self.id = uuid()
         self.name = name
         self.instantiated = False
+        self.committed = False
         self.description = description or "A pipeline"
         self.chimerapy_graph = None
 
@@ -127,7 +128,7 @@ class Pipeline(nx.DiGraph):
         """Returns True if the pipeline_service is a DAG, False otherwise."""
         return nx.is_directed_acyclic_graph(self)
 
-    def doesnt_have_worker_mapping(self) -> bool:
+    def doesnot_have_worker_mapping(self) -> bool:
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
             if wrapped_node.worker_id is None:
@@ -139,12 +140,13 @@ class Pipeline(nx.DiGraph):
             wrapped_node.committed = True
         return self.to_web_json()
 
-    async def _instantiate(self, updater):
+    async def instantiate(self, updater):
         worker_graph_mapping = {}
 
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
             wrapped_node.instantiate()
+            await updater(self.to_web_json())
 
             if wrapped_node.worker_id not in worker_graph_mapping:
                 worker_graph_mapping[wrapped_node.worker_id] = []
@@ -152,8 +154,6 @@ class Pipeline(nx.DiGraph):
             worker_graph_mapping[wrapped_node.worker_id].append(
                 wrapped_node.instance_id
             )
-
-            await updater(self.to_web_json())
 
         return worker_graph_mapping
 
@@ -164,7 +164,7 @@ class Pipeline(nx.DiGraph):
         if self.instantiated:
             raise ValueError("Pipeline is already instantiated")
 
-        if self.doesnt_have_worker_mapping():
+        if self.doesnot_have_worker_mapping():
             raise ValueError("Pipeline does not have worker mapping")
 
         worker_graph_mapping = await self._instantiate(updater)

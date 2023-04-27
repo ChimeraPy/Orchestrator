@@ -17,7 +17,7 @@ export function populateStores() {
 	);
 
 	const committedPipelineStore = readableWebSocketStore<Pipeline>(
-		'/cluster/committed-pipeline',
+		'/cluster/pipeline-lifecycle',
 		null,
 		(payload) => payload
 	);

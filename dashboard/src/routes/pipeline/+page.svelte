@@ -8,12 +8,12 @@
 	5. Accessibility improvements.
 -->
 <script lang="ts">
-	import { pipelineClient, clusterClient } from '$lib/services';
-	import { onMount } from 'svelte';
-	import { getStore } from '$lib/stores';
-	import { PipelineUtils } from '$lib/Services/PipelineUtils';
-	import { ClusterUtils } from '$lib/Services/ClusterUtils';
-	import { debounce } from '$lib/utils';
+	import {clusterClient, pipelineClient} from '$lib/services';
+	import {onMount} from 'svelte';
+	import {getStore} from '$lib/stores';
+	import {PipelineUtils} from '$lib/Services/PipelineUtils';
+	import {ClusterUtils} from '$lib/Services/ClusterUtils';
+	import {debounce} from '$lib/utils';
 
 	import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
 	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
@@ -22,12 +22,13 @@
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import TabbedOrchestrationViews from '$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte';
 
-	import { CreatePipelineStages } from '$lib/models';
-	import type { Pipeline, ClusterState, NodeState } from '$lib/models';
+	import type {ClusterState, NodeState, Pipeline} from '$lib/models';
+	import {CreatePipelineStages} from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
-	import { Icons } from '$lib/Icons';
+	import {Icons} from '$lib/Icons';
 
-	import { Input, Select, Label, Spinner } from 'flowbite-svelte';
+	import {Input, Label, Select, Spinner} from 'flowbite-svelte';
+
 	let networkStore = getStore('network');
 
 	let nodeCells: joint.dia.Cell[];
@@ -51,7 +52,7 @@
 	let editorContainer: HTMLElement,
 		horizontalMenu: HTMLElement,
 		tabbedOrchestrationViewsContainer: HTMLElement;
-	let committablePipeline: Pipeline | null = null;
+	let pipelineToActivate: Pipeline | null = null;
 	let workers = [];
 
 	$: {
@@ -374,9 +375,24 @@
 
 	async function displayCommitIntent() {
 		if (!activePipeline) return;
-		console.log(activePipeline, selectedNode);
-		await clusterClient.assignWorkers(activePipeline);
-		committablePipeline = activePipeline;
+		(await clusterClient.assignWorkers(activePipeline))
+				.mapError((error) => {
+					infoModalContent = {
+						title: 'Error',
+						content: error
+					};
+				})
+				.mapAsync( async (result) => {
+					(await clusterClient.activatePipeline(result.id))
+							.map(result => pipelineToActivate = result)
+							.mapError((error) => {
+								infoModalContent = {
+									title: 'Error',
+									content: error
+								};
+							});
+				});
+
 	}
 
 	function onWorkerIdSelectionChange() {
@@ -444,7 +460,7 @@
 						},
 						{
 							type: Icons.bolt,
-							tooltip: 'Commit pipeline',
+							tooltip: 'Activate pipeline',
 							disabled: !activePipeline
 						}
 					]}
@@ -468,7 +484,7 @@
 		<div class="flex-1 flex flex-col h-0.5" bind:this={tabbedOrchestrationViewsContainer}>
 			<TabbedOrchestrationViews
 				bind:this={tabbedOrchestrationViews}
-				{committablePipeline}
+				{pipelineToActivate}
 				committedPipeline={null}
 			/>
 		</div>

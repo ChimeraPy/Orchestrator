@@ -1,0 +1,153 @@
+{
+  "description": "The state machine for the chimerapy cluster",
+  "states": {
+    "INITIALIZED": {
+      "name": "INITIALIZED",
+      "valid_transitions": [
+        {
+          "name": "/activate",
+          "from_state": "INITIALIZED",
+          "to_state": "ACTIVATED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "INITIALIZED",
+          "to_state": "SHUTDOWN"
+        }
+      ],
+      "description": "The cluster is initialized and ready to be committed"
+    },
+    "ACTIVATED": {
+      "name": "ACTIVATED",
+      "valid_transitions": [
+        {
+          "name": "/commit",
+          "from_state": "ACTIVATED",
+          "to_state": "COMMITTED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "ACTIVATED",
+          "to_state": "SHUTDOWN"
+        }
+      ],
+      "description": "The cluster is activated and a pipeline ready to be committed"
+    },
+    "COMMITTED": {
+      "name": "COMMITTED",
+      "valid_transitions": [
+        {
+          "name": "/preview",
+          "from_state": "COMMITTED",
+          "to_state": "PREVIEWING"
+        },
+        {
+          "name": "/record",
+          "from_state": "COMMITTED",
+          "to_state": "RECORDING"
+        },
+        {
+          "name": "/reset",
+          "from_state": "COMMITTED",
+          "to_state": "INITIALIZED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "COMMITTED",
+          "to_state": "SHUTDOWN"
+        }
+      ],
+      "description": "The cluster is committed and ready to be previewed or recorded"
+    },
+    "PREVIEWING": {
+      "name": "PREVIEWING",
+      "description": "The cluster is in the preview state",
+      "valid_transitions": [
+        {
+          "name": "/record",
+          "from_state": "PREVIEWING",
+          "to_state": "RECORDING"
+        },
+        {
+          "name": "/reset",
+          "from_state": "PREVIEWING",
+          "to_state": "INITIALIZED"
+        },
+        {
+          "name": "/stop",
+          "from_state": "PREVIEWING",
+          "to_state": "STOPPED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "PREVIEWING",
+          "to_state": "SHUTDOWN"
+        }
+      ]
+    },
+    "RECORDING": {
+      "name": "RECORDING",
+      "description": "The cluster is in the recording state",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "RECORDING",
+          "to_state": "INITIALIZED"
+        },
+        {
+          "name": "/stop",
+          "from_state": "RECORDING",
+          "to_state": "STOPPED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "RECORDING",
+          "to_state": "SHUTDOWN"
+        }
+      ]
+    },
+    "STOPPED": {
+      "name": "STOPPED",
+      "description": "The cluster is in the stopped state",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "STOPPED",
+          "to_state": "INITIALIZED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "STOPPED",
+          "to_state": "SHUTDOWN"
+        },
+        {
+          "name": "/collect",
+          "from_state": "STOPPED",
+          "to_state": "COLLECTED"
+        }
+      ]
+    },
+    "COLLECTED": {
+      "name": "COLLECTED",
+      "description": "The cluster is in the collecting state",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "COLLECTING",
+          "to_state": "INITIALIZED"
+        },
+        {
+          "name": "/shutdown",
+          "from_state": "COLLECTING",
+          "to_state": "SHUTDOWN"
+        }
+      ]
+    },
+    "SHUTDOWN": {
+      "name": "SHUTDOWN",
+      "description": "The cluster is in the shutdown state",
+      "valid_transitions": []
+    }
+  },
+  "initial_state": "INITIALIZED"
+}

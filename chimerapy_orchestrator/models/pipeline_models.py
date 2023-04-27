@@ -102,6 +102,10 @@ class WrappedNode(BaseModel):
     )
 
     @property
+    def name(self):
+        return self.instance.name if self.instance else self.NodeClass.__name__
+
+    @property
     def instance_id(self) -> Optional[str]:
         return self.instance.id if self.instance else None
 
