@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Type
 
 import chimerapy as cp
 from pydantic import BaseModel, Field, validator
@@ -59,8 +59,48 @@ class Workers(BaseModel):
         allow_extra = False
 
 
+class Timeouts(BaseModel):
+    commit_timeout: int = Field(
+        default=60,
+        description="The timeout for the commit operation in seconds.",
+    )
+
+    preview_timeout: int = Field(
+        default=20,
+        description="The timeout for the preview operation in seconds.",
+    )
+
+    record_timeout: int = Field(
+        default=20,
+        description="The timeout for the record operation in seconds.",
+    )
+
+    collect_timeout: int = Field(
+        default=20,
+        description="The timeout for the commit operation in seconds.",
+    )
+
+    stop_timeout: int = Field(
+        default=20,
+        description="The timeout for the stop operation in seconds.",
+    )
+
+    shutdown_timeout: int = Field(
+        default=20, description="The timeout for shutdown operation in seconds."
+    )
+
+    class Config:
+        allow_extra = False
+        allow_mutation = False
+
+
 class ChimeraPyPipelineConfig(BaseModel):
     """The pipeline_service config."""
+
+    mode: Literal["preview", "record"] = Field(
+        default="record",
+        description="The mode of the pipeline_service.",
+    )
 
     workers: Workers = Field(..., description="The workers to be added.")
 
@@ -83,6 +123,11 @@ class ChimeraPyPipelineConfig(BaseModel):
     discover_nodes_from: Optional[List[str]] = Field(
         default=[],
         description="The list of modules to discover nodes from.",
+    )
+
+    timeouts: Timeouts = Field(
+        default=Timeouts(),
+        description="The timeouts for the pipeline operation.",
     )
 
     def manager(self) -> cp.Manager:
