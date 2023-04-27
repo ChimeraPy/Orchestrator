@@ -16,7 +16,7 @@ class WebcamNode(cp.Node):
     def __init__(self, name: str = "WebcamNode"):
         super().__init__(name=name)
 
-    def prep(self):
+    def setup(self):
         self.vid = cv2.VideoCapture(0)
 
     def step(self) -> cp.DataChunk:
@@ -43,13 +43,16 @@ class ShowWindow(cp.Node):
             cv2.imshow(name, data_chunk.get("frame")["value"])
             cv2.waitKey(1)
 
+    def teardown(self):
+        cv2.destroyAllWindows()
+
 
 @source_node
 class ScreenCaptureNode(cp.Node):
     def __init__(self, name: str = "ScreenCaptureNode"):
         super().__init__(name=name)
 
-    def prep(self):
+    def setup(self):
         if platform.system() == "Windows":
             import dxcam
 

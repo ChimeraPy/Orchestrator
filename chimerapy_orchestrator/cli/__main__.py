@@ -3,6 +3,7 @@ import sys
 import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
+from chimerapy.config import set
 from requests.exceptions import ConnectionError
 
 from chimerapy_orchestrator.models.pipeline_config import (
@@ -27,15 +28,20 @@ def orchestrate(config: ChimeraPyPipelineConfig):
             break
 
     # Commit the graph
-    manager.commit_graph(graph=pipeline, mapping=mappings)
+    manager.commit_graph(graph=pipeline, mapping=mappings).result(
+        timeout=config.timeouts.commit_timeout
+    )
 
-    # Wail until user stops
+    if config.mode == "preview":
+        manager.start().result(timeout=config.timeouts.preview_timeout)
+
+    # Wait until user stops
     while True:
         q = input("Ready to start? (Y/n)")
         if q.lower() == "y":
             break
 
-    manager.start()
+    manager.record().result(timeout=config.timeouts.record_timeout)
 
     # Wail until user stops
     while True:
@@ -43,9 +49,11 @@ def orchestrate(config: ChimeraPyPipelineConfig):
         if q.lower() == "y":
             break
 
-    manager.stop()
-    manager.collect()
-    manager.shutdown()
+    manager.stop().result(timeout=config.timeouts.stop_timeout)
+    manager.collect().result(timeout=config.timeouts.collect_timeout)
+
+    set("manager.timeout.worker-shutdown", config.timeouts.shutdown_timeout)
+    manager.shutdown(blocking=True)
 
 
 def orchestrate_worker(
@@ -101,6 +109,15 @@ def add_orchestrate_parser(subparsers):
         help="The configuration file to use",
         type=str,
         required=True,
+    )
+
+    orchestrate_parser.add_argument(
+        "--mode",
+        help="Overwrite the mode from the config file",
+        type=str,
+        choices=["preview", "record"],
+        required=False,
+        default=None,
     )
 
     return orchestrate_parser
@@ -204,7 +221,7 @@ def run(args=None):
     )
 
     subparsers = parser.add_subparsers(
-        title="subcommands", description="valid subcommands", dest="mode"
+        title="subcommands", description="valid subcommands", dest="subcommand"
     )
 
     # Orchestrate
@@ -221,26 +238,29 @@ def run(args=None):
 
     args = parser.parse_args(args)
 
-    if args.mode != "server":
+    if args.subcommand != "server":
         with open(args.config) as config_file:
             config_dict = json.load(config_file)
             cp_config = ChimeraPyPipelineConfig.parse_obj(config_dict)
 
-    if args.mode == "orchestrate":
+            if args.mode and cp_config.mode != args.mode:
+                cp_config.mode = args.mode
+
+    if args.subcommand == "orchestrate":
         orchestrate(cp_config)
 
-    elif args.mode == "orchestrate-worker":
+    elif args.subcommand == "orchestrate-worker":
         kwargs = {
             "wait_until_connected": not args.no_wait,
             "max_retries": args.max_retries,
         }
         orchestrate_worker(cp_config, args.worker_id, **kwargs)
 
-    elif args.mode == "list-remote-workers":
+    elif args.subcommand == "list-remote-workers":
         print("=== Remote Workers ===")
         cp_config.list_remote_workers()
         print("=== End Remote Workers ===")
-    elif args.mode == "server":
+    elif args.subcommand == "server":
         from uvicorn import run
 
         kwargs = {}
