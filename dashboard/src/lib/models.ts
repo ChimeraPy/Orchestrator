@@ -69,6 +69,7 @@ export interface Pipeline {
 	name: string;
 	description: string;
 	instantiated: boolean;
+	committed: boolean;
 	nodes: PipelineNode[];
 	edges: Edge[];
 }

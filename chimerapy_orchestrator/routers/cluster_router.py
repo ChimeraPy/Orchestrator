@@ -62,6 +62,22 @@ class ClusterRouter(APIRouter):
         )
 
         self.add_api_route(
+            "/commit",
+            self.commit_route,
+            methods=["POST"],
+            response_description="Commit a pipeline to the cluster",
+            description="Commit a pipeline to the cluster",
+        )
+
+        self.add_api_route(
+            "/preview",
+            self.preview_route,
+            methods=["POST"],
+            response_description="Preview a pipeline",
+            description="Preview a pipeline",
+        )
+
+        self.add_api_route(
             "/actions-fsm",
             self.get_actions_fsm,
             methods=["GET"],
@@ -78,18 +94,23 @@ class ClusterRouter(APIRouter):
         )
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
 
-    async def commit_route(self, pipeline_id: str):
+    async def commit_route(self):
         """Commit a pipeline to the cluster."""
-        can_commit, reason = await self.manager.can_commit(pipeline_id)
-        if not can_commit:
-            print(f"Cannot commit pipeline: {reason}")
-            raise HTTPException(
-                status_code=403, detail=f"Cannot commit pipeline: {reason}"
-            )
+        pipeline = await self.manager.commit_pipeline()
 
-        pipeline = await self.manager.commit_pipeline(pipeline_id)
+        return pipeline.map(lambda p: p.to_web_json()).map_error(get_mapping).unwrap()
 
-        return pipeline.to_web_json()
+    async def preview_route(self):
+        """Preview a pipeline."""
+        pipeline = await self.manager.preview()
+
+        return pipeline.map(lambda p: p.to_web_json()).map_error(get_mapping).unwrap()
+
+    async def stop_route(self):
+        """Stop a pipeline."""
+        pipeline = await self.manager.stop()
+
+        return pipeline.map(lambda p: p.to_web_json()).map_error(get_mapping).unwrap()
 
     async def assign_workers(self, pipeline_id: str, nodes: List[WebNode]) -> Dict[str, Any]:
         """Assign workers to the given nodes."""

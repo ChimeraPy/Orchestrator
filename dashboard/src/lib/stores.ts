@@ -16,14 +16,14 @@ export function populateStores() {
 		(payload) => payload.data
 	);
 
-	const committedPipelineStore = readableWebSocketStore<Pipeline>(
+	const lifeCycleStore = readableWebSocketStore<Pipeline>(
 		'/cluster/pipeline-lifecycle',
 		null,
 		(payload) => payload
 	);
 
 	stores.set('network', networkStore);
-	stores.set('committedPipeline', committedPipelineStore);
+	stores.set('lifeCycle', lifeCycleStore);
 }
 
 export function getStore<T>(name: string): T | null {

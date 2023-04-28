@@ -11,6 +11,7 @@
 
     import {getStore} from '$lib/stores';
     import {PipelineUtils} from '../../Services/PipelineUtils';
+    import {Ok} from 'ts-monads';
 
     export let committablePipeline;
     let committedPipelineGraph, committedPipelineGraphContainer;
@@ -22,11 +23,10 @@
     let pipelineCells = [];
     let icons: IconType[] = [];
 
-    const pipelineStore = getStore('committedPipeline');
+    const lifeCycleStore = getStore('lifeCycle');
     const dispatch = createEventDispatcher();
 
-    onMount(async () => {
-        const clusterActionsResult = await clusterClient.getActionsFSM();
+    function clusterActionsResultToIcons(clusterActionsResult) {
         clusterActionsResult.map((fsm) => {
             const statesArray = Object.values(fsm.states);
             const currentState = statesArray.find(state => state.name === fsm.current_state);
@@ -34,7 +34,7 @@
             const actions = [];
             Object.values(fsm.states).forEach((state) => {
                 state.valid_transitions.forEach((transition) => {
-                    if(! actions.includes(transition.name)) {
+                    if (!actions.includes(transition.name)) {
                         actions.push(transition.name);
                     }
                 });
@@ -49,6 +49,11 @@
                 strokeWidth: 2,
             });
         });
+    }
+
+    onMount(async () => {
+        const clusterActionsResult = await clusterClient.getActionsFSM();
+        clusterActionsResultToIcons(clusterActionsResult);
     });
 
     export async function onConfirmCommit() {
@@ -74,17 +79,28 @@
         committablePipeline = null;
     }
 
+    function renderChanges(pipeline, fsm) {
+        if (pipeline) {
+            pipelineCells = PipelineUtils.committablePipelineToJointCells(pipeline);
+            pipelineCells = pipelineCells;
+        } else {
+            pipelineCells = [];
+        }
 
-    $: committablePipeline && onConfirmCommit();
+        if (fsm) {
+            clusterActionsResultToIcons(new Ok(fsm));
+        }
 
-    $: {
-        pipelineCells = $pipelineStore
-            ? PipelineUtils.committablePipelineToJointCells($pipelineStore)
-            : [];
-        pipelineCells = pipelineCells;
         committedPipelineGraph?.render(pipelineCells, pipelineCells.length === 0);
         committedPipelineGraph?.layout();
     }
+
+
+    $: committablePipeline && onConfirmCommit();
+
+    $: renderChanges($lifeCycleStore?.pipeline, $lifeCycleStore?.fsm);
+
+    $: console.log($lifeCycleStore);
 
     function beginPipelineExecution() {
         if (!committablePipeline) {
@@ -98,6 +114,54 @@
             infoModalContent = {
                 title: 'Cluster Actions and States',
                 content: fsm,
+                alertMessage: 'Close'
+            };
+        })
+    }
+
+    async function commitPipeline() {
+        (await clusterClient.commitPipeline()).map(pipeline => {
+            infoModalContent = {
+                title: 'COMMITTING PIPELINE',
+                content: pipeline,
+                alertMessage: 'Close'
+            };
+        }).mapError(error => {
+            infoModalContent = {
+                title: 'ERROR',
+                content: error,
+                alertMessage: 'Close'
+            };
+        })
+    }
+
+    async function previewPipeline() {
+        (await clusterClient.previewPipeline()).map(pipeline => {
+            infoModalContent = {
+                title: 'PREVIEWING PIPELINE',
+                content: pipeline,
+                alertMessage: 'Close'
+            };
+        }).mapError(error => {
+            infoModalContent = {
+                title: 'ERROR',
+                content: error,
+                alertMessage: 'Close'
+            };
+        })
+    }
+
+    async function recordPipeline() {
+        (await clusterClient.recordPipeline()).map(pipeline => {
+            infoModalContent = {
+                title: 'RECORDING PIPELINE',
+                content: pipeline,
+                alertMessage: 'Close'
+            };
+        }).mapError(error => {
+            infoModalContent = {
+                title: 'ERROR',
+                content: error,
                 alertMessage: 'Close'
             };
         })
@@ -123,6 +187,9 @@
             on:play={beginPipelineExecution}
             on:info={clusterInfo}
             on:activate={activatePipeline}
+            on:commit={commitPipeline}
+            on:preview={previewPipeline}
+            on:record={recordPipeline}
     />
 </div>
 <div class="flex-1 flex justify-center items-center bg-[#F3F7F6] overflow-hidden">

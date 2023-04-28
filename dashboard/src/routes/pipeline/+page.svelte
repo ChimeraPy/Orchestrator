@@ -367,7 +367,7 @@
         );
         if (workerDetails) {
             infoModalContent = {
-                title: workerDeftails.name,
+                title: workerDetails.name,
                 content: workerDetails
             };
         }

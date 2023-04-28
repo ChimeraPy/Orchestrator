@@ -37,7 +37,7 @@ class TestNetworkRouter(BaseTest):
     @pytest.fixture(scope="class")
     async def cluster_manager_and_client(self, manager, event_loop_class):
         broadcast_task = event_loop_class.create_task(
-            manager.start_updates_broadcaster()
+            manager.start_async_tasks()
         )
         app = FastAPI()
         app.include_router(ClusterRouter(manager))

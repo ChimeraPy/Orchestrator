@@ -164,9 +164,29 @@ export class ClusterClient extends Client {
 		return response;
 	}
 
-	async commitPipeline(pipelineId: string): Promise<Result<Pipeline, ResponseError>> {
-		const prefix = encodeURIComponent(`/commit/${pipelineId}`);
-		const response = await this._fetch<Pipeline>(prefix, { method: 'POST' });
+	async commitPipeline(): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/commit`);
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'POST',
+		});
+
+		return response;
+	}
+
+	async previewPipeline(): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/preview`);
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'POST',
+		});
+
+		return response;
+	}
+
+	async recordPipeline(): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/record`);
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'POST',
+		});
 
 		return response;
 	}
@@ -200,6 +220,8 @@ export class ClusterClient extends Client {
 
 		return response;
 	}
+
+
 }
 
 export class NetworkClient extends Client {

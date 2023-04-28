@@ -140,13 +140,23 @@ class Pipeline(nx.DiGraph):
             wrapped_node.committed = True
         return self.to_web_json()
 
-    async def instantiate(self, updater):
+    def instantiate(self, updater):
+        """Instantiates the nodes in the pipeline"""
+        for _, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            wrapped_node.instantiate()
+            updater(self.to_web_json())
+
+        self.instantiated = True
+
+    async def commit(
+        self, updater, committer
+    ) -> Tuple[nx.DiGraph, Dict[str, List[str]]]:
+        """Instantiates the pipeline_service."""
         worker_graph_mapping = {}
 
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
-            wrapped_node.instantiate()
-            await updater(self.to_web_json())
 
             if wrapped_node.worker_id not in worker_graph_mapping:
                 worker_graph_mapping[wrapped_node.worker_id] = []
@@ -154,27 +164,13 @@ class Pipeline(nx.DiGraph):
             worker_graph_mapping[wrapped_node.worker_id].append(
                 wrapped_node.instance_id
             )
-
-        return worker_graph_mapping
-
-    async def instantiate_and_commit(
-        self, updater, committer
-    ) -> Tuple[nx.DiGraph, Dict[str, List[str]]]:
-        """Instantiates the pipeline_service."""
-        if self.instantiated:
-            raise ValueError("Pipeline is already instantiated")
-
-        if self.doesnot_have_worker_mapping():
-            raise ValueError("Pipeline does not have worker mapping")
-
-        worker_graph_mapping = await self._instantiate(updater)
-        print(worker_graph_mapping, "worker_graph_mapping")
+        print(worker_graph_mapping)
         chimerapy_graph = cp.Graph()
         for _, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
             chimerapy_graph.add_node(wrapped_node.instance)
 
-        await updater(self.to_web_json())
+        updater(self.to_web_json())
 
         for (source, sink, _) in self.edges(data=True):
             src_wrapped_node = self.nodes[source]["wrapped_node"]
@@ -183,9 +179,8 @@ class Pipeline(nx.DiGraph):
                 src_wrapped_node.instance, sink_wrapped_node.instance
             )
 
-        self.instantiated = True
-
         await committer(chimerapy_graph, worker_graph_mapping)
+        self.committed = True
 
     async def assign_worker(self, node_id, worker_id):
         wrapped_node = self.nodes[node_id]["wrapped_node"]
@@ -200,6 +195,7 @@ class Pipeline(nx.DiGraph):
             "id": self.id,
             "name": self.name,
             "instantiated": self.instantiated,
+            "committed": self.committed,
             "description": self.description,
             "nodes": [
                 data["wrapped_node"].to_web_node().dict()
