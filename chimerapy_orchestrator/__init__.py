@@ -7,5 +7,3 @@ from chimerapy_orchestrator.registry.utils import (
 )
 
 from . import registered_nodes
-
-logging.disable(logging.DEBUG)

@@ -61,6 +61,13 @@ class ClusterRouter(APIRouter):
             description="Activate a pipeline",
         )
 
+        self.add_api_route(
+            "/actions-fsm",
+            self.get_actions_fsm,
+            methods=["GET"],
+            response_description="Get the actions FSM",
+        )
+
         self.add_api_route("/assign-workers/{pipeline_id}", self.assign_workers, methods=["POST"])
 
         self.add_api_route("/active-pipeline", self.get_active_pipeline, methods=["GET"])
@@ -109,7 +116,7 @@ class ClusterRouter(APIRouter):
         result = await self.manager.get_active_pipeline()
         return result.map(lambda p: p.to_web_json()).map_error(lambda err: get_mapping(err)).unwrap()
 
-    async def get_states_info(self) -> Dict[str, Any]:
+    async def get_actions_fsm(self) -> Dict[str, Any]:
         """Get the state of the cluster."""
         return self.manager.get_states_info()
 

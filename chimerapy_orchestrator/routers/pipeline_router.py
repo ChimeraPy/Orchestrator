@@ -133,6 +133,7 @@ class PipelineRouter(APIRouter):
 
     async def list_nodes(self) -> List[WebNode]:
         """Get all nodes."""
+        print('all_nodes', all_nodes())
         return [node.to_web_node() for node in all_nodes().values()]
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:

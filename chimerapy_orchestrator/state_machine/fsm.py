@@ -129,6 +129,7 @@ class FSM:
 
     def to_dict(self):
         return {
+            "current_state": self.current_state.name,
             "description": self.description,
             "initial_state": self.initial_state.name,
             "states": {state.name: state.dict() for state in self.states},

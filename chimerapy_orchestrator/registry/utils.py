@@ -58,6 +58,6 @@ class RegistersChimeraPyNode:
                 f"{name} is already registered as a ChimeraPy Node"
             )
 
-        wrapped_node = WrappedNode.from_node_class(node_class)
+        wrapped_node = WrappedNode.from_node_class(node_class, registry_name=name)
         self.registry[name] = wrapped_node
         return node_class

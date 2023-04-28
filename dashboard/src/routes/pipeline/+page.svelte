@@ -8,441 +8,441 @@
 	5. Accessibility improvements.
 -->
 <script lang="ts">
-	import {clusterClient, pipelineClient} from '$lib/services';
-	import {onMount} from 'svelte';
-	import {getStore} from '$lib/stores';
-	import {PipelineUtils} from '$lib/Services/PipelineUtils';
-	import {ClusterUtils} from '$lib/Services/ClusterUtils';
-	import {debounce} from '$lib/utils';
+    import {clusterClient, pipelineClient} from '$lib/services';
+    import {onMount} from 'svelte';
+    import {getStore} from '$lib/stores';
+    import {PipelineUtils} from '$lib/Services/PipelineUtils';
+    import {ClusterUtils} from '$lib/Services/ClusterUtils';
+    import {debounce} from '$lib/utils';
 
-	import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
-	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
-	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
-	import * as joint from 'jointjs';
-	import Modal from '$lib/Components/Modal/Modal.svelte';
-	import TabbedOrchestrationViews from '$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte';
+    import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
+    import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
+    import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
+    import * as joint from 'jointjs';
+    import Modal from '$lib/Components/Modal/Modal.svelte';
+    import TabbedOrchestrationViews from '$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte';
 
-	import type {ClusterState, NodeState, Pipeline} from '$lib/models';
-	import {CreatePipelineStages} from '$lib/models';
-	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
-	import {Icons} from '$lib/Icons';
+    import type {ClusterState, NodeState, Pipeline} from '$lib/models';
+    import {CreatePipelineStages} from '$lib/models';
+    import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
+    import {Icons} from '$lib/Icons';
 
-	import {Input, Label, Select, Spinner} from 'flowbite-svelte';
+    import {Input, Label, Select, Spinner} from 'flowbite-svelte';
 
-	let networkStore = getStore('network');
+    let networkStore = getStore('network');
 
-	let nodeCells: joint.dia.Cell[];
-	let pipelineName: string = '',
-		pipelineDescription: string = '';
-	let createPipelineStage: CreatePipelineStages = CreatePipelineStages.INACTIVE;
-	let pipelineCreationMessage: string = '';
-	export let modalOpen: boolean;
-	let confirmMessage = 'Create Pipeline';
-	let cancelMessage;
+    let nodeCells: joint.dia.Cell[];
+    let pipelineName: string = '',
+        pipelineDescription: string = '';
+    let createPipelineStage: CreatePipelineStages = CreatePipelineStages.INACTIVE;
+    let pipelineCreationMessage: string = '';
+    export let modalOpen: boolean;
+    let confirmMessage = 'Create Pipeline';
+    let cancelMessage;
 
-	let pipelines = [],
-		pipelineListItems = [];
-	let activePipeline: Pipeline | null = null;
-	let pipelineGraph: EditableDagViewer;
-	let tabbedOrchestrationViews: TabbedOrchestrationViews;
-	let infoModalContent: { title: string; content: any; alertMessage?: string } | null = null;
-	let selectedNode: NodeState | null = null;
-	let selectedWorkerId: string | null = null;
+    let pipelines = [],
+        pipelineListItems = [];
+    let activePipeline: Pipeline | null = null;
+    let pipelineGraph: EditableDagViewer;
+    let tabbedOrchestrationViews: TabbedOrchestrationViews;
+    let infoModalContent: { title: string; content: any; alertMessage?: string } | null = null;
+    let selectedNode: NodeState | null = null;
+    let selectedWorkerId: string | null = null;
 
-	let editorContainer: HTMLElement,
-		horizontalMenu: HTMLElement,
-		tabbedOrchestrationViewsContainer: HTMLElement;
-	let pipelineToActivate: Pipeline | null = null;
-	let workers = [];
+    let editorContainer: HTMLElement,
+        horizontalMenu: HTMLElement,
+        tabbedOrchestrationViewsContainer: HTMLElement;
+    let pipelineToActivate: Pipeline | null = null;
+    let workers = [];
 
-	$: {
-		modalOpen = createPipelineStage !== CreatePipelineStages.INACTIVE;
-		cancelMessage = [CreatePipelineStages.OK, CreatePipelineStages.ERROR].includes(
-			createPipelineStage
-		)
-			? 'Close'
-			: 'Cancel';
-		createPipelineStage === CreatePipelineStages.OK ? (activePipeline = null) : null;
-		[CreatePipelineStages.OK, CreatePipelineStages.ERROR].includes(createPipelineStage)
-			? fetchPipelines()
-			: null;
+    $: {
+        modalOpen = createPipelineStage !== CreatePipelineStages.INACTIVE;
+        cancelMessage = [CreatePipelineStages.OK, CreatePipelineStages.ERROR].includes(
+            createPipelineStage
+        )
+            ? 'Close'
+            : 'Cancel';
+        createPipelineStage === CreatePipelineStages.OK ? (activePipeline = null) : null;
+        [CreatePipelineStages.OK, CreatePipelineStages.ERROR].includes(createPipelineStage)
+            ? fetchPipelines()
+            : null;
 
-		workers = Object.values($networkStore?.workers || {})
-			.map((w) => {
-				return {
-					name: w.name,
-					value: w.id
-				};
-			})
-			.concat([{ name: 'No worker selected', value: null }]);
-	}
+        workers = Object.values($networkStore?.workers || {})
+            .map((w) => {
+                return {
+                    name: w.name,
+                    value: w.id
+                };
+            })
+            .concat([{name: 'No worker selected', value: null}]);
+    }
 
-	onMount(async () => {
-		await fetchPartBrowserNodes();
-		await fetchPipelines();
-		const observer = new ResizeObserver((entries) => {
-			entries.forEach((entry) => {
-				if (entry.target === editorContainer) {
-					pipelineGraph?.resize();
-				}
-				if (entry.target === tabbedOrchestrationViewsContainer) {
-					tabbedOrchestrationViews?.resize();
-				}
-			});
-		});
+    onMount(async () => {
+        await fetchPartBrowserNodes();
+        await fetchPipelines();
+        const observer = new ResizeObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.target === editorContainer) {
+                    pipelineGraph?.resize();
+                }
+                if (entry.target === tabbedOrchestrationViewsContainer) {
+                    tabbedOrchestrationViews?.resize();
+                }
+            });
+        });
 
-		observer.observe(editorContainer);
-		observer.observe(tabbedOrchestrationViewsContainer);
-	});
+        observer.observe(editorContainer);
+        observer.observe(tabbedOrchestrationViewsContainer);
+    });
 
-	// Part Browser
-	async function fetchPartBrowserNodes(): Promise<joint.dia.Graph> {
-		const result = await pipelineClient.getNodes();
-		nodeCells = PipelineUtils.pipelineNodeResultToJointCells(result);
-		nodeCells = nodeCells;
-	}
+    // Part Browser
+    async function fetchPartBrowserNodes(): Promise<joint.dia.Graph> {
+        const result = await pipelineClient.getNodes();
+        nodeCells = PipelineUtils.pipelineNodeResultToJointCells(result);
+        nodeCells = nodeCells;
+    }
 
-	const debouncedFetchNodes = debounce(fetchPartBrowserNodes);
+    const debouncedFetchNodes = debounce(fetchPartBrowserNodes);
 
-	// Pipeline Editor
-	async function addNodeToActivePipeline(cell) {
-		if (!activePipeline) {
-			infoModalContent = {
-				title: 'No active pipeline',
-				content: 'Please create or activate a pipeline to add nodes to it.'
-			};
-			return;
-		}
+    // Pipeline Editor
+    async function addNodeToActivePipeline(cell) {
+        if (!activePipeline) {
+            infoModalContent = {
+                title: 'No active pipeline',
+                content: 'Please create or activate a pipeline to add nodes to it.'
+            };
+            return;
+        }
 
-		const node = {
-			name: cell.prop('registryName'),
-			registry_name: cell.prop('registryName'),
-			id: cell.id
-		};
+        const node = {
+            name: cell.prop('registryName'),
+            registry_name: cell.prop('registryName'),
+            id: cell.id
+        };
 
-		const result = await pipelineClient.addNodeTo(activePipeline.id, node);
-		result.mapAsync(async (node) => {
-			await renderActivePipelineGraph();
-		});
-	}
+        const result = await pipelineClient.addNodeTo(activePipeline.id, node);
+        result.mapAsync(async (node) => {
+            await renderActivePipelineGraph();
+        });
+    }
 
-	async function removeNodeFromPipeline(cell) {
-		if (!activePipeline) {
-			return;
-		}
-		const nodeToRemove = activePipeline.nodes.find((n) => n.id === cell.id);
-		if (nodeToRemove) {
-			const result = await pipelineClient.removeNodeFrom(activePipeline.id, nodeToRemove);
-			result.mapError((error) => {
-				infoModalContent = {
-					title: 'Error removing node',
-					content: error
-				};
-			});
-			await renderActivePipelineGraph(true);
-		}
-	}
+    async function removeNodeFromPipeline(cell) {
+        if (!activePipeline) {
+            return;
+        }
+        const nodeToRemove = activePipeline.nodes.find((n) => n.id === cell.id);
+        if (nodeToRemove) {
+            const result = await pipelineClient.removeNodeFrom(activePipeline.id, nodeToRemove);
+            result.mapError((error) => {
+                infoModalContent = {
+                    title: 'Error removing node',
+                    content: error
+                };
+            });
+            await renderActivePipelineGraph(true);
+        }
+    }
 
-	async function fetchPipelines(rerender = true) {
-		const result = await pipelineClient.getPipelines();
+    async function fetchPipelines(rerender = true) {
+        const result = await pipelineClient.getPipelines();
 
-		pipelineListItems = PipelineUtils.pipelinesResultToEditableListItems(result, activePipeline);
-		pipelineListItems = pipelineListItems;
+        pipelineListItems = PipelineUtils.pipelinesResultToEditableListItems(result, activePipeline);
+        pipelineListItems = pipelineListItems;
 
-		result.map((p) => {
-			pipelines = p;
-		});
+        result.map((p) => {
+            pipelines = p;
+        });
 
-		if (!activePipeline) {
-			activePipeline = pipelines.length ? pipelines[0] : null;
-		} else {
-			activePipeline = pipelines.find((p) => p.id === activePipeline.id);
-		}
-		rerender ? await renderActivePipelineGraph() : null;
-	}
+        if (!activePipeline) {
+            activePipeline = pipelines.length ? pipelines[0] : null;
+        } else {
+            activePipeline = pipelines.find((p) => p.id === activePipeline.id);
+        }
+        rerender ? await renderActivePipelineGraph() : null;
+    }
 
-	const debouncedFetchPipelines = debounce(fetchPipelines);
+    const debouncedFetchPipelines = debounce(fetchPipelines);
 
-	async function renderActivePipelineGraph(clear = true) {
-		if (!activePipeline) {
-			return;
-		}
-		const result = await pipelineClient.getPipeline(activePipeline.id);
-		result.map((pipeline) => {
-			activePipeline = pipeline;
-		});
-		const cells = PipelineUtils.pipelineResultToJointCells(result);
-		pipelineGraph?.render(cells, clear);
-		pipelineGraph?.layout();
-	}
+    async function renderActivePipelineGraph(clear = true) {
+        if (!activePipeline) {
+            return;
+        }
+        const result = await pipelineClient.getPipeline(activePipeline.id);
+        result.map((pipeline) => {
+            activePipeline = pipeline;
+        });
+        const cells = PipelineUtils.pipelineResultToJointCells(result);
+        pipelineGraph?.render(cells, clear);
+        pipelineGraph?.layout();
+    }
 
-	async function addLinkToPipeline({ src, tgt, link }) {
-		const source = activePipeline?.nodes.find((n) => n.id === src?.id);
-		const target = activePipeline?.nodes.find((n) => n.id === tgt?.id);
+    async function addLinkToPipeline({src, tgt, link}) {
+        const source = activePipeline?.nodes.find((n) => n.id === src?.id);
+        const target = activePipeline?.nodes.find((n) => n.id === tgt?.id);
 
-		if (source && target) {
-			const result = await pipelineClient.addEdgeTo(activePipeline.id, source, target, link.id);
-			result.map((edge) => {
-				link.prop('id', edge.id);
-			});
-		}
+        if (source && target) {
+            const result = await pipelineClient.addEdgeTo(activePipeline.id, source, target, link.id);
+            result.map((edge) => {
+                link.prop('id', edge.id);
+            });
+        }
 
-		await fetchPipelines(false);
-	}
+        await fetchPipelines(false);
+    }
 
-	async function removeLinkFromPipeline({ src, tgt, link }) {
-		const source = activePipeline?.nodes.find((n) => n.id === src?.id);
-		const target = activePipeline?.nodes.find((n) => n.id === tgt?.id);
+    async function removeLinkFromPipeline({src, tgt, link}) {
+        const source = activePipeline?.nodes.find((n) => n.id === src?.id);
+        const target = activePipeline?.nodes.find((n) => n.id === tgt?.id);
 
-		if (source && target) {
-			const result = await pipelineClient.removeEdgeFrom(
-				activePipeline.id,
-				source,
-				target,
-				link.id
-			);
-			result
-				.map((edge) => {
-					pipelineGraph?.removeCell(link.id);
-				})
-				.mapError((error) => {
-					infoModalContent = {
-						title: 'Error removing edge',
-						content: error
-					};
-				});
-			await fetchPipelines(false);
-		}
-	}
+        if (source && target) {
+            const result = await pipelineClient.removeEdgeFrom(
+                activePipeline.id,
+                source,
+                target,
+                link.id
+            );
+            result
+                .map((edge) => {
+                    pipelineGraph?.removeCell(link.id);
+                })
+                .mapError((error) => {
+                    infoModalContent = {
+                        title: 'Error removing edge',
+                        content: error
+                    };
+                });
+            await fetchPipelines(false);
+        }
+    }
 
-	function highlightPipelineEdge(link: joint.dia.Link) {
-		const otherCells = activePipeline?.edges
-			.filter((e) => {
-				return e.id !== link.id;
-			})
-			.concat(activePipeline?.nodes);
+    function highlightPipelineEdge(link: joint.dia.Link) {
+        const otherCells = activePipeline?.edges
+            .filter((e) => {
+                return e.id !== link.id;
+            })
+            .concat(activePipeline?.nodes);
 
-		otherCells.forEach((l) => {
-			pipelineGraph?.setCellStrokeWidth(l.id, 2);
-		});
+        otherCells.forEach((l) => {
+            pipelineGraph?.setCellStrokeWidth(l.id, 2);
+        });
 
-		pipelineGraph?.setCellStrokeWidth(link.id, 4);
-	}
+        pipelineGraph?.setCellStrokeWidth(link.id, 4);
+    }
 
-	function highlightPipelineNode(node: joint.dia.Element) {
-		selectedWorkerId = null;
-		const otherCells = activePipeline?.nodes
-			.filter((n) => {
-				return n.id !== node.id;
-			})
-			.concat(activePipeline?.edges);
+    function highlightPipelineNode(node: joint.dia.Element) {
+        selectedWorkerId = null;
+        const otherCells = activePipeline?.nodes
+            .filter((n) => {
+                return n.id !== node.id;
+            })
+            .concat(activePipeline?.edges);
 
-		const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
-		if (pipelineNode) {
-			selectedNode = pipelineNode;
-			console.log(selectedNode);
-			if (selectedNode.worker_id) {
-				const foundWorker = workers.find((w) => w.value === selectedNode.worker_id);
+        const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
+        if (pipelineNode) {
+            selectedNode = pipelineNode;
+            console.log(selectedNode);
+            if (selectedNode.worker_id) {
+                const foundWorker = workers.find((w) => w.value === selectedNode.worker_id);
 
-				if (foundWorker) {
-					selectedWorkerId = foundWorker.value;
-				}
-			}
-		}
+                if (foundWorker) {
+                    selectedWorkerId = foundWorker.value;
+                }
+            }
+        }
 
-		otherCells.forEach((n) => {
-			pipelineGraph?.setCellStrokeWidth(n.id, 2);
-		});
+        otherCells.forEach((n) => {
+            pipelineGraph?.setCellStrokeWidth(n.id, 2);
+        });
 
-		pipelineGraph?.setCellStrokeWidth(node.id, 4);
-	}
+        pipelineGraph?.setCellStrokeWidth(node.id, 4);
+    }
 
-	function clearPipelineHighlights() {
-		activePipeline?.edges.forEach((l) => {
-			pipelineGraph?.setCellStrokeWidth(l.id, 2);
-		});
+    function clearPipelineHighlights() {
+        activePipeline?.edges.forEach((l) => {
+            pipelineGraph?.setCellStrokeWidth(l.id, 2);
+        });
 
-		activePipeline?.nodes.forEach((n) => {
-			pipelineGraph?.setCellStrokeWidth(n.id, 2);
-		});
-		selectedNode = null;
-		selectedWorkerId = null;
-	}
+        activePipeline?.nodes.forEach((n) => {
+            pipelineGraph?.setCellStrokeWidth(n.id, 2);
+        });
+        selectedNode = null;
+        selectedWorkerId = null;
+    }
 
-	function showNodeInfo(node) {
-		const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
-		if (nodeDetails) {
-			infoModalContent = {
-				title: nodeDetails.name,
-				content: nodeDetails
-			};
-		}
-	}
+    function showNodeInfo(node) {
+        const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
+        if (nodeDetails) {
+            infoModalContent = {
+                title: nodeDetails.name,
+                content: nodeDetails
+            };
+        }
+    }
 
-	function linkExistsInActivePipeline(linkView: joint.dia.LinkView, paper: joint.dia.Paper) {
-		const link = linkView.model;
-		const source = link.get('source');
-		const target = link.get('target');
-		const sourceNode = paper.findViewByModel(source.id);
-		const targetNode = paper.findViewByModel(target.id);
-		const sourceNodeModel = sourceNode.model;
-		const targetNodeModel = targetNode.model;
+    function linkExistsInActivePipeline(linkView: joint.dia.LinkView, paper: joint.dia.Paper) {
+        const link = linkView.model;
+        const source = link.get('source');
+        const target = link.get('target');
+        const sourceNode = paper.findViewByModel(source.id);
+        const targetNode = paper.findViewByModel(target.id);
+        const sourceNodeModel = sourceNode.model;
+        const targetNodeModel = targetNode.model;
 
-		const linkExists = activePipeline?.edges.some(
-			(e) => e.source === sourceNodeModel.id && e.sink === targetNodeModel.id
-		);
-		return !linkExists;
-	}
+        const linkExists = activePipeline?.edges.some(
+            (e) => e.source === sourceNodeModel.id && e.sink === targetNodeModel.id
+        );
+        return !linkExists;
+    }
 
-	// Pipeline Creator/ Info List
-	function showPipelineModal() {
-		createPipelineStage = CreatePipelineStages.ACTIVE;
-	}
+    // Pipeline Creator/ Info List
+    function showPipelineModal() {
+        createPipelineStage = CreatePipelineStages.ACTIVE;
+    }
 
-	async function requestPipelineCreation() {
-		if (createPipelineStage === CreatePipelineStages.CREATING) {
-			return;
-		}
+    async function requestPipelineCreation() {
+        if (createPipelineStage === CreatePipelineStages.CREATING) {
+            return;
+        }
 
-		createPipelineStage = CreatePipelineStages.CREATING;
+        createPipelineStage = CreatePipelineStages.CREATING;
 
-		const result = await pipelineClient.createPipeline(pipelineName, pipelineDescription);
+        const result = await pipelineClient.createPipeline(pipelineName, pipelineDescription);
 
-		result
-			.map((pipeline) => {
-				createPipelineStage = CreatePipelineStages.OK;
-				pipelineCreationMessage = JSON.stringify(pipeline, null, 2);
-			})
-			.mapError((error) => {
-				createPipelineStage = CreatePipelineStages.ERROR;
-				pipelineCreationMessage = JSON.stringify(error, null, 2);
-			});
+        result
+            .map((pipeline) => {
+                createPipelineStage = CreatePipelineStages.OK;
+                pipelineCreationMessage = JSON.stringify(pipeline, null, 2);
+            })
+            .mapError((error) => {
+                createPipelineStage = CreatePipelineStages.ERROR;
+                pipelineCreationMessage = JSON.stringify(error, null, 2);
+            });
 
-		pipelineName = '';
-		pipelineDescription = '';
-	}
+        pipelineName = '';
+        pipelineDescription = '';
+    }
 
-	async function requestPipelineDeletion(item) {
-		await pipelineClient.removePipeline(item.id);
-		if (activePipeline?.id === item.id) {
-			activePipeline = null;
-			pipelineGraph?.clearGraph();
-		}
+    async function requestPipelineDeletion(item) {
+        await pipelineClient.removePipeline(item.id);
+        if (activePipeline?.id === item.id) {
+            activePipeline = null;
+            pipelineGraph?.clearGraph();
+        }
 
-		fetchPipelines();
-	}
+        fetchPipelines();
+    }
 
-	async function requestPipelineInfo(item) {
-		const requestedPipeline = pipelines.find((p) => p.id === item.id);
-		(await pipelineClient.getPipeline(requestedPipeline.id)).map((pipeline) => {
-			infoModalContent = {
-				title: pipeline.name,
-				content: pipeline
-			};
-		});
-	}
+    async function requestPipelineInfo(item) {
+        const requestedPipeline = pipelines.find((p) => p.id === item.id);
+        (await pipelineClient.getPipeline(requestedPipeline.id)).map((pipeline) => {
+            infoModalContent = {
+                title: pipeline.name,
+                content: pipeline
+            };
+        });
+    }
 
-	function activatePipeline(item) {
-		pipelineListItems = pipelineListItems.map((i) => {
-			i.active = i.id === item.id;
-			return i;
-		});
-		if (activePipeline && activePipeline.id !== item.id) {
-			pipelineGraph?.clearGraph();
-		}
-		activePipeline = pipelines.find((p) => p.id === item.id);
-		renderActivePipelineGraph();
-	}
+    function activatePipeline(item) {
+        pipelineListItems = pipelineListItems.map((i) => {
+            i.active = i.id === item.id;
+            return i;
+        });
+        if (activePipeline && activePipeline.id !== item.id) {
+            pipelineGraph?.clearGraph();
+        }
+        activePipeline = pipelines.find((p) => p.id === item.id);
+        renderActivePipelineGraph();
+    }
 
-	function getNetworkTitle(clusterState: ClusterState | null) {
-		if (!clusterState) {
-			return 'No active network';
-		}
-		return `${clusterState.id}#${clusterState.ip}`;
-	}
+    function getNetworkTitle(clusterState: ClusterState | null) {
+        if (!clusterState) {
+            return 'No active network';
+        }
+        return `${clusterState.id}#${clusterState.ip}`;
+    }
 
-	function displayWorkerInfo(worker) {
-		const workerDetails = Object.values($networkStore?.workers || []).find(
-			(w) => w.id === worker.id
-		);
-		if (workerDetails) {
-			infoModalContent = {
-				title: workerDetails.name,
-				content: workerDetails
-			};
-		}
-	}
+    function displayWorkerInfo(worker) {
+        const workerDetails = Object.values($networkStore?.workers || []).find(
+            (w) => w.id === worker.id
+        );
+        if (workerDetails) {
+            infoModalContent = {
+                title: workerDeftails.name,
+                content: workerDetails
+            };
+        }
+    }
 
-	async function displayCommitIntent() {
-		if (!activePipeline) return;
-		(await clusterClient.assignWorkers(activePipeline))
-				.mapError((error) => {
-					infoModalContent = {
-						title: 'Error',
-						content: error
-					};
-				})
-				.mapAsync( async (result) => {
-					(await clusterClient.activatePipeline(result.id))
-							.map(result => pipelineToActivate = result)
-							.mapError((error) => {
-								infoModalContent = {
-									title: 'Error',
-									content: error
-								};
-							});
-				});
+    async function displayActivationIntent() {
+        if (!activePipeline) return;
+        const result = await clusterClient.assignWorkers(activePipeline);
+        await result.mapError((error) => {
+            infoModalContent = {
+                title: 'Error',
+                content: error
+            };
+        })
+            .mapAsync(async (result) => {
+                (await clusterClient.activatePipeline(result.id))
+                    .map(result => pipelineToActivate = result)
+                    .mapError((error) => {
+                        infoModalContent = {
+                            title: 'Error',
+                            content: error
+                        };
+                    });
+            });
 
-	}
+    }
 
-	function onWorkerIdSelectionChange() {
-		if (!selectedNode) return;
-		selectedNode.worker_id = selectedWorkerId;
-		selectedNode = selectedNode;
-	}
+    function onWorkerIdSelectionChange() {
+        if (!selectedNode) return;
+        selectedNode.worker_id = selectedWorkerId;
+        selectedNode = selectedNode;
+    }
 </script>
 
 <div class="h-full flex">
-	<div class="w-1/5 flex flex-col border-r-2 border-gray-400">
-		<div class="flex flex-col flex-1 overflow-hidden">
-			<div>
-				<HorizontalMenu
-					on:refresh={debouncedFetchNodes}
-					title="Nodes"
-					icons={[{ type: Icons.refresh, tooltip: 'Refresh nodes' }]}
-					backgroundClass="bg-blue-600"
-				/>
-			</div>
-			<div class="flex-1 bg-[#F3F7F6] overflow-hidden">
-				<PartBrowser
-					on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
-					cells={nodeCells}
-				/>
-			</div>
-		</div>
-		<div class="flex flex-col flex-1">
-			<div>
-				<HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600" />
-			</div>
-			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-				<EditableList
-					editable={false}
-					items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}
-					on:info={(event) => displayWorkerInfo(event.detail)}
-				/>
-			</div>
-		</div>
-	</div>
-	<div class="flex flex-col w-3/5 h-full bg-indigo-100 border-r-2 border-gray-400">
-		<div bind:this={editorContainer} class="flex-1 flex h-0.5 flex-col overflow-hidden">
-			<div>
-				<HorizontalMenu
-					bind:this={horizontalMenu}
-					on:magnify={() => pipelineGraph?.zoomIn()}
-					on:reduce={() => pipelineGraph?.zoomOut()}
-					on:refresh={() => pipelineGraph?.scaleContentToFit()}
-					on:bolt={() => displayCommitIntent()}
-					icons={[
+    <div class="w-1/5 flex flex-col border-r-2 border-gray-400">
+        <div class="flex flex-col flex-1 overflow-hidden">
+            <div>
+                <HorizontalMenu
+                        on:refresh={debouncedFetchNodes}
+                        title="Nodes"
+                        icons={[{ type: Icons.refresh, tooltip: 'Refresh nodes' }]}
+                        backgroundClass="bg-blue-600"
+                />
+            </div>
+            <div class="flex-1 bg-[#F3F7F6] overflow-hidden">
+                <PartBrowser
+                        on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
+                        cells={nodeCells}
+                />
+            </div>
+        </div>
+        <div class="flex flex-col flex-1">
+            <div>
+                <HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600"/>
+            </div>
+            <div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+                <EditableList
+                        editable={false}
+                        items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}
+                        on:info={(event) => displayWorkerInfo(event.detail)}
+                />
+            </div>
+        </div>
+    </div>
+    <div class="flex flex-col w-3/5 h-full bg-indigo-100 border-r-2 border-gray-400">
+        <div bind:this={editorContainer} class="flex-1 flex h-0.5 flex-col overflow-hidden">
+            <div>
+                <HorizontalMenu
+                        bind:this={horizontalMenu}
+                        on:magnify={() => pipelineGraph?.zoomIn()}
+                        on:reduce={() => pipelineGraph?.zoomOut()}
+                        on:refresh={() => pipelineGraph?.scaleContentToFit()}
+                        on:bolt={() => displayActivationIntent()}
+                        icons={[
 						{
 							type: Icons.magnify,
 							tooltip: 'Zoom in',
@@ -464,149 +464,150 @@
 							disabled: !activePipeline
 						}
 					]}
-					title="Pipeline Editor"
-				/>
-			</div>
-			<div class="flex-1 overflow-hidden">
-				<EditableDagViewer
-					bind:this={pipelineGraph}
-					additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
-					on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
-					on:linkAdd={(event) => addLinkToPipeline(event.detail)}
-					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
-					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
-					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-					on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
-					on:blankClick={(event) => clearPipelineHighlights()}
-				/>
-			</div>
-		</div>
-		<div class="flex-1 flex flex-col h-0.5" bind:this={tabbedOrchestrationViewsContainer}>
-			<TabbedOrchestrationViews
-				bind:this={tabbedOrchestrationViews}
-				{pipelineToActivate}
-				committedPipeline={null}
-			/>
-		</div>
-	</div>
-	<div class="w-1/5 flex flex-col bg-indigo-50">
-		<div class="flex flex-col flex-1 overflow-hidden">
-			<div>
-				<HorizontalMenu
-					title="Pipelines"
-					backgroundClass="bg-blue-600"
-					icons={[
+                        title="Pipeline Editor"
+                />
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <EditableDagViewer
+                        bind:this={pipelineGraph}
+                        additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
+                        on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
+                        on:linkAdd={(event) => addLinkToPipeline(event.detail)}
+                        on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
+                        on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
+                        on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
+                        on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
+                        on:blankClick={(event) => clearPipelineHighlights()}
+                />
+            </div>
+        </div>
+        <div class="flex-1 flex flex-col h-0.5" bind:this={tabbedOrchestrationViewsContainer}>
+            <TabbedOrchestrationViews
+                    bind:this={tabbedOrchestrationViews}
+                    {pipelineToActivate}
+                    committedPipeline={null}
+                    on:activatePipeline={displayActivationIntent}
+            />
+        </div>
+    </div>
+    <div class="w-1/5 flex flex-col bg-indigo-50">
+        <div class="flex flex-col flex-1 overflow-hidden">
+            <div>
+                <HorizontalMenu
+                        title="Pipelines"
+                        backgroundClass="bg-blue-600"
+                        icons={[
 						{ type: Icons.refresh, tooltip: 'Refresh Pipelines' },
 						{ type: Icons.add, tooltip: 'Create a new Pipeline' }
 					]}
-					on:add={showPipelineModal}
-					on:refresh={debouncedFetchPipelines}
-				/>
-			</div>
-			<div class="flex-1 overflow-hidden">
-				<EditableList
-					items={pipelineListItems}
-					on:info={(event) => requestPipelineInfo(event.detail)}
-					on:click={(event) => activatePipeline(event.detail)}
-					on:delete={(event) => requestPipelineDeletion(event.detail)}
-				/>
-			</div>
-		</div>
-		<div class="flex flex-col flex-1">
-			<div>
-				<HorizontalMenu
-					title={selectedNode?.name || 'Selected Node'}
-					backgroundClass="bg-blue-600"
-				/>
-			</div>
-			<div class="flex-1 flex-col justify-center items-center bg-[#F3F7F6]">
-				{#if selectedNode}
-					{#if workers.length > 0}
-						<div class="p-2">
-							<Label>Select a worker</Label>
-							<Select
-								mt-2
-								items={workers}
-								bind:value={selectedWorkerId}
-								on:change={onWorkerIdSelectionChange}
-							/>
-						</div>
-					{:else}
-						<p>No workers available</p>
-					{/if}
-				{/if}
-				<p>Selected Node attributes</p>
-			</div>
-		</div>
-	</div>
+                        on:add={showPipelineModal}
+                        on:refresh={debouncedFetchPipelines}
+                />
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <EditableList
+                        items={pipelineListItems}
+                        on:info={(event) => requestPipelineInfo(event.detail)}
+                        on:click={(event) => activatePipeline(event.detail)}
+                        on:delete={(event) => requestPipelineDeletion(event.detail)}
+                />
+            </div>
+        </div>
+        <div class="flex flex-col flex-1">
+            <div>
+                <HorizontalMenu
+                        title={selectedNode?.name || 'Selected Node'}
+                        backgroundClass="bg-blue-600"
+                />
+            </div>
+            <div class="flex-1 flex-col justify-center items-center bg-[#F3F7F6]">
+                {#if selectedNode}
+                    {#if workers.length > 0}
+                        <div class="p-2">
+                            <Label>Select a worker</Label>
+                            <Select
+                                    mt-2
+                                    items={workers}
+                                    bind:value={selectedWorkerId}
+                                    on:change={onWorkerIdSelectionChange}
+                            />
+                        </div>
+                    {:else}
+                        <p>No workers available</p>
+                    {/if}
+                {/if}
+                <p>Selected Node attributes</p>
+            </div>
+        </div>
+    </div>
 </div>
 <!-- Creation Modal -->
 <Modal
-	type="confirm"
-	title="Pipeline Creator"
-	bind:modalOpen
-	disableConfirm={!pipelineName}
-	autoclose={false}
-	{confirmMessage}
-	{cancelMessage}
-	on:confirm={requestPipelineCreation}
-	on:cancel={() => (createPipelineStage = CreatePipelineStages.INACTIVE)}
+        type="confirm"
+        title="Pipeline Creator"
+        bind:modalOpen
+        disableConfirm={!pipelineName}
+        autoclose={false}
+        {confirmMessage}
+        {cancelMessage}
+        on:confirm={requestPipelineCreation}
+        on:cancel={() => (createPipelineStage = CreatePipelineStages.INACTIVE)}
 >
-	<div slot="content">
-		{#if createPipelineStage === CreatePipelineStages.ERROR}
-			<div class="text-red-500">
-				<h3 class="text-xl font-medium text-red-900 p-0">Error</h3>
-				<pre>{pipelineCreationMessage}</pre>
-			</div>
-		{:else if createPipelineStage === CreatePipelineStages.OK}
-			<div>
-				<h3 class="text-xl font-medium text-green-900 p-0">Success</h3>
-				<pre>{pipelineCreationMessage}</pre>
-			</div>
-		{:else}
-			<h3 class="text-xl font-medium text-gray-900 p-0">
-				{#if createPipelineStage === CreatePipelineStages.CREATING}
-					<Spinner size={4} color="green" />
-				{/if}
-				{createPipelineStage === CreatePipelineStages.CREATING ? 'Creating' : 'Create'} a New Pipeline
-			</h3>
-			<br />
-			<Label class="space-y-2">
-				<span>Pipeline Name</span>
-				<Input
-					bind:value={pipelineName}
-					type="text"
-					name="pipeline"
-					placeholder="Be creative here"
-					required
-				/>
-			</Label>
-			<br />
-			<Label class="space-y-2">
-				<span>Pipeline Description(optional)</span>
-				<Input
-					bind:value={pipelineDescription}
-					type="text"
-					name="pipeline"
-					placeholder="Be creative here"
-				/>
-			</Label>
-		{/if}
-	</div>
+    <div slot="content">
+        {#if createPipelineStage === CreatePipelineStages.ERROR}
+            <div class="text-red-500">
+                <h3 class="text-xl font-medium text-red-900 p-0">Error</h3>
+                <pre>{pipelineCreationMessage}</pre>
+            </div>
+        {:else if createPipelineStage === CreatePipelineStages.OK}
+            <div>
+                <h3 class="text-xl font-medium text-green-900 p-0">Success</h3>
+                <pre>{pipelineCreationMessage}</pre>
+            </div>
+        {:else}
+            <h3 class="text-xl font-medium text-gray-900 p-0">
+                {#if createPipelineStage === CreatePipelineStages.CREATING}
+                    <Spinner size={4} color="green"/>
+                {/if}
+                {createPipelineStage === CreatePipelineStages.CREATING ? 'Creating' : 'Create'} a New Pipeline
+            </h3>
+            <br/>
+            <Label class="space-y-2">
+                <span>Pipeline Name</span>
+                <Input
+                        bind:value={pipelineName}
+                        type="text"
+                        name="pipeline"
+                        placeholder="Be creative here"
+                        required
+                />
+            </Label>
+            <br/>
+            <Label class="space-y-2">
+                <span>Pipeline Description(optional)</span>
+                <Input
+                        bind:value={pipelineDescription}
+                        type="text"
+                        name="pipeline"
+                        placeholder="Be creative here"
+                />
+            </Label>
+        {/if}
+    </div>
 </Modal>
 
 <!-- Info Modal -->
 <Modal
-	type="alert"
-	title={infoModalContent?.title}
-	bind:modalOpen={infoModalContent}
-	autoclose={true}
-	alertMessage={infoModalContent?.alertMessage || 'Close'}
-	on:cancel={() => (infoModalContent = null)}
-	on:alert={() => (infoModalContent = null)}
+        type="alert"
+        title={infoModalContent?.title}
+        bind:modalOpen={infoModalContent}
+        autoclose={true}
+        alertMessage={infoModalContent?.alertMessage || 'Close'}
+        on:cancel={() => (infoModalContent = null)}
+        on:alert={() => (infoModalContent = null)}
 >
-	<div slot="content">
-		<h3 class="text-xl font-medium text-green-900 p-2">{infoModalContent.title}</h3>
-		<pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
-	</div>
+    <div slot="content">
+        <h3 class="text-xl font-medium text-green-900 p-2">{infoModalContent.title}</h3>
+        <pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
+    </div>
 </Modal>

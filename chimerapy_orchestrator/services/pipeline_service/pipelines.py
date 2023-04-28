@@ -13,6 +13,7 @@ class Pipelines:
 
     def get_pipeline(self, pipeline_id: str, throw: bool = True) -> Optional[Pipeline]:
         """Get a pipeline_service by its ID."""
+
         if pipeline_id not in self._pipelines:
             if throw:
                 raise ValueError(f"Pipeline {pipeline_id} does not exist")

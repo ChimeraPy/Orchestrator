@@ -12,4 +12,8 @@ export class ClusterUtils {
 			};
 		});
 	}
+
+	static clusterFSMActionsToIcons() {
+
+	}
 }

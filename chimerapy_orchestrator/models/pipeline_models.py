@@ -101,6 +101,10 @@ class WrappedNode(BaseModel):
         description="Whether the node has been committed to a worker.",
     )
 
+    registry_name: str = Field(
+        ..., description="The name of the node in the registry."
+    )
+
     @property
     def name(self):
         return self.instance.name if self.instance else self.NodeClass.__name__
@@ -120,23 +124,23 @@ class WrappedNode(BaseModel):
 
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
-        return WrappedNode(NodeClass=self.NodeClass, kwargs=kwargs)
+        return WrappedNode(NodeClass=self.NodeClass, registry_name=self.registry_name, kwargs=kwargs)
 
     @classmethod
     def from_node_class(
-        cls, NodeClass: Type[Node], kwargs=None
+        cls, NodeClass: Type[Node], registry_name, kwargs=None
     ) -> "WrappedNode":
         if kwargs is None:
             kwargs = {}
 
-        wrapped_node = cls(NodeClass=NodeClass, kwargs=kwargs)
+        wrapped_node = cls(NodeClass=NodeClass, registry_name=registry_name, ekwargs=kwargs)
 
         return wrapped_node
 
     def to_web_node(self, name: str = None) -> WebNode:
         return WebNode(
             name=name or self.NodeClass.__name__,
-            registry_name=self.NodeClass.__name__,
+            registry_name=self.registry_name or self.NodeClass.__name__,
             id=self.id,
             type=get_node_type(self),
             worker_id=self.worker_id,

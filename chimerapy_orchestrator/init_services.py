@@ -27,7 +27,6 @@ def initialize():
     available_services["cluster_manager"] = cluster_manager
     available_services["pipelines"] = pipelines
     if config.mode == "dev":
-
         for j in range(config.num_dev_workers):
             worker = create_dev_worker(f"DevWorker-{j+1}")
             available_services["workers"].append(worker)

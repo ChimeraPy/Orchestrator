@@ -43,6 +43,5 @@ class Orchestrator(FastAPI):
 def create_orchestrator_app() -> "Orchestrator":
     with concurrent.futures.ThreadPoolExecutor() as pool:
         pool.submit(initialize)
-
     orchestrator = Orchestrator(lifespan=lifespan)
     return orchestrator

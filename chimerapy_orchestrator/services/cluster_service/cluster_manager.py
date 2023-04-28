@@ -126,7 +126,7 @@ class ClusterManager(FSM):
             return Err(StateTransitionError("Pipeline already activated."))
 
         pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
-
+        print(pipeline)
         if pipeline is None:
             return Err(StateTransitionError(f"Pipeline with id {pipeline_id} does not exist."))
 
@@ -175,8 +175,11 @@ class ClusterManager(FSM):
             return Err(StateTransitionError("Cluster is transitioning."))
 
         pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
-        if not pipeline:
+        if pipeline is None:
             return Err(StateTransitionError(f"Pipeline with id {pipeline_id} does not exist."))
+
+        if len(list(pipeline.nodes)) == 0:
+            return Err(StateTransitionError(f"Pipeline {pipeline_id} does not have any nodes."))
 
         for _, data in pipeline.nodes(data=True):
             node = data["wrapped_node"]
@@ -204,5 +207,4 @@ class ClusterManager(FSM):
     def get_states_info(self):
         """Return the FSM states info."""
         info = self.to_dict()
-        info["current_state"] = self.current_state.name
         return info

@@ -28,12 +28,11 @@ def all_nodes() -> Dict[str, "WrappedNode"]:
 
 def get_node_type(wrapped_node: "WrappedNode") -> NodeType:
     """Returns the type of a WrappedNode."""
-
-    if wrapped_node.NodeClass.__name__ in source_nodes:
+    if wrapped_node.registry_name in source_nodes:
         return NodeType.SOURCE
-    elif wrapped_node.NodeClass.__name__ in sink_nodes:
+    elif wrapped_node.registry_name in sink_nodes:
         return NodeType.SINK
-    elif wrapped_node.NodeClass.__name__ in step_nodes:
+    elif wrapped_node.registry_name in step_nodes:
         return NodeType.STEP
     else:
         raise ValueError(f"{wrapped_node} is not a registered ChimeraPy Node")

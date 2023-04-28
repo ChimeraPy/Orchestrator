@@ -1,5 +1,5 @@
 import type { Result } from 'ts-monads/lib/Result';
-import type { PipelineNode, Pipeline, Edge, ResponseError, ClusterState } from '../models';
+import type { PipelineNode, Pipeline, Edge, ResponseError, ClusterState, ActionsFSM } from '../models';
 import { Err, Ok } from 'ts-monads';
 
 class Client {
@@ -193,6 +193,13 @@ export class ClusterClient extends Client {
 
 		return response;
 	}
+
+	async getActionsFSM(): Promise<Result<ActionsFSM, ResponseError>> {
+		const prefix = '/actions-fsm';
+		const response = await this._fetch<ActionsFSM>(prefix, { method: 'GET' });
+
+		return response;
+	}
 }
 
 export class NetworkClient extends Client {
@@ -207,7 +214,7 @@ export class NetworkClient extends Client {
 		if (res.ok) {
 			return new Ok(await res.json());
 		} else {
-			return new Err({ message: res.statusText, code: res.status });
+			return new Err({ message: res.statusText, code: res.status,  });
 		}
 	}
 
