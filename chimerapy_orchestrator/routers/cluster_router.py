@@ -1,7 +1,7 @@
 import asyncio
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 
 from chimerapy_orchestrator.models.cluster_models import (
@@ -10,10 +10,10 @@ from chimerapy_orchestrator.models.cluster_models import (
     UpdateMessageType,
 )
 from chimerapy_orchestrator.models.pipeline_models import WebNode
+from chimerapy_orchestrator.routers.error_mappers import get_mapping
 from chimerapy_orchestrator.services.cluster_service import (
     ClusterManager,
 )
-from chimerapy_orchestrator.routers.error_mappers import get_mapping
 
 
 async def relay(q: asyncio.Queue, ws: WebSocket, is_sentinel) -> None:
@@ -78,15 +78,45 @@ class ClusterRouter(APIRouter):
         )
 
         self.add_api_route(
+            "/record",
+            self.record_route,
+            methods=["POST"],
+            response_description="Record a pipeline",
+            description="Record a pipeline",
+        )
+
+        self.add_api_route(
+            "/stop",
+            self.stop_route,
+            methods=["POST"],
+            response_description="Stop a pipeline",
+            description="Stop a pipeline",
+        )
+
+        self.add_api_route(
+            "/reset",
+            self.reset_route,
+            methods=["POST"],
+            response_description="Reset a pipeline",
+            description="Reset a pipeline",
+        )
+
+        self.add_api_route(
             "/actions-fsm",
             self.get_actions_fsm,
             methods=["GET"],
             response_description="Get the actions FSM",
         )
 
-        self.add_api_route("/assign-workers/{pipeline_id}", self.assign_workers, methods=["POST"])
+        self.add_api_route(
+            "/assign-workers/{pipeline_id}",
+            self.assign_workers,
+            methods=["POST"],
+        )
 
-        self.add_api_route("/active-pipeline", self.get_active_pipeline, methods=["GET"])
+        self.add_api_route(
+            "/active-pipeline", self.get_active_pipeline, methods=["GET"]
+        )
 
         # Websocket routes
         self.add_websocket_route(
@@ -96,32 +126,65 @@ class ClusterRouter(APIRouter):
 
     async def commit_route(self):
         """Commit a pipeline to the cluster."""
-        pipeline = await self.manager.commit_pipeline()
+        pipeline = await self.manager.commit()
 
-        return pipeline.map(lambda p: p.to_web_json()).map_error(get_mapping).unwrap()
+        return (
+            pipeline.map(lambda p: p.to_web_json())
+            .map_error(get_mapping)
+            .unwrap()
+        )
 
     async def preview_route(self):
         """Preview a pipeline."""
         pipeline = await self.manager.preview()
 
-        return pipeline.map(lambda p: p.to_web_json()).map_error(get_mapping).unwrap()
+        return (
+            pipeline.map(lambda p: p.to_web_json())
+            .map_error(get_mapping)
+            .unwrap()
+        )
+
+    async def record_route(self):
+        """Record a pipeline."""
+        pipeline = await self.manager.record()
+
+        return (
+            pipeline.map(lambda p: p.to_web_json())
+            .map_error(get_mapping)
+            .unwrap()
+        )
 
     async def stop_route(self):
         """Stop a pipeline."""
         pipeline = await self.manager.stop()
 
-        return pipeline.map(lambda p: p.to_web_json()).map_error(get_mapping).unwrap()
+        return (
+            pipeline.map(lambda p: p.to_web_json())
+            .map_error(get_mapping)
+            .unwrap()
+        )
 
-    async def assign_workers(self, pipeline_id: str, nodes: List[WebNode]) -> Dict[str, Any]:
+    async def reset_route(self):
+        pipeline = await self.manager.reset()
+
+        return (
+            pipeline.map(lambda p: p.to_web_json())
+            .map_error(get_mapping)
+            .unwrap()
+        )
+
+    async def assign_workers(
+        self, pipeline_id: str, nodes: List[WebNode]
+    ) -> Dict[str, Any]:
         """Assign workers to the given nodes."""
-        node_to_worker_ids = {
-            node.id: node.worker_id for node in nodes
-        }
+        node_to_worker_ids = {node.id: node.worker_id for node in nodes}
 
-        return self.manager \
-            .assign_workers(pipeline_id, node_to_worker_ids) \
-            .map(lambda pipeline: pipeline.to_web_json()) \
-            .map_error(get_mapping).unwrap()
+        return (
+            self.manager.assign_workers(pipeline_id, node_to_worker_ids)
+            .map(lambda pipeline: pipeline.to_web_json())
+            .map_error(get_mapping)
+            .unwrap()
+        )
 
     async def get_manager_state(self) -> ClusterState:
         """Get the current state of the cluster."""
@@ -130,12 +193,20 @@ class ClusterRouter(APIRouter):
     async def activate_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Activate a pipeline."""
         result = await self.manager.activate_pipeline(pipeline_id)
-        return result.map(lambda p: p.to_web_json()).map_error(lambda err: get_mapping(err)).unwrap()
+        return (
+            result.map(lambda p: p.to_web_json())
+            .map_error(lambda err: get_mapping(err))
+            .unwrap()
+        )
 
     async def get_active_pipeline(self) -> Dict[str, Any]:
         """Get the active pipeline."""
         result = await self.manager.get_active_pipeline()
-        return result.map(lambda p: p.to_web_json()).map_error(lambda err: get_mapping(err)).unwrap()
+        return (
+            result.map(lambda p: p.to_web_json())
+            .map_error(lambda err: get_mapping(err))
+            .unwrap()
+        )
 
     async def get_actions_fsm(self) -> Dict[str, Any]:
         """Get the state of the cluster."""

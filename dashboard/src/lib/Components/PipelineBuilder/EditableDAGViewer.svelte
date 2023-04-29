@@ -36,6 +36,7 @@
 	let paperContainer: HTMLDivElement;
 	const dispatch = createEventDispatcher();
 	let paperScaler: PaperScaler | null = null;
+	let animationIntervalFunctionId;
 
 	onMount(() => {
 		graph = new joint.dia.Graph();
@@ -228,6 +229,31 @@
 	export function scaleContentToFit() {
 		paper?.setDimensions(paperContainer?.clientWidth, paperContainer.clientHeight);
 		paperScaler?.scaleContentToFit();
+	}
+
+	export function animateLinks(color) {
+		if (!graph) return;
+		if (!paper) return;
+		if (animationIntervalFunctionId) {
+			clearInterval(animationIntervalFunctionId);
+		}
+
+		const links = graph.getLinks();
+
+		animationIntervalFunctionId = setInterval(() => {
+			links.forEach(link => {
+				link.findView(paper)?.sendToken(
+					joint.V('circle', {r: 5, fill: color}),
+					{ duration: 2000 }
+				);
+			});
+		}, 500);
+	}
+
+	export function stopLinksAnimation() {
+		if (animationIntervalFunctionId) {
+			clearInterval(animationIntervalFunctionId);
+		}
 	}
 </script>
 

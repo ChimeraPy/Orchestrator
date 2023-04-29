@@ -12,9 +12,10 @@
     import {getStore} from '$lib/stores';
     import {PipelineUtils} from '../../Services/PipelineUtils';
     import {Ok} from 'ts-monads';
+    import * as fs from "fs";
 
     export let committablePipeline;
-    let committedPipelineGraph, committedPipelineGraphContainer;
+    let committedPipelineGraph;
     export let infoModalContent: {
         title: string;
         content: any;
@@ -87,12 +88,19 @@
             pipelineCells = [];
         }
 
-        if (fsm) {
-            clusterActionsResultToIcons(new Ok(fsm));
-        }
-
         committedPipelineGraph?.render(pipelineCells, pipelineCells.length === 0);
         committedPipelineGraph?.layout();
+
+        if (fsm) {
+            clusterActionsResultToIcons(new Ok(fsm));
+            if(fsm.current_state === "PREVIEWING") {
+                committedPipelineGraph?.animateLinks('#FFDF00');
+            } else if (fsm.current_state === "RECORDING") {
+                committedPipelineGraph?.animateLinks('#0000FF');
+            } else {
+                committedPipelineGraph?.stopLinksAnimation();
+            }
+        }
     }
 
 
@@ -101,13 +109,6 @@
     $: renderChanges($lifeCycleStore?.pipeline, $lifeCycleStore?.fsm);
 
     $: console.log($lifeCycleStore);
-
-    function beginPipelineExecution() {
-        if (!committablePipeline) {
-            return;
-        }
-        // clusterClient.beginPipelineExecution(committablePipeline?.id);
-    }
 
     async function clusterInfo() {
         (await clusterClient.getActionsFSM()).map(fsm => {
@@ -167,6 +168,38 @@
         })
     }
 
+    async function stopPipeline() {
+        (await clusterClient.stopPipeline()).map(pipeline => {
+            infoModalContent = {
+                title: 'STOPPING PIPELINE',
+                content: pipeline,
+                alertMessage: 'Close'
+            };
+        }).mapError(error => {
+            infoModalContent = {
+                title: 'ERROR',
+                content: error,
+                alertMessage: 'Close'
+            };
+        });
+    }
+
+    async function resetPipeline() {
+        (await clusterClient.resetPipeline()).map(pipeline => {
+            infoModalContent = {
+                title: 'RESETTING PIPELINE',
+                content: pipeline,
+                alertMessage: 'Close'
+            };
+        }).mapError(error => {
+            infoModalContent = {
+                title: 'ERROR',
+                content: error,
+                alertMessage: 'Close'
+            };
+        });
+    }
+
     async function activatePipeline() {
         dispatch('activatePipeline');
     }
@@ -184,12 +217,13 @@
     <HorizontalMenu
             title="Orchestration"
             {icons}
-            on:play={beginPipelineExecution}
             on:info={clusterInfo}
             on:activate={activatePipeline}
             on:commit={commitPipeline}
             on:preview={previewPipeline}
             on:record={recordPipeline}
+            on:stop={stopPipeline}
+            on:reset={resetPipeline}
     />
 </div>
 <div class="flex-1 flex justify-center items-center bg-[#F3F7F6] overflow-hidden">

@@ -1,26 +1,24 @@
 import asyncio
-from pathlib import Path
-from typing import Any, Dict, List, Tuple, Callable, Union, Optional
 import json
+from pathlib import Path
+from typing import Dict, Union
 
-
-import networkx as nx
 from chimerapy.manager import Manager
 from chimerapy.states import ManagerState
 
 from chimerapy_orchestrator.models.cluster_models import UpdateMessage
+from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import (
     ClusterUpdatesBroadCaster,
     UpdatesBroadcaster,
 )
-from chimerapy_orchestrator.services.cluster_service.async_task_queue import AsyncTask
-from chimerapy_orchestrator.services.pipeline_service import Pipelines, Pipeline
+from chimerapy_orchestrator.services.pipeline_service import Pipeline, Pipelines
 from chimerapy_orchestrator.state_machine.fsm import FSM, StateTransitionError
-from chimerapy_orchestrator.monads import Ok, Err, Result
 
 
 class PipelineNotFoundError(Exception):
     """Raised when a pipeline is not found in the cluster."""
+
     pass
 
 
@@ -33,7 +31,7 @@ class ClusterManager(FSM):
         super().__init__(
             states=list(state_cache.values()),
             initial_state=state_cache[states["initial_state"]],
-            description=states["description"]
+            description=states["description"],
         )
 
         kwargs = {
@@ -80,7 +78,9 @@ class ClusterManager(FSM):
         fut1 = asyncio.ensure_future(
             self._network_updates_broadcaster.broadcast_updates()
         )
-        fut2 = asyncio.ensure_future(self._commit_updates_broadcaster.start_broadcast())
+        fut2 = asyncio.ensure_future(
+            self._commit_updates_broadcaster.start_broadcast()
+        )
         self.futures = [fut1, fut2]
 
     def shutdown(self):
@@ -100,10 +100,14 @@ class ClusterManager(FSM):
 
     async def subscribe_to_commit_updates(self, q: asyncio.Queue):
         """Subscribe to updates from the cluster manager."""
-        q.put_nowait({
-            "pipeline": self.active_pipeline.to_web_json() if self.active_pipeline else None,
-            "fsm": self.to_dict()
-        })
+        q.put_nowait(
+            {
+                "pipeline": self.active_pipeline.to_web_json()
+                if self.active_pipeline
+                else None,
+                "fsm": self.to_dict(),
+            }
+        )
 
         await self._commit_updates_broadcaster.add_client(q)
 
@@ -124,7 +128,9 @@ class ClusterManager(FSM):
         else:
             return False
 
-    async def activate_pipeline(self, pipeline_id: str) -> Result[Pipeline, Union[str, Exception]]:
+    async def activate_pipeline(
+        self, pipeline_id: str
+    ) -> Result[Pipeline, Union[str, Exception]]:
         """Activate the pipeline."""
         can, reason = self.can_transition("/activate")
         if not can:
@@ -133,13 +139,23 @@ class ClusterManager(FSM):
         pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
 
         if pipeline is None:
-            return Err(StateTransitionError(f"Pipeline with id {pipeline_id} does not exist."))
+            return Err(
+                StateTransitionError(
+                    f"Pipeline with id {pipeline_id} does not exist."
+                )
+            )
 
         if pipeline.doesnot_have_worker_mapping():
-            return Err(StateTransitionError(f"Pipeline {pipeline_id} does not have proper worker mapping."))
+            return Err(
+                StateTransitionError(
+                    f"Pipeline {pipeline_id} does not have proper worker mapping."
+                )
+            )
 
         task = asyncio.create_task(self.instantiate_pipeline(pipeline))
-        task.add_done_callback(lambda fut: self.transition_if_success(fut, "/activate"))
+        task.add_done_callback(
+            lambda fut: self.transition_if_success(fut, "/activate")
+        )
 
         if self.active_pipeline is not None:
             asyncio.create_task(self.destroy_pipeline(self.active_pipeline.id))
@@ -150,21 +166,27 @@ class ClusterManager(FSM):
 
     async def destroy_pipeline(self, active_pipeline_id):
         """Destroy the active pipeline."""
-        pipeline = self._pipeline_service.get_pipeline(active_pipeline_id, throw=False)
+        pipeline = self._pipeline_service.get_pipeline(
+            active_pipeline_id, throw=False
+        )
 
         self._manager_busy = True
         if pipeline and pipeline.committed:
-            await self._manager.async_reset(keep_workers=False)
+            await self._manager.async_reset(keep_workers=True)
 
         self._manager_busy = False
 
     def updater(self, pipeline_json=None):
         update_message = {
-            "pipeline": pipeline_json or self.active_pipeline.to_web_json() if self.active_pipeline else None,
-            "fsm": self.to_dict()
+            "pipeline": pipeline_json or self.active_pipeline.to_web_json()
+            if self.active_pipeline
+            else None,
+            "fsm": self.to_dict(),
         }
 
-        asyncio.create_task(self._commit_updates_broadcaster.put_update(update_message))
+        asyncio.create_task(
+            self._commit_updates_broadcaster.put_update(update_message)
+        )
 
     async def committer(self, graph, worker_graph_mapping):
         self._manager_busy = True
@@ -175,11 +197,12 @@ class ClusterManager(FSM):
         self._manager_busy = False
 
     def transition_if_success(self, result, transition: str):
-        print(result.exception())
+        print("Result exception", result.exception())
         if result.exception() is None:
             self.transitioning = False
             self.transition(transition)
             self.transitioning = False
+            print("Transitioned to", transition, self.active_pipeline)
             self.updater()
 
     async def instantiate_pipeline(self, pipeline):
@@ -191,42 +214,66 @@ class ClusterManager(FSM):
 
         pipeline.instantiate(lambda msg: self.updater(msg))
 
-    def assign_workers(self, pipeline_id: str, node_to_worker_ids: Dict[str, str]) -> Result[Pipeline, Union[str, Exception]]:
+    def assign_workers(
+        self, pipeline_id: str, node_to_worker_ids: Dict[str, str]
+    ) -> Result[Pipeline, Union[str, Exception]]:
         """Assign workers to the pipeline."""
         if self.transitioning:
             return Err(StateTransitionError("Cluster is transitioning."))
 
         pipeline = self._pipeline_service.get_pipeline(pipeline_id, throw=False)
         if pipeline is None:
-            return Err(StateTransitionError(f"Pipeline with id {pipeline_id} does not exist."))
+            return Err(
+                StateTransitionError(
+                    f"Pipeline with id {pipeline_id} does not exist."
+                )
+            )
 
         if len(list(pipeline.nodes)) == 0:
-            return Err(StateTransitionError(f"Pipeline {pipeline_id} does not have any nodes."))
+            return Err(
+                StateTransitionError(
+                    f"Pipeline {pipeline_id} does not have any nodes."
+                )
+            )
 
         for _, data in pipeline.nodes(data=True):
             node = data["wrapped_node"]
 
             if node.id not in node_to_worker_ids:
-                return Err(StateTransitionError(f"Node {node.name}/{node.id} does not have a valid worker id."))
+                return Err(
+                    StateTransitionError(
+                        f"Node {node.name}/{node.id} does not have a valid worker id."
+                    )
+                )
 
             if node_to_worker_ids[node.id] is None:
-                return Err(StateTransitionError(f"Node {node.name}/{node.id} does not have a valid worker id."))
+                return Err(
+                    StateTransitionError(
+                        f"Node {node.name}/{node.id} does not have a valid worker id."
+                    )
+                )
 
             if node_to_worker_ids[node.id] not in self._manager.state.workers:
-                return Err(StateTransitionError(f"Worker {node_to_worker_ids[node.id]} does not exist anymore."))
+                return Err(
+                    StateTransitionError(
+                        f"Worker {node_to_worker_ids[node.id]} does not exist anymore."
+                    )
+                )
 
             node.worker_id = node_to_worker_ids[node.id]
 
         return Ok(pipeline)
 
-    async def get_active_pipeline(self) -> Result[Pipeline, Union[str, Exception]]:
+    async def get_active_pipeline(
+        self,
+    ) -> Result[Pipeline, Union[str, Exception]]:
         """Get the active pipeline."""
         if self.active_pipeline is None:
             return Err(PipelineNotFoundError("No active pipeline."))
 
         return Ok(self.active_pipeline)
 
-    async def commit_pipeline(self) -> Result[Pipeline, Union[str, Exception]]:
+    async def commit(self) -> Result[Pipeline, Union[str, Exception]]:
         """Commit the active pipeline."""
         can, reason = self.can_transition("/commit")
         if not can:
@@ -240,9 +287,15 @@ class ClusterManager(FSM):
 
         self.transitioning = True
 
-        task = asyncio.create_task(self.active_pipeline.commit(updater=self.updater, committer=self.committer))
+        task = asyncio.create_task(
+            self.active_pipeline.commit(
+                updater=self.updater, committer=self.committer
+            )
+        )
 
-        task.add_done_callback(lambda fut: self.transition_if_success(fut, "/commit"))
+        task.add_done_callback(
+            lambda fut: self.transition_if_success(fut, "/commit")
+        )
 
         return Ok(self.active_pipeline)
 
@@ -261,7 +314,9 @@ class ClusterManager(FSM):
         self.transitioning = True
 
         task = asyncio.create_task(self._manager.async_start())
-        task.add_done_callback(lambda fut: self.transition_if_success(fut, "/preview"))
+        task.add_done_callback(
+            lambda fut: self.transition_if_success(fut, "/preview")
+        )
 
         return Ok(self.active_pipeline)
 
@@ -280,7 +335,9 @@ class ClusterManager(FSM):
         self.transitioning = True
 
         task = asyncio.create_task(self._manager.async_record())
-        task.add_done_callback(lambda fut: self.transition_if_success(fut, "/record"))
+        task.add_done_callback(
+            lambda fut: self.transition_if_success(fut, "/record")
+        )
 
         return Ok(self.active_pipeline)
 
@@ -293,15 +350,59 @@ class ClusterManager(FSM):
         if self.active_pipeline is None:
             return Err(StateTransitionError("No active pipeline."))
 
-        if not self.active_pipeline.running:
-            return Err(StateTransitionError("Pipeline is not running."))
-
         self.transitioning = True
 
         task = asyncio.create_task(self._manager.async_stop())
-        task.add_done_callback(lambda fut: self.transition_if_success(fut, "/stop"))
+        task.add_done_callback(
+            lambda fut: self.transition_if_success(fut, "/stop")
+        )
 
         return Ok(self.active_pipeline)
+
+    async def reset(self) -> Result[Pipeline, Union[str, Exception]]:
+        """Reset the active pipeline."""
+        can, reason = self.can_transition("/reset")
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self.active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline."))
+
+        self.transitioning = True
+
+        task = asyncio.create_task(self._manager.async_reset(keep_workers=True))
+        task.add_done_callback(lambda fut: self.signal_reset(fut))
+
+        return Ok(self.active_pipeline)
+
+    async def collect(self) -> Result[Pipeline, Union[str, Exception]]:
+        """Collect the active pipeline."""
+        can, reason = self.can_transition("/collect")
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self.active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline."))
+
+        if not self.active_pipeline.committed:
+            return Err(StateTransitionError("Pipeline is not committed."))
+
+        self.transitioning = True
+
+        task = asyncio.create_task(self._manager.async_collect())
+        task.add_done_callback(
+            lambda fut: self.transition_if_success(fut, "/collect")
+        )
+
+        return Ok(self.active_pipeline)
+
+    def signal_reset(self, result):
+        """Signal reset."""
+        print("result", result.exception())
+        if result.exception() is None:
+            self.active_pipeline = None
+
+        self.transition_if_success(result, "/reset")
 
     def get_states_info(self):
         """Return the FSM states info."""

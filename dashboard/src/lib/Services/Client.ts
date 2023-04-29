@@ -191,6 +191,24 @@ export class ClusterClient extends Client {
 		return response;
 	}
 
+	async stopPipeline(): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/stop`);
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'POST',
+		});
+
+		return response;
+	}
+
+	async resetPipeline(): Promise<Result<PipelineNode, ResponseError>> {
+		const prefix = encodeURIComponent(`/reset`);
+		const response = await this._fetch<PipelineNode>(prefix, {
+			method: 'POST',
+		});
+
+		return response;
+	}
+
 	async assignWorkers(pipeline: Pipeline): Promise<Result<PipelineNode, ResponseError>> {
 		const nodes = pipeline.nodes;
 

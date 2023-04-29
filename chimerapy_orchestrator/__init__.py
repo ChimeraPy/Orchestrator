@@ -6,4 +6,5 @@ from chimerapy_orchestrator.registry.utils import (
     step_node,
 )
 
+logging.disable(logging.DEBUG)
 from . import registered_nodes

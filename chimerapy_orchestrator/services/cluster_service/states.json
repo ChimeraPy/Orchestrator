@@ -121,9 +121,14 @@
           "to_state": "SHUTDOWN"
         },
         {
-          "name": "/collect",
+          "name": "/preview",
           "from_state": "STOPPED",
-          "to_state": "COLLECTED"
+          "to_state": "PREVIEWING"
+        },
+        {
+            "name": "/record",
+            "from_state": "STOPPED",
+            "to_state": "RECORDING"
         }
       ]
     },
