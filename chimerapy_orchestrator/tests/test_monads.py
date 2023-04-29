@@ -1,9 +1,10 @@
-from chimerapy_orchestrator.tests.base_test import BaseTest
-from chimerapy_orchestrator.monads import Ok, Err, MayBe, some, none
 import pytest
 
+from chimerapy_orchestrator.monads import Err, Ok, none, some
+from chimerapy_orchestrator.tests.base_test import BaseTest
 
-class TestResult(BaseTest):
+
+class TestMonads(BaseTest):
     def test_result_success(self):
         result = Ok(1)
         assert result.unwrap() == 1
@@ -40,5 +41,24 @@ class TestResult(BaseTest):
             result.map(error_func).unwrap()
             assert e is exception
 
+    def test_ok(self):
+        result = Ok(1)
+        assert result.ok().unwrap() == 1
 
+        error = Err(Exception("Test"))
+        assert error.ok().unwrap_or(2) == 2
 
+    def test_some(self):
+        assert some(1).unwrap() == 1
+        assert some(None).unwrap() is None
+        assert some(None).is_some()
+
+    def test_none(self):
+        assert none().unwrap_or(1) == 1
+        assert none().unwrap_or_else(lambda: 1) == 1
+        assert none().map(lambda x: x + 1).unwrap_or(1) == 1
+        assert none().map_or(1, lambda x: x + 1) == 1
+        assert none().is_none()
+
+        with pytest.raises(Exception):
+            none().unwrap()

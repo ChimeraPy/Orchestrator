@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
-
 from typing import Any, Callable, Generic, TypeVar, Union
 
-T = TypeVar('T')
-E = TypeVar('E')
-U = TypeVar('U')
+T = TypeVar("T")
+E = TypeVar("E")
+U = TypeVar("U")
 
 
 class Result(ABC, Generic[T, E]):
+    """A result type that can be either Ok or Err."""
+
     def __init__(self, value: Any):
         self._value = value
 
@@ -29,6 +30,8 @@ class Result(ABC, Generic[T, E]):
 
 
 class MayBe(ABC, Generic[T, E]):
+    """A type that can be either Some or None."""
+
     @abstractmethod
     def is_some(self) -> bool:
         return NotImplemented
@@ -71,6 +74,8 @@ class MayBe(ABC, Generic[T, E]):
 
 
 class some(MayBe):
+    """Represents a Some value."""
+
     def __init__(self, value: T):
         self._value = value
 
@@ -106,6 +111,8 @@ class some(MayBe):
 
 
 class none(MayBe):
+    """Represents a None value."""
+
     def is_some(self) -> bool:
         return False
 
@@ -138,6 +145,8 @@ class none(MayBe):
 
 
 class Ok(Result[T, E]):
+    """Ok is a Result that contains a success value."""
+
     def __init__(self, value: T):
         super().__init__(value)
 
@@ -158,6 +167,8 @@ class Ok(Result[T, E]):
 
 
 class Err(Result[T, E]):
+    """Err is a Result that contains an error value."""
+
     def __init__(self, value: E):
         super().__init__(value)
 
@@ -178,13 +189,3 @@ class Err(Result[T, E]):
 
     def ok(self) -> "MayBe[T, E]":
         return none()
-
-
-
-
-
-
-
-
-
-
