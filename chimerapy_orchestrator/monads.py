@@ -30,6 +30,8 @@ class Result(ABC, Generic[T, E]):
 
 
 class MayBe(ABC, Generic[T, E]):
+    """A type that can be either Some or None."""
+
     @abstractmethod
     def is_some(self) -> bool:
         return NotImplemented
