@@ -2,7 +2,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from chimerapy_orchestrator.registry import nodes_registry
+from chimerapy_orchestrator.models.pipeline_models import NodesPlugin
+from chimerapy_orchestrator.registry import get_all_nodes, importable_packages
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
@@ -16,15 +17,32 @@ class TestPipelineRouter(BaseTest):
         app.include_router(PipelineRouter(Pipelines()))
         yield TestClient(app)
 
+    def test_installable_plugins(self, pipeline_client):
+        response = pipeline_client.get("/pipeline/plugins")
+        assert response.status_code == 200
+        assert response.json() == [
+            NodesPlugin.from_plugin_registry(package_name=package_name).dict()
+            for package_name in importable_packages()
+        ]
+
     def test_get_pipelines(self, pipeline_client):
         response = pipeline_client.get("/pipeline/list")
         assert response.status_code == 200
         assert response.json() == []
 
+    def test_install_plugin(self, pipeline_client):
+        response = pipeline_client.post(
+            "/pipeline/install-plugin/plugin-nodes-package"
+        )
+        assert response.status_code == 200
+        node_names = [node["name"] for node in response.json()]
+        assert "ANode" in node_names
+        assert "BNode" in node_names
+
     def test_list_nodes(self, pipeline_client):
         response = pipeline_client.get("/pipeline/list-nodes")
         assert response.status_code == 200
-        assert len(response.json()) == len(nodes_registry)
+        assert len(response.json()) == len(get_all_nodes())
 
     def test_create_pipeline(self, pipeline_client):
         pipeline = pipeline_client.put(

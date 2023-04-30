@@ -62,9 +62,11 @@ jobs:
           ${{ steps.cp39.outputs.python-path }} -m pip install --upgrade pip
           ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
 
-      - name: Install Package
+      - name: Install Package and Plugin Test Package
         run: |
           ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
+          cd chimerapy_orchestrator/tests/plugin-nodes-package
+          ${{ steps.cp39.outputs.python-path }} -m pip install .
 
       - name: Perform Tests (${{ matrix.os }})
         run: |

@@ -20,7 +20,7 @@ class TestPipeline(BaseTest):
 
     @pytest.fixture(scope="session", autouse=True)
     def dummy_step_node(self):
-        @step_node
+        @step_node(add_to_registry=True)
         class DummyStepNode(Node):
             def __init__(self, name):
                 self.name = name

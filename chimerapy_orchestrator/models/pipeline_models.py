@@ -1,10 +1,11 @@
-from typing import Any, Dict, Optional, Type
+import importlib
+from typing import Any, Dict, List, Optional, Type
 
 from chimerapy.node import Node
 from pydantic import BaseModel, Field
 
 from chimerapy_orchestrator.models.registry_models import NodeType
-from chimerapy_orchestrator.registry import get_node_type
+from chimerapy_orchestrator.registry import plugin_registry
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -38,6 +39,10 @@ class WebNode(BaseModel):
 
     type: Optional[NodeType] = Field(
         default=None, description="The type of the node."
+    )
+
+    package: Optional[str] = Field(
+        default=None, description="The package that registered this node."
     )
 
     class Config:
@@ -76,6 +81,18 @@ class WrappedNode(BaseModel):
         default_factory=uuid, description="The id of the node."
     )
 
+    node_type: Optional[NodeType] = Field(
+        default=None, description="The type of the node."
+    )
+
+    registry_name: str = Field(
+        ..., description="The name of the node in the registry."
+    )
+
+    package: Optional[str] = Field(
+        default=None, description="The package that registered this node."
+    )
+
     @property
     def instantiated(self) -> bool:
         return self.instance is not None
@@ -87,25 +104,41 @@ class WrappedNode(BaseModel):
 
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
-        return WrappedNode(NodeClass=self.NodeClass, kwargs=kwargs)
+        return WrappedNode(
+            NodeClass=self.NodeClass,
+            node_type=self.node_type,
+            registry_name=self.registry_name,
+            kwargs=kwargs,
+            package=self.package,
+        )
 
     @classmethod
     def from_node_class(
-        cls, NodeClass: Type[Node], kwargs=None
+        cls,
+        NodeClass: Type[Node],
+        node_type: NodeType,
+        registry_name: str,
+        kwargs: Optional[Dict[str, Any]] = None,
     ) -> "WrappedNode":
         if kwargs is None:
             kwargs = {}
 
-        wrapped_node = cls(NodeClass=NodeClass, kwargs=kwargs)
+        wrapped_node = cls(
+            NodeClass=NodeClass,
+            kwargs=kwargs,
+            node_type=node_type,
+            registry_name=registry_name,
+        )
 
         return wrapped_node
 
     def to_web_node(self, name: str = None) -> WebNode:
         return WebNode(
             name=name or self.NodeClass.__name__,
-            registry_name=self.NodeClass.__name__,
+            registry_name=self.registry_name,
             id=self.id,
-            type=get_node_type(self),
+            type=self.node_type,
+            package=self.package,
         )
 
     def __repr__(self):
@@ -114,3 +147,45 @@ class WrappedNode(BaseModel):
     class Config:
         allow_extra = False
         arbitrary_types_allowed = True
+
+
+class NodesPlugin(BaseModel):
+    """A plugin that can be installed."""
+
+    name: str = Field(..., description="The name of the plugin.")
+
+    package: str = Field(..., description="The package of the plugin.")
+
+    nodes: List[str] = Field(
+        ..., description="The nodes that this plugin provides."
+    )
+
+    description: Optional[str] = Field(
+        default=None, description="The description of the plugin."
+    )
+
+    version: str = Field(..., description="The version of the plugin.")
+
+    @classmethod
+    def from_plugin_registry(cls, package_name):
+        if package_name not in plugin_registry:
+            raise ValueError(f"Plugin {package_name} not found in registry.")
+
+        nodes = plugin_registry[package_name]["nodes"]
+        description = plugin_registry[package_name].get("description", None)
+        node_names = [name.rsplit(":")[-1] for name in nodes]
+        try:
+            version = importlib.metadata.version(package_name)
+        except importlib.metadata.PackageNotFoundError:
+            version = "N/A"
+
+        return cls(
+            name=package_name,
+            package=package_name,
+            nodes=node_names,
+            version=version,
+            description=description,
+        )
+
+    class Config:
+        allow_extra = False
