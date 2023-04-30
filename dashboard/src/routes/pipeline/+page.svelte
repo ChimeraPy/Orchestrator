@@ -18,6 +18,7 @@
 	import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
 	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
+	import PluginInstaller from "$lib/Components/PluginInstaller/PluginInstaller.svelte";
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import { CreatePipelineStages } from '$lib/models';
@@ -41,6 +42,7 @@
 		pipelineListItems = [];
 	let activePipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
+	let pluginInstaller: PluginInstaller;
 	let infoModalContent: { title: string; content: any } | null = null;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
@@ -313,6 +315,10 @@
 			};
 		}
 	}
+
+	function showPluginInstaller() {
+		pluginInstaller?.display();
+	}
 </script>
 
 <div class="h-full flex">
@@ -321,8 +327,18 @@
 			<div>
 				<HorizontalMenu
 					on:refresh={debouncedFetchNodes}
+					on:add={() => showPluginInstaller()}
 					title="Nodes"
-					icons={[{ type: Icons.refresh, tooltip: 'Refresh nodes' }]}
+					icons={[
+							{
+								type: Icons.refresh,
+							    tooltip: 'Refresh nodes'
+							},
+							{
+								type: Icons.add,
+								tooltip: 'Plugins'
+							}
+						]}
 					backgroundClass="bg-blue-600"
 				/>
 			</div>
@@ -499,3 +515,5 @@
 		<pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
 	</div>
 </Modal>
+
+<PluginInstaller bind:this={pluginInstaller}/>

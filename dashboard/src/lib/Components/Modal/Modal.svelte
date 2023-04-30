@@ -11,6 +11,8 @@
 	export let title: string = 'A Modal';
 	export let modalOpen = false;
 
+	export let size = 'md';
+
 	const dispatch = createEventDispatcher();
 
 	function confirm() {
@@ -26,7 +28,7 @@
 	}
 </script>
 
-<Modal {title} bind:open={modalOpen} {autoclose} on:hide={cancel}>
+<Modal {title} bind:open={modalOpen} {size} {autoclose} on:hide={cancel}>
 	<slot name="content">
 		<em>Such Emtpy Here!</em>
 	</slot>
