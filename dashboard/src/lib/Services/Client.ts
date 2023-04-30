@@ -1,5 +1,12 @@
 import type { Result } from 'ts-monads/lib/Result';
-import type { PipelineNode, Pipeline, Edge, ResponseError, ClusterState } from '../models';
+import type {
+	PipelineNode,
+	Pipeline,
+	Edge,
+	ResponseError,
+	ClusterState,
+	NodesPlugin
+} from '../models';
 import { Err, Ok } from 'ts-monads';
 
 class Client {
@@ -147,6 +154,20 @@ export class PipelineClient extends Client {
 			body: JSON.stringify(requestBody),
 			headers: new Headers({ 'Content-Type': 'application/json' })
 		});
+
+		return response;
+	}
+
+	async getPlugins(): Promise<Result<NodesPlugin[], ResponseError>> {
+		const prefix = '/plugins';
+		const response = await this._fetch<NodesPlugin[]>(prefix, { method: 'GET' });
+
+		return response;
+	}
+
+	async installPlugin(pluginName: string): Promise<Result<PipelineNode[], ResponseError>> {
+		const prefix = encodeURIComponent(`/install-plugin/${pluginName}`);
+		const response = await this._fetch<PipelineNode[]>(prefix, { method: 'POST' });
 
 		return response;
 	}
