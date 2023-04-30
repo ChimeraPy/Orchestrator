@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import networkx as nx
 
@@ -38,7 +38,10 @@ class Pipeline(nx.DiGraph):
         self.chimerapy_graph = None
 
     def add_node(
-        self, node_name: str, node_package: str, **kwargs: Dict[str, Any]
+        self,
+        node_name: str,
+        node_package: Optional[str] = None,
+        **kwargs: Dict[str, Any],
     ) -> WrappedNode:
         """Adds a node to the pipeline_service."""
         wrapped_node = get_registered_node(

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
@@ -30,7 +30,11 @@ class Pipelines:
         return pipeline
 
     def add_node_to(
-        self, pipeline_id: str, node_id: str, node_package: str, **kwargs
+        self,
+        pipeline_id: str,
+        node_id: str,
+        node_package: Optional[str] = None,
+        **kwargs,
     ) -> WrappedNode:
         """Add a node to a pipeline_service."""
 

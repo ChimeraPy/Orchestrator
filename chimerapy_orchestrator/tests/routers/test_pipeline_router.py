@@ -2,6 +2,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from chimerapy_orchestrator.models.pipeline_models import NodesPlugin
 from chimerapy_orchestrator.registry import get_all_nodes, importable_packages
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
@@ -17,9 +18,12 @@ class TestPipelineRouter(BaseTest):
         yield TestClient(app)
 
     def test_installable_plugins(self, pipeline_client):
-        response = pipeline_client.get("/pipeline/plugin-nodes")
+        response = pipeline_client.get("/pipeline/plugins")
         assert response.status_code == 200
-        assert response.json() == importable_packages()
+        assert response.json() == [
+            NodesPlugin.from_plugin_registry(package_name=package_name).dict()
+            for package_name in importable_packages()
+        ]
 
     def test_get_pipelines(self, pipeline_client):
         response = pipeline_client.get("/pipeline/list")

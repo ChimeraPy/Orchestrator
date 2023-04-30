@@ -1,7 +1,9 @@
 import pytest
 from plugin_nodes_package.registered_nodes import ANode, BNode
 
+from chimerapy_orchestrator.models.pipeline_models import NodeType, WrappedNode
 from chimerapy_orchestrator.registry import (
+    DiscoveredNodes,
     discovered_nodes,
     get_registered_node,
     importable_packages,
@@ -46,3 +48,20 @@ class TestRegisteredNodes(BaseTest):
             get_registered_node("BNode", "plugin-nodes-package").NodeClass
             is BNode
         )
+
+    def test_discovered_nodes_implementation(self):
+        dnodes = DiscoveredNodes()
+        assert dnodes._nodes["chimerapy-orchestrator"] == {}
+        node = WrappedNode.from_node_class(ANode, NodeType.SOURCE, "NewNode")
+
+        dnodes.add_node(
+            "NewNode",
+            node,
+            package="chimerapy-orchestrator",
+            add_to_default=False,
+        )
+        assert (
+            dnodes.get_node("NewNode", "chimerapy-orchestrator").NodeClass
+            is ANode
+        )
+        assert "chimerapy-orchestrator" in dnodes
