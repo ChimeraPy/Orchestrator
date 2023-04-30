@@ -53,6 +53,7 @@ export class PipelineUtils {
 					rect.prop('nodeId', node.id);
 					rect.prop('nodeType', node.type);
 					rect.prop('registryName', node.registry_name);
+					rect.prop('package', node.package);
 					cells.push(rect);
 				});
 				pipeline.edges.forEach((edge) => {
@@ -91,6 +92,7 @@ export class PipelineUtils {
 					rect.prop('nodeId', node.id);
 					rect.prop('nodeType', node.type);
 					rect.prop('registryName', node.registry_name);
+					rect.prop('package', node.package);
 					cells.push(rect);
 				});
 		});

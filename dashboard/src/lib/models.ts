@@ -34,6 +34,7 @@ export interface PipelineNode {
 	registry_name: string;
 	type: NodeType;
 	kwargs: { [key: string]: any };
+	package: string;
 }
 
 export interface Edge {
@@ -83,4 +84,12 @@ export interface ClusterState {
 export interface ResponseError {
 	message: string;
 	code: number;
+}
+
+export interface NodesPlugin {
+	package: string;
+	nodes: string[];
+	version: string;
+	name: string;
+	description: string;
 }
