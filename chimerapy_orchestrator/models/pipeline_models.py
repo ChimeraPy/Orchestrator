@@ -1,9 +1,11 @@
-from typing import Any, Dict, Optional, Type
+import importlib
+from typing import Any, Dict, List, Optional, Type
 
 from chimerapy.node import Node
 from pydantic import BaseModel, Field
 
 from chimerapy_orchestrator.models.registry_models import NodeType
+from chimerapy_orchestrator.registry import plugin_registry
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -145,3 +147,45 @@ class WrappedNode(BaseModel):
     class Config:
         allow_extra = False
         arbitrary_types_allowed = True
+
+
+class NodesPlugin(BaseModel):
+    """A plugin that can be installed."""
+
+    name: str = Field(..., description="The name of the plugin.")
+
+    package: str = Field(..., description="The package of the plugin.")
+
+    nodes: List[str] = Field(
+        ..., description="The nodes that this plugin provides."
+    )
+
+    description: Optional[str] = Field(
+        default=None, description="The description of the plugin."
+    )
+
+    version: str = Field(..., description="The version of the plugin.")
+
+    @classmethod
+    def from_plugin_registry(cls, package_name):
+        if package_name not in plugin_registry:
+            raise ValueError(f"Plugin {package_name} not found in registry.")
+
+        nodes = plugin_registry[package_name]["nodes"]
+        description = plugin_registry[package_name].get("description", None)
+        node_names = [name.rsplit(":")[-1] for name in nodes]
+        try:
+            version = importlib.metadata.version(package_name)
+        except importlib.metadata.PackageNotFoundError:
+            version = "N/A"
+
+        return cls(
+            name=package_name,
+            package=package_name,
+            nodes=node_names,
+            version=version,
+            description=description,
+        )
+
+    class Config:
+        allow_extra = False

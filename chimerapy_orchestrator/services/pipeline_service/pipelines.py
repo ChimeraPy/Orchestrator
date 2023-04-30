@@ -30,12 +30,12 @@ class Pipelines:
         return pipeline
 
     def add_node_to(
-        self, pipeline_id: str, node_id: str, **kwargs
+        self, pipeline_id: str, node_id: str, node_package: str, **kwargs
     ) -> WrappedNode:
         """Add a node to a pipeline_service."""
 
         pipeline = self.get_pipeline(pipeline_id)
-        wrapped_node = pipeline.add_node(node_id, **kwargs)
+        wrapped_node = pipeline.add_node(node_id, node_package, **kwargs)
 
         return wrapped_node
 

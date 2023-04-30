@@ -37,9 +37,13 @@ class Pipeline(nx.DiGraph):
         self.description = description or "A pipeline"
         self.chimerapy_graph = None
 
-    def add_node(self, node_name: str, **kwargs: Dict[str, Any]) -> WrappedNode:
+    def add_node(
+        self, node_name: str, node_package: str, **kwargs: Dict[str, Any]
+    ) -> WrappedNode:
         """Adds a node to the pipeline_service."""
-        wrapped_node = get_registered_node(node_name).clone(**kwargs)
+        wrapped_node = get_registered_node(
+            node_name, package=node_package
+        ).clone(**kwargs)
         super().add_node(wrapped_node.id, wrapped_node=wrapped_node)
         return wrapped_node
 

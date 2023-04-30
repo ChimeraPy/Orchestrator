@@ -1,7 +1,7 @@
 import importlib
 import typing
 import warnings
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import importlib_metadata
 
@@ -54,7 +54,6 @@ class DiscoveredNodes:
                 qualname == qualname_
             ):  # FixME: There can be name collisions here? Package name collisions?
                 node.package = package
-                print(node.package)
                 self.add_node(
                     node.registry_name, node, package, add_to_default=False
                 )
@@ -65,11 +64,13 @@ class DiscoveredNodes:
 
     def all_nodes(self):
         """A flat list of all registered nodes."""
-        return [
-            node
-            for package in self._nodes.values()
-            for node in package.values()
-        ]
+        nodes = []
+
+        for package in self._nodes:
+            for node in self._nodes[package]:
+                nodes.append(self._nodes[package][node])
+
+        return nodes
 
     def __contains__(self, package: str):
         """Check if a package is in the registry."""
@@ -84,13 +85,16 @@ discovered_nodes = DiscoveredNodes()
 plugin_registry = {}  # noqa: F841
 
 
-def register_nodes_metadata() -> List[str]:
+def register_nodes_metadata() -> Dict[str, Any]:
     """Register nodes from metadata."""
-    nodes = [
-        "chimerapy_orchestrator.registered_nodes.nodes:WebcamNode",
-        "chimerapy_orchestrator.registered_nodes.nodes:ShowWindow",
-        "chimerapy_orchestrator.registered_nodes.nodes:ScreenCaptureNode",
-    ]
+    nodes = {
+        "description": "Basic nodes for ChimeraPyOrchestrator",
+        "nodes": [
+            "chimerapy_orchestrator.registered_nodes.nodes:WebcamNode",
+            "chimerapy_orchestrator.registered_nodes.nodes:ShowWindow",
+            "chimerapy_orchestrator.registered_nodes.nodes:ScreenCaptureNode",
+        ],
+    }
 
     return nodes
 
@@ -111,7 +115,7 @@ def check_registry(package: str) -> Tuple[bool, str]:
     if package not in plugin_registry:
         return True, f"Package not found: {package}"
 
-    for to_register_node in plugin_registry[package]:
+    for to_register_node in plugin_registry[package]["nodes"]:
         module, class_name = to_register_node.rsplit(":", 1)
         try:
             module = importlib.import_module(module)
@@ -142,7 +146,7 @@ def get_registered_node(name: str, package: str = None) -> "WrappedNode":
         raise ValueError(f"Could not find node {name}.")  # noqa: B904
 
 
-def all_nodes() -> List["WrappedNode"]:
+def get_all_nodes() -> List["WrappedNode"]:
     """Returns all registered ChimeraPy Nodes."""
     return discovered_nodes.all_nodes()
 

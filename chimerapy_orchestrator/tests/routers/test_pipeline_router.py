@@ -2,7 +2,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from chimerapy_orchestrator.registry import all_nodes, importable_packages
+from chimerapy_orchestrator.registry import get_all_nodes, importable_packages
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
@@ -38,7 +38,7 @@ class TestPipelineRouter(BaseTest):
     def test_list_nodes(self, pipeline_client):
         response = pipeline_client.get("/pipeline/list-nodes")
         assert response.status_code == 200
-        assert len(response.json()) == len(all_nodes())
+        assert len(response.json()) == len(get_all_nodes())
 
     def test_create_pipeline(self, pipeline_client):
         pipeline = pipeline_client.put(

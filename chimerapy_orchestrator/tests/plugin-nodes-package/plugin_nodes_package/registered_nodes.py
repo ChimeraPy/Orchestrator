@@ -2,10 +2,8 @@ import chimerapy as cp
 
 from chimerapy_orchestrator.registry.utils import sink_node, source_node
 
-print("here")
 
-
-@source_node(name="ANode", add_to_registry=True)
+@source_node(name="ANode")
 class ANode(cp.Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -14,7 +12,7 @@ class ANode(cp.Node):
         return 5
 
 
-@sink_node(name="BNode", add_to_registry=True)
+@sink_node(name="BNode")
 class BNode(cp.Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
