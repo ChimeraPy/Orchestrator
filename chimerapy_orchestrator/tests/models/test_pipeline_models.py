@@ -2,14 +2,14 @@ import pytest
 from chimerapy.node import Node
 from pydantic import ValidationError
 
-from chimerapy_orchestrator.models.pipeline_models import WrappedNode
+from chimerapy_orchestrator.models.pipeline_models import NodeType, WrappedNode
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 
 class TestPipelineModels(BaseTest):
     def test_non_node_instantiation_wrapped_node(self):
         with pytest.raises(ValidationError):
-            WrappedNode.from_node_class(int)
+            WrappedNode.from_node_class(int, NodeType.SOURCE, "int")
 
     def test_node_instantiation_wrapped_node(self):
         class DummyNode(Node):
@@ -23,7 +23,9 @@ class TestPipelineModels(BaseTest):
             def step(self):
                 return self.tunable_prop
 
-        wrapped_node = WrappedNode.from_node_class(DummyNode)
+        wrapped_node = WrappedNode.from_node_class(
+            DummyNode, node_type=NodeType.SOURCE, registry_name="DummyNode"
+        )
         chimerapy_node = wrapped_node.instantiate()
         assert isinstance(chimerapy_node, DummyNode)
         assert chimerapy_node.name == "DummyNode"

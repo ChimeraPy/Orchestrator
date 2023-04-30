@@ -4,7 +4,6 @@ from chimerapy.node import Node
 from pydantic import BaseModel, Field
 
 from chimerapy_orchestrator.models.registry_models import NodeType
-from chimerapy_orchestrator.registry import get_node_type
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -38,6 +37,10 @@ class WebNode(BaseModel):
 
     type: Optional[NodeType] = Field(
         default=None, description="The type of the node."
+    )
+
+    package: Optional[str] = Field(
+        default=None, description="The package that registered this node."
     )
 
     class Config:
@@ -76,6 +79,18 @@ class WrappedNode(BaseModel):
         default_factory=uuid, description="The id of the node."
     )
 
+    node_type: Optional[NodeType] = Field(
+        default=None, description="The type of the node."
+    )
+
+    registry_name: str = Field(
+        ..., description="The name of the node in the registry."
+    )
+
+    package: Optional[str] = Field(
+        default=None, description="The package that registered this node."
+    )
+
     @property
     def instantiated(self) -> bool:
         return self.instance is not None
@@ -87,25 +102,41 @@ class WrappedNode(BaseModel):
 
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
-        return WrappedNode(NodeClass=self.NodeClass, kwargs=kwargs)
+        return WrappedNode(
+            NodeClass=self.NodeClass,
+            node_type=self.node_type,
+            registry_name=self.registry_name,
+            kwargs=kwargs,
+            package=self.package,
+        )
 
     @classmethod
     def from_node_class(
-        cls, NodeClass: Type[Node], kwargs=None
+        cls,
+        NodeClass: Type[Node],
+        node_type: NodeType,
+        registry_name: str,
+        kwargs: Optional[Dict[str, Any]] = None,
     ) -> "WrappedNode":
         if kwargs is None:
             kwargs = {}
 
-        wrapped_node = cls(NodeClass=NodeClass, kwargs=kwargs)
+        wrapped_node = cls(
+            NodeClass=NodeClass,
+            kwargs=kwargs,
+            node_type=node_type,
+            registry_name=registry_name,
+        )
 
         return wrapped_node
 
     def to_web_node(self, name: str = None) -> WebNode:
         return WebNode(
             name=name or self.NodeClass.__name__,
-            registry_name=self.NodeClass.__name__,
+            registry_name=self.registry_name,
             id=self.id,
-            type=get_node_type(self),
+            type=self.node_type,
+            package=self.package,
         )
 
     def __repr__(self):

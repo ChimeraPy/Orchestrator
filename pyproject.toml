@@ -29,6 +29,7 @@ dependencies = [
     'chimerapy',
     'pydantic',
     'fastapi[all]',
+    'importlib-metadata; python_version < "3.8"',
 ]
 
 [project.optional-dependencies]
@@ -56,6 +57,10 @@ build-backend = "setuptools.build_meta"
 # https://setuptools.pypa.io/en/stable/userguide/datafiles.html
 [tool.setuptools]
 include-package-data = true
+
+[project.entry-points."chimerapy_orchestrator.nodes_registry"]
+get_nodes_registry = "chimerapy_orchestrator.registry:register_nodes_metadata"
+
 
 [tool.setuptools.packages.find]
 where = ["."]

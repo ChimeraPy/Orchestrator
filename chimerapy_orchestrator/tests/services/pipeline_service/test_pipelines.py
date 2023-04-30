@@ -155,6 +155,7 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[0][0].id,
                         "kwargs": {},
                         "type": "SOURCE",
+                        "package": "chimerapy-orchestrator",
                     },
                     {
                         "name": "ShowWindow",
@@ -162,6 +163,7 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[0][1].id,
                         "kwargs": {},
                         "type": "SINK",
+                        "package": "chimerapy-orchestrator",
                     },
                 ],
                 "edges": [
@@ -184,6 +186,7 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[1][0].id,
                         "kwargs": {},
                         "type": "SOURCE",
+                        "package": "chimerapy-orchestrator",
                     },
                     {
                         "name": "ShowWindow",
@@ -191,6 +194,7 @@ class TestPipelines(BaseTest):
                         "id": nodes_created[1][1].id,
                         "kwargs": {},
                         "type": "SINK",
+                        "package": "chimerapy-orchestrator",
                     },
                 ],
                 "edges": [

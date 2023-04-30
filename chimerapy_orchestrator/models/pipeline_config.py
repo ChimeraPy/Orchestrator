@@ -18,11 +18,15 @@ class ManagerConfig(BaseModel):
 
 class NodeConfig(BaseModel):
     registry_name: str = Field(
-        ..., description="The name of the node to serach in the registry."
+        ..., description="The name of the node to search in the registry."
     )
     name: str = Field(..., description="The name of the node.")
     kwargs: Dict[str, Any] = Field(
         default={}, description="The kwargs for the node."
+    )
+
+    package: Optional[str] = Field(
+        default=None, description="The package that registered this node."
     )
 
     class Config:
@@ -122,7 +126,7 @@ class ChimeraPyPipelineConfig(BaseModel):
 
     discover_nodes_from: Optional[List[str]] = Field(
         default=[],
-        description="The list of modules to discover nodes from.",
+        description="The list of modules to discover nodes from. Deprecated. see NodeConfig.package.",
     )
 
     timeouts: Timeouts = Field(
@@ -133,18 +137,10 @@ class ChimeraPyPipelineConfig(BaseModel):
     def manager(self) -> cp.Manager:
         return cp.Manager(**self.manager_config.dict())
 
-    def register_external_nodes(self):
-        for module in self.discover_nodes_from:
-            try:
-                import importlib
-
-                module = importlib.import_module(module)
-            except ModuleNotFoundError:
-                print(f"Module {module} not found. Skipping nodes discovery")
-
-    def get_registered_node(self, name) -> Type["WrappedNode"]:  # noqa: F821
-        wrapped_node = get_registered_node(name)
-
+    def get_registered_node(
+        self, name, package
+    ) -> Type["WrappedNode"]:  # noqa: F821
+        wrapped_node = get_registered_node(name, package)
         return wrapped_node
 
     def pipeline_graph(
@@ -155,7 +151,8 @@ class ChimeraPyPipelineConfig(BaseModel):
         for node_config in self.nodes:
             node_config.kwargs["name"] = node_config.name
             created_nodes[node_config.name] = self.get_registered_node(
-                node_config.registry_name
+                node_config.registry_name,
+                package=node_config.package,
             ).instantiate(**node_config.kwargs)
 
         pipeline = cp.Graph()

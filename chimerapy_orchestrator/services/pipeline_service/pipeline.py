@@ -4,7 +4,7 @@ import networkx as nx
 
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.models.registry_models import NodeType
-from chimerapy_orchestrator.registry import get_node_type, get_registered_node
+from chimerapy_orchestrator.registry import get_registered_node
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -61,9 +61,9 @@ class Pipeline(nx.DiGraph):
                 raise ValueError(f"{node} is not a valid node")
         edge = {}
         for node_id, data in self.nodes(data=True):
-            wrapped_node = data["wrapped_node"]
+            wrapped_node: WrappedNode = data["wrapped_node"]
             if node_id == source:
-                node_type = get_node_type(wrapped_node)
+                node_type = wrapped_node.node_type
 
                 if node_type not in {NodeType.SOURCE, NodeType.STEP}:
                     raise ValueError(
@@ -72,7 +72,7 @@ class Pipeline(nx.DiGraph):
                 edge["source"] = wrapped_node
 
             elif node_id == sink:
-                node_type = get_node_type(wrapped_node)
+                node_type = wrapped_node.node_type
 
                 if node_type not in {NodeType.SINK, NodeType.STEP}:
                     raise ValueError(

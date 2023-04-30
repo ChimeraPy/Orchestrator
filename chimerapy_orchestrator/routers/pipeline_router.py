@@ -7,7 +7,11 @@ from chimerapy_orchestrator.models.pipeline_models import (
     WebEdge,
     WebNode,
 )
-from chimerapy_orchestrator.registry import all_nodes
+from chimerapy_orchestrator.registry import (
+    all_nodes,
+    check_registry,
+    importable_packages,
+)
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 
 
@@ -15,17 +19,37 @@ class PipelineRouter(APIRouter):
     def __init__(self, pipelines: Pipelines):
         super().__init__(prefix="/pipeline", tags=["pipeline_service"])
         self.pipelines = pipelines
-        self.add_api_route(
-            "/list",
-            self.list_pipelines,
-            methods=["GET"],
-            response_description="List of all the active pipelines",
-        )
+
+        # Nodes and plugins
         self.add_api_route(
             "/list-nodes",
             self.list_nodes,
             methods=["GET"],
             response_description="List of all the nodes available to add to a pipeline",
+        )
+
+        # Import from plugins
+        self.add_api_route(
+            "/plugin-nodes",
+            self.plugin_nodes,
+            methods=["GET"],
+            response_description="List of all the nodes available to add to a pipeline",
+            description="Import nodes from plugins",
+        )
+
+        self.add_api_route(
+            "/install-plugin/{package}",
+            self.install_plugin,
+            methods=["POST"],
+            response_description="List of all the nodes available to add to a pipeline",
+        )
+
+        # Pipeline operations
+        self.add_api_route(
+            "/list",
+            self.list_pipelines,
+            methods=["GET"],
+            response_description="List of all the active pipelines",
         )
 
         self.add_api_route(
@@ -133,7 +157,19 @@ class PipelineRouter(APIRouter):
 
     async def list_nodes(self) -> List[WebNode]:
         """Get all nodes."""
-        return [node.to_web_node() for node in all_nodes().values()]
+        return [node.to_web_node() for node in all_nodes()]
+
+    async def install_plugin(self, package: str) -> List[WebNode]:
+        """Import all nodes from a package."""
+        try:
+            check_registry(package)
+        except Exception as e:
+            raise e
+        return [node.to_web_node() for node in all_nodes()]
+
+    async def plugin_nodes(self) -> List[str]:
+        """Get all importable packages."""
+        return importable_packages()
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:
         """Get all pipelines."""
