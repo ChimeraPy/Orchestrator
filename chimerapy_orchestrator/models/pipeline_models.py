@@ -4,6 +4,10 @@ from typing import Any, Dict, List, Optional, Type
 from chimerapy.node import Node
 from pydantic import BaseModel, Field
 
+from chimerapy_orchestrator.attributes_parser.parser import (
+    Argument,
+    get_node_arguments,
+)
 from chimerapy_orchestrator.models.registry_models import NodeType
 from chimerapy_orchestrator.registry import plugin_registry
 from chimerapy_orchestrator.utils import uuid
@@ -41,8 +45,17 @@ class WebNode(BaseModel):
         default=None, description="The type of the node."
     )
 
+    attributes: Dict[str, Argument] = Field(
+        default={},
+        description="The attributes of the node.",
+    )
+
     package: Optional[str] = Field(
         default=None, description="The package that registered this node."
+    )
+
+    doc: Optional[str] = Field(
+        default=None, description="The docstring of the node."
     )
 
     class Config:
@@ -93,6 +106,14 @@ class WrappedNode(BaseModel):
         default=None, description="The package that registered this node."
     )
 
+    attributes: Dict[str, Argument] = Field(
+        default={}, description="The attributes of the node."
+    )
+
+    doc: Optional[str] = Field(
+        default="", description="The docstring of the node."
+    )
+
     @property
     def instantiated(self) -> bool:
         return self.instance is not None
@@ -110,6 +131,8 @@ class WrappedNode(BaseModel):
             registry_name=self.registry_name,
             kwargs=kwargs,
             package=self.package,
+            attributes=self.attributes,
+            doc=self.doc,
         )
 
     @classmethod
@@ -122,12 +145,13 @@ class WrappedNode(BaseModel):
     ) -> "WrappedNode":
         if kwargs is None:
             kwargs = {}
-
         wrapped_node = cls(
             NodeClass=NodeClass,
             kwargs=kwargs,
             node_type=node_type,
             registry_name=registry_name,
+            attributes=get_node_arguments(NodeClass),
+            doc=NodeClass.__doc__,
         )
 
         return wrapped_node
@@ -139,6 +163,8 @@ class WrappedNode(BaseModel):
             id=self.id,
             type=self.node_type,
             package=self.package,
+            attributes=self.attributes,
+            doc=self.doc,
         )
 
     def __repr__(self):

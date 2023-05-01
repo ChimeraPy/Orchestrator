@@ -19,11 +19,13 @@
 	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
 	import PluginInstaller from '$lib/Components/PluginInstaller/PluginInstaller.svelte';
+	import MarkdownViewer from '$lib/Components/MarkdownViewer/MarkdownViewer.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import { CreatePipelineStages } from '$lib/models';
-	import type { Pipeline, ClusterState } from '$lib/models';
+	import type { Pipeline, ClusterState, NodeState, PipelineNode } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
+	import AttributesEditor  from "$lib/Components/AttributesEditor/AttributesEditor.svelte";
 	import { Icons } from '$lib/Icons';
 
 	import { Input, Label, Spinner } from 'flowbite-svelte';
@@ -44,6 +46,8 @@
 	let pipelineGraph: EditableDagViewer;
 	let pluginInstaller: PluginInstaller;
 	let infoModalContent: { title: string; content: any } | null = null;
+	let selectedNode: PipelineNode | null = null;
+	let markdownViewer: MarkdownViewer;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
 
@@ -196,6 +200,7 @@
 	}
 
 	function highlightPipelineEdge(link: joint.dia.Link) {
+		clearPipelineHighlights();
 		const otherLinks = activePipeline?.edges.filter((e) => {
 			return e.id !== link.id;
 		});
@@ -207,20 +212,58 @@
 		pipelineGraph?.setCellStrokeWidth(link.id, 4);
 	}
 
-	function clearPipelineEdgeHighlight() {
-		activePipeline?.edges.forEach((l) => {
-			pipelineGraph?.setCellStrokeWidth(l.id, 2);
-		});
-	}
+	function highlightPipelineNode(node: joint.dia.Element) {
+		clearPipelineHighlights();
+        const otherCells = activePipeline?.nodes
+            .filter((n) => {
+                return n.id !== node.id;
+            })
+            .concat(activePipeline?.edges);
+
+        const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
+        if (pipelineNode) {
+            selectedNode = pipelineNode;
+        }
+
+        otherCells.forEach((n) => {
+            pipelineGraph?.setCellStrokeWidth(n.id, 2);
+        });
+
+        pipelineGraph?.setCellStrokeWidth(node.id, 4);
+    }
+
+
+	function clearPipelineHighlights() {
+        activePipeline?.edges.forEach((l) => {
+            pipelineGraph?.setCellStrokeWidth(l.id, 2);
+        });
+
+        activePipeline?.nodes.forEach((n) => {
+            pipelineGraph?.setCellStrokeWidth(n.id, 2);
+        });
+        selectedNode = null;
+    }
 
 	function showNodeInfo(node) {
 		const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
 		if (nodeDetails) {
 			infoModalContent = {
 				title: nodeDetails.name,
-				content: nodeDetails
+				content: getContentFromNodeDetails(nodeDetails)
 			};
 		}
+	}
+
+	function getContentFromNodeDetails(nodeDetails: PipelineNode) {
+		return Object.fromEntries(Object.entries(nodeDetails).filter(([key, value]) => !['doc', 'attributes'].includes(key)))
+	}
+
+	function getContentFromPipelineDetails(pipelineDetails: Pipeline) {
+		const pipeline = Object.assign({}, pipelineDetails);
+		pipeline.nodes = pipeline.nodes.map((n) => {
+			return getContentFromNodeDetails(n);
+		});
+		return pipeline;
 	}
 
 	function linkExistsInActivePipeline(linkView: joint.dia.LinkView, paper: joint.dia.Paper) {
@@ -281,7 +324,7 @@
 		(await pipelineClient.getPipeline(requestedPipeline.id)).map((pipeline) => {
 			infoModalContent = {
 				title: pipeline.name,
-				content: pipeline
+				content: getContentFromPipelineDetails(pipeline)
 			};
 		});
 	}
@@ -319,6 +362,24 @@
 
 	function showPluginInstaller() {
 		pluginInstaller?.display();
+	}
+
+	function showNodeDocs(node) {
+		const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
+		if(nodeDetails.doc) {
+			const docs = nodeDetails.doc
+            .replace(/^\s*/mg, '')  // default indentation creates code blocks
+            // Convert the arguments to a list
+			.replace(/^Args:/mg, (match, arg) => '## Arguments\n')
+			.replace(/^Parameters/mg, (match, arg) => '\n## Parameters\n')
+            .replace(/^([a-zA-Z_]+):/mg, (match, argName) => `- \`${argName}\`:`)
+			.replace(/^\*\*kwargs:?/mg, (match, kwarg) => '- `**kwargs`') // replace **kwargs and args
+			console.log(docs);
+
+			markdownViewer.display(docs, nodeDetails.name);
+		} else {
+			markdownViewer.display('No documentation available', nodeDetails.name);
+		}
 	}
 </script>
 
@@ -400,7 +461,8 @@
 					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
 					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
 					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-					on:blankClick={(event) => clearPipelineEdgeHighlight()}
+					on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
+					on:blankClick={(event) => clearPipelineHighlights()}
 				/>
 			</div>
 		</div>
@@ -438,10 +500,19 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu title="Selected Node" backgroundClass="bg-blue-600" />
+				<HorizontalMenu
+						icons="{[{
+							type: Icons.info,
+							tooltip: `${selectedNode?.name || 'Node'} Info`,
+							disabled: !selectedNode
+						}]}"
+						title="{selectedNode?.name || 'Selected Node'}"
+						backgroundClass="bg-blue-600"
+						on:info="{() => showNodeDocs(selectedNode)}"
+				/>
 			</div>
-			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-				<p>Selected Node attributes</p>
+			<div class="flex-1 justify-center bg-[#F3F7F6] overflow-hidden">
+				<AttributesEditor bind:selectedObject="{selectedNode}"/>
 			</div>
 		</div>
 	</div>
@@ -518,3 +589,4 @@
 </Modal>
 
 <PluginInstaller bind:this={pluginInstaller} on:pluginInstalled={() => fetchPartBrowserNodes()} />
+<MarkdownViewer bind:this={markdownViewer}/>

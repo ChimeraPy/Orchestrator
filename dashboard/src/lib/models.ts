@@ -28,6 +28,16 @@ export enum CreatePipelineStages {
 	INACTIVE = 'INACTIVE'
 }
 
+export interface Argument {
+  name: string;
+  type_info: TypeInfo;
+}
+
+export interface TypeInfo {
+  type: string;
+  items_type?: string[] | string;
+}
+
 export interface PipelineNode {
 	id: string;
 	name: string;
@@ -35,6 +45,7 @@ export interface PipelineNode {
 	type: NodeType;
 	kwargs: { [key: string]: any };
 	package: string;
+	attributes: {[key: string]: Argument};
 }
 
 export interface Edge {
