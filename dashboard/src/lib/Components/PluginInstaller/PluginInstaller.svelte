@@ -92,9 +92,9 @@
 							<TableBodyRow>
 								<TableBodyCell>{plugin.package}</TableBodyCell>
 								<TableBodyCell>{plugin.name}</TableBodyCell>
-								<TableBodyCell>{plugin.description}</TableBodyCell>
+								<TableBodyCell tdClass="px-6 py-4 font-medium">{plugin.description}</TableBodyCell>
 								<TableBodyCell>{plugin.version}</TableBodyCell>
-								<TableBodyCell>{plugin.nodes.join(', ')}</TableBodyCell>
+								<TableBodyCell tdClass="px-6 py-4 font-medium">{plugin.nodes.join(', ')}</TableBodyCell>
 								<TableBodyCell>
 									{#if installingPluginNames.includes(plugin.name)}
 										<Spinner color="green" />
