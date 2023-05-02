@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { getIconPath } from '$lib/Icons';
-	import type { Icons } from '$lib/Icons';
+	import type { IconType } from '$lib/Icons';
 	import { Tooltip } from 'flowbite-svelte';
 
 	import { createEventDispatcher } from 'svelte';
+	import { Icons } from '$lib/Icons';
 
-	export let icons: { type: Icons; tooltip?: string; disabled?: boolean }[] = [];
+	export let icons: IconType[] = [];
 	export let title: string = 'Menu';
 	export let backgroundClass: string = 'bg-green-800';
 
@@ -13,6 +14,11 @@
 
 	function dispatchEvent(event: string) {
 		dispatch(event);
+	}
+
+	function getPaths(iconType: Icons) {
+		const paths = getIconPath(iconType);
+		return Array.isArray(paths) ? paths : [paths];
 	}
 </script>
 
@@ -28,15 +34,19 @@
 						   text-xl
 						   {icon.disabled ? 'pointer-events-none' : 'pointer-events-auto'}
 						   {icon.disabled ? 'opacity-50' : 'opacity-100'}"
-					on:click={() => dispatchEvent(icon.type)}
+					on:click={() => dispatchEvent(icon.dispatchEventName || icon.type)}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
-						fill="currentColor"
+						fill={icon.fill || 'currentColor'}
+						stroke="currentColor"
 						class="w-6 h-6"
+						stroke-width={icon.strokeWidth || 0.5}
 					>
-						<path d={getIconPath(icon.type)} />
+						{#each getPaths(icon.type) as iconPath}
+							<path stroke-linecap="round" stroke-linejoin="round" d={iconPath} />
+						{/each}
 					</svg>
 					{#if icon.tooltip}
 						<Tooltip style={'dark'}>
