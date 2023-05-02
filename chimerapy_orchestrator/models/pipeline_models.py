@@ -1,4 +1,5 @@
 import importlib
+from copy import copy
 from typing import Any, Dict, List, Optional, Type
 
 from chimerapy.node import Node
@@ -142,7 +143,13 @@ class WrappedNode(BaseModel):
 
     def instantiate(self, **kwargs) -> Node:
         """Instantiates the node."""
-        self.instance = self.NodeClass(**kwargs)
+        if kwargs is None:
+            kwargs = {}
+
+        current_kwargs = copy(self.kwargs)
+        current_kwargs.update(kwargs)
+
+        self.instance = self.NodeClass(**current_kwargs)
         return self.instance
 
     def clone(self, **kwargs) -> "WrappedNode":
