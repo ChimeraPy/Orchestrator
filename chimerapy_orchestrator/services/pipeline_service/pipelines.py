@@ -1,5 +1,8 @@
 from typing import Any, Dict, List, Optional, Tuple
 
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
 
@@ -20,6 +23,14 @@ class Pipelines:
     def create_pipeline(self, name: str, description: str = None) -> Pipeline:
         """Create a new pipeline_service."""
         pipeline = Pipeline(name=name, description=description)
+        self._pipelines[pipeline.id] = pipeline
+        return pipeline
+
+    def create_pipeline_from_config(
+        self, pipeline_config: ChimeraPyPipelineConfig
+    ):
+        """Create a new pipeline from a ChimeraPyPipelineConfig."""
+        pipeline = Pipeline.from_pipeline_config(pipeline_config)
         self._pipelines[pipeline.id] = pipeline
         return pipeline
 

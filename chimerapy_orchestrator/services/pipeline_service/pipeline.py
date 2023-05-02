@@ -2,6 +2,9 @@ from typing import Any, Dict, Optional
 
 import networkx as nx
 
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.models.registry_models import NodeType
 from chimerapy_orchestrator.registry import get_registered_node
@@ -152,3 +155,21 @@ class Pipeline(nx.DiGraph):
                 for (source, sink, data) in self.edges(data=True)
             ],
         }
+
+    @classmethod
+    def from_pipeline_config(
+        cls, config: ChimeraPyPipelineConfig
+    ) -> "Pipeline":
+        """Creates a pipeline_service from a ChimeraPyPipelineConfig."""
+        pipeline = cls(config.name, config.description)
+        node_to_names = {}
+        for node in config.nodes:
+            wrapped_node = pipeline.add_node(
+                node.registry_name, node.package, **node.kwargs
+            )
+            node_to_names[node.name] = wrapped_node
+        for edge in config.adj:
+            source, sink = edge
+            pipeline.add_edge(node_to_names[source].id, node_to_names[sink].id)
+
+        return pipeline

@@ -4,6 +4,9 @@ from typing import Any, Dict, List, Optional, Type
 from chimerapy.node import Node
 from pydantic import BaseModel, Field
 
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 from chimerapy_orchestrator.models.registry_models import NodeType
 from chimerapy_orchestrator.registry import plugin_registry
 from chimerapy_orchestrator.utils import uuid
@@ -12,10 +15,17 @@ from chimerapy_orchestrator.utils import uuid
 class PipelineRequest(BaseModel):
     """A request to create a pipeline."""
 
-    name: str = Field(..., description="The name of the pipeline.")
+    name: Optional[str] = Field(
+        default=None, description="The name of the pipeline."
+    )
 
     description: Optional[str] = Field(
         default=None, description="The description of the pipeline."
+    )
+
+    config: Optional[ChimeraPyPipelineConfig] = Field(
+        default=None,
+        description="The configuration of the pipeline.",
     )
 
     class Config:
@@ -104,6 +114,10 @@ class WrappedNode(BaseModel):
 
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
+        if kwargs is None:
+            kwargs = {}
+        if kwargs == {}:
+            kwargs = self.kwargs
         return WrappedNode(
             NodeClass=self.NodeClass,
             node_type=self.node_type,
@@ -139,6 +153,7 @@ class WrappedNode(BaseModel):
             id=self.id,
             type=self.node_type,
             package=self.package,
+            kwargs=self.kwargs,
         )
 
     def __repr__(self):

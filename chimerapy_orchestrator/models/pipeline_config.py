@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Type
 
 import chimerapy as cp
@@ -9,7 +8,7 @@ from chimerapy_orchestrator.registry import get_registered_node
 
 
 class ManagerConfig(BaseModel):
-    logdir: Path = Field(..., description="The log directory for the manager.")
+    logdir: str = Field(..., description="The log directory for the manager.")
     port: int = Field(..., description="The port for the manager.")
 
     class Config:
@@ -104,6 +103,14 @@ class ChimeraPyPipelineConfig(BaseModel):
     mode: Literal["preview", "record"] = Field(
         default="record",
         description="The mode of the pipeline_service.",
+    )
+
+    name: str = Field(
+        default="Pipeline", description="The name of the pipeline"
+    )
+
+    description: str = Field(
+        default="", description="The description of the pipeline."
     )
 
     workers: Workers = Field(..., description="The workers to be added.")

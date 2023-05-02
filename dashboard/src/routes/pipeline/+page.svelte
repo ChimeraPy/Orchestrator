@@ -19,6 +19,7 @@
 	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
 	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
 	import PluginInstaller from '$lib/Components/PluginInstaller/PluginInstaller.svelte';
+	import PipelineImporter from '$lib/Components/PipelineImporter/PipelineImporter.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import { CreatePipelineStages } from '$lib/models';
@@ -43,6 +44,7 @@
 	let activePipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
 	let pluginInstaller: PluginInstaller;
+	let pipelineImporter: PipelineImporter;
 	let infoModalContent: { title: string; content: any } | null = null;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
@@ -239,7 +241,7 @@
 	}
 
 	// Pipeline Creator/ Info List
-	function showPipelineModal() {
+	function showAddPipelineModal() {
 		createPipelineStage = CreatePipelineStages.ACTIVE;
 	}
 
@@ -319,6 +321,10 @@
 
 	function showPluginInstaller() {
 		pluginInstaller?.display();
+	}
+
+	function showPipelineImporter() {
+		pipelineImporter.display();
 	}
 </script>
 
@@ -421,9 +427,11 @@
 					backgroundClass="bg-blue-600"
 					icons={[
 						{ type: Icons.refresh, tooltip: 'Refresh Pipelines' },
-						{ type: Icons.add, tooltip: 'Create a new Pipeline' }
+						{ type: Icons.add, tooltip: 'Create a new Pipeline' },
+						{ type: Icons.upload, tooltip: 'Import a Pipeline', fill: 'none', strokeWidth: 2 }
 					]}
-					on:add={showPipelineModal}
+					on:add={showAddPipelineModal}
+					on:upload={showPipelineImporter}
 					on:refresh={debouncedFetchPipelines}
 				/>
 			</div>
@@ -518,3 +526,10 @@
 </Modal>
 
 <PluginInstaller bind:this={pluginInstaller} on:pluginInstalled={() => fetchPartBrowserNodes()} />
+<PipelineImporter
+	bind:this={pipelineImporter}
+	on:importSuccess={() => {
+		fetchPipelines();
+		fetchPartBrowserNodes();
+	}}
+/>
