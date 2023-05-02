@@ -1,4 +1,6 @@
 {
+  "name": "webcam-demo",
+  "description": "A demo of the webcam node and the show window node",
   "workers": {
     "manager_ip": "129.59.104.153",
     "manager_port": 9001,

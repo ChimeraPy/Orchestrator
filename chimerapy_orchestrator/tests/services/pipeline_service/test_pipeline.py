@@ -135,10 +135,10 @@ class TestPipeline(BaseTest):
     def test_from_local_camera(self):
         config = get_pipeline_config("local_camera")
         pipeline = Pipeline.from_pipeline_config(config)
-        assert pipeline.name == "Pipeline"
+        assert pipeline.name == "webcam-demo"
 
     @pytest.mark.skipif(
-        can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
+        not can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
     )
     def test_from_mmlapipe_displays_pipeline(self):
         config = get_pipeline_config(
@@ -154,9 +154,9 @@ class TestPipeline(BaseTest):
             ]
 
     @pytest.mark.skipif(
-        can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
+        not can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
     )
-    def test_from_mmlapipe_displays(self):
+    def test_from_mmlapipe_mf_sort(self):
         config = get_pipeline_config(
             "mf_sort/all_local", get_mmlapipe_configs_root_dir()
         )

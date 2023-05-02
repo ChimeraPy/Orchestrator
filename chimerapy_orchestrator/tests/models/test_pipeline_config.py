@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import pytest
 
@@ -54,4 +53,4 @@ class TestPipelineConfig(BaseTest):
     def test_manager_config(self, dummy_pipeline_config):
         manager = dummy_pipeline_config.manager_config
         assert manager.port == 8000
-        assert manager.logdir == Path("/tmp/logs")
+        assert manager.logdir == "/tmp/logs"
