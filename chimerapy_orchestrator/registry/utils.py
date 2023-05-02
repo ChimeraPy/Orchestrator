@@ -1,50 +1,64 @@
-from typing import Dict, Optional
+from typing import Optional, Type
 
 from chimerapy import Node
 
-from chimerapy_orchestrator.models.pipeline_models import WrappedNode
+from chimerapy_orchestrator.models.pipeline_models import NodeType, WrappedNode
 
 
-def source_node(cls=None, *, name=None):
+def source_node(cls=None, *, name=None, add_to_registry=False):
     """Registers a source node."""
-    from chimerapy_orchestrator.registry import source_nodes
-
     if cls is not None:
-        return RegistersChimeraPyNode(name, source_nodes)(cls)
+        return RegistersChimeraPyNode(
+            name, NodeType.SOURCE, add_to_registry=add_to_registry
+        )(cls)
     else:
-        return RegistersChimeraPyNode(name, source_nodes)
+        return RegistersChimeraPyNode(
+            name, NodeType.SOURCE, add_to_registry=add_to_registry
+        )
 
 
-def sink_node(cls=None, *, name=None):
+def sink_node(cls=None, *, name=None, add_to_registry=False):
     """Register a sink node."""
-    from chimerapy_orchestrator.registry import sink_nodes
 
     if cls is not None:
-        return RegistersChimeraPyNode(name, sink_nodes)(cls)
+        return RegistersChimeraPyNode(
+            name, NodeType.SINK, add_to_registry=add_to_registry
+        )(cls)
     else:
-        return RegistersChimeraPyNode(name, sink_nodes)
+        return RegistersChimeraPyNode(
+            name, NodeType.SINK, add_to_registry=add_to_registry
+        )
 
 
-def step_node(cls=None, *, name=None):
+def step_node(cls=None, *, name=None, add_to_registry=False):
     """Register a step node."""
-    from chimerapy_orchestrator.registry import step_nodes
 
     if cls is not None:
-        return RegistersChimeraPyNode(name, step_nodes)(cls)
+        return RegistersChimeraPyNode(
+            name, NodeType.STEP, add_to_registry=add_to_registry
+        )(cls)
     else:
-        return RegistersChimeraPyNode(name, step_nodes)
+        return RegistersChimeraPyNode(
+            name, NodeType.STEP, add_to_registry=add_to_registry
+        )
 
 
 class RegistersChimeraPyNode:
     """Registers a ChimeraPy Node."""
 
     def __init__(
-        self, name: Optional[str], registry: Dict[str, WrappedNode]
+        self,
+        name: Optional[str],
+        node_type: NodeType,
+        add_to_registry: bool = False,
     ) -> None:
         self.name = name
-        self.registry = registry
+        self.type = node_type
+        self.add_to_registry = add_to_registry
 
-    def __call__(self, node_class: Node):
+    def __call__(self, node_class: Type[Node]):
+        from chimerapy_orchestrator.registry import discovered_nodes
+
         if not issubclass(node_class, Node):
             raise TypeError(f"{node_class} is not a ChimeraPy Node")
 
@@ -53,11 +67,19 @@ class RegistersChimeraPyNode:
         else:
             name = self.name
 
-        if name in self.registry:
-            raise ValueError(
-                f"{name} is already registered as a ChimeraPy Node"
+        wrapped_node = WrappedNode.from_node_class(
+            node_class,
+            node_type=self.type,
+            registry_name=name,
+        )
+
+        qualified_name = f"{node_class.__module__}:{node_class.__name__}"
+
+        discovered_nodes.add_imported_node(qualified_name, wrapped_node)
+
+        if self.add_to_registry:
+            discovered_nodes.add_node(
+                wrapped_node.registry_name, wrapped_node, add_to_default=True
             )
 
-        wrapped_node = WrappedNode.from_node_class(node_class, registry_name=name)
-        self.registry[name] = wrapped_node
         return node_class

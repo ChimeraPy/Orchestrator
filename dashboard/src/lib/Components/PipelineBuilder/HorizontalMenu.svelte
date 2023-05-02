@@ -4,7 +4,7 @@
 	import { Tooltip } from 'flowbite-svelte';
 
 	import { createEventDispatcher } from 'svelte';
-	import {Icons} from "$lib/Icons";
+	import { Icons } from '$lib/Icons';
 
 	export let icons: IconType[] = [];
 	export let title: string = 'Menu';
@@ -39,15 +39,13 @@
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
-						fill="{icon.fill || 'currentColor'}"
+						fill={icon.fill || 'currentColor'}
 						stroke="currentColor"
 						class="w-6 h-6"
-						stroke-width="{icon.strokeWidth || 0.5}"
+						stroke-width={icon.strokeWidth || 0.5}
 					>
 						{#each getPaths(icon.type) as iconPath}
-							<path stroke-linecap="round"
-								  stroke-linejoin="round"
-							d={iconPath} />
+							<path stroke-linecap="round" stroke-linejoin="round" d={iconPath} />
 						{/each}
 					</svg>
 					{#if icon.tooltip}

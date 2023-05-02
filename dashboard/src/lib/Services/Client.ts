@@ -1,6 +1,16 @@
 import type { Result } from 'ts-monads/lib/Result';
-import type { PipelineNode, Pipeline, Edge, ResponseError, ClusterState, ActionsFSM } from '../models';
+import type {
+	PipelineNode,
+	Pipeline,
+	Edge,
+	ResponseError,
+	ClusterState,
+	NodesPlugin,
+	ActionsFSM
+} from '../models';
+
 import { Err, Ok } from 'ts-monads';
+import type { ChimeraPyPipelineConfig } from '$lib/pipelineConfig';
 
 class Client {
 	url: string;
@@ -147,6 +157,36 @@ export class PipelineClient extends Client {
 			body: JSON.stringify(requestBody),
 			headers: new Headers({ 'Content-Type': 'application/json' })
 		});
+
+		return response;
+	}
+
+	async importPipeline(config: ChimeraPyPipelineConfig): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = '/create';
+
+		const requestBody = {
+			config: config
+		};
+
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'PUT',
+			body: JSON.stringify(requestBody),
+			headers: new Headers({ 'Content-Type': 'application/json' })
+		});
+
+		return response;
+	}
+
+	async getPlugins(): Promise<Result<NodesPlugin[], ResponseError>> {
+		const prefix = '/plugins';
+		const response = await this._fetch<NodesPlugin[]>(prefix, { method: 'GET' });
+
+		return response;
+	}
+
+	async installPlugin(pluginName: string): Promise<Result<PipelineNode[], ResponseError>> {
+		const prefix = encodeURIComponent(`/install-plugin/${pluginName}`);
+		const response = await this._fetch<PipelineNode[]>(prefix, { method: 'POST' });
 
 		return response;
 	}

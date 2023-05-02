@@ -8,6 +8,11 @@ from chimerapy_orchestrator.services.pipeline_service.pipeline import (
     Pipeline,
 )
 from chimerapy_orchestrator.tests.base_test import BaseTest
+from chimerapy_orchestrator.tests.utils import (
+    can_find_mmlapipe_configs,
+    get_mmlapipe_configs_root_dir,
+    get_pipeline_config,
+)
 
 
 class TestPipeline(BaseTest):
@@ -20,7 +25,7 @@ class TestPipeline(BaseTest):
 
     @pytest.fixture(scope="session", autouse=True)
     def dummy_step_node(self):
-        @step_node
+        @step_node(add_to_registry=True)
         class DummyStepNode(Node):
             def __init__(self, name):
                 self.name = name
@@ -126,3 +131,43 @@ class TestPipeline(BaseTest):
         assert web_json["edges"][0]["source"] == wrapped_node_1.id
         assert web_json["edges"][0]["sink"] == wrapped_node_2.id
         assert web_json["description"] == "Webcam to ShowWindow"
+
+    def test_from_local_camera(self):
+        config = get_pipeline_config("local_camera")
+        pipeline = Pipeline.from_pipeline_config(config)
+        assert pipeline.name == "webcam-demo"
+
+    @pytest.mark.skipif(
+        not can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
+    )
+    def test_from_mmlapipe_displays_pipeline(self):
+        config = get_pipeline_config(
+            "displays/all_local", get_mmlapipe_configs_root_dir()
+        )
+        pipeline = Pipeline.from_pipeline_config(config)
+        pipeline_dict = pipeline.to_web_json()
+        assert pipeline_dict["name"] == "Pipeline"
+        for node in pipeline_dict["nodes"]:
+            assert node["registry_name"] in [
+                "MMLAPIPE_Video",
+                "MMLAPIPE_ShowWindows",
+            ]
+
+    @pytest.mark.skipif(
+        not can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
+    )
+    def test_from_mmlapipe_mf_sort(self):
+        config = get_pipeline_config(
+            "mf_sort/all_local", get_mmlapipe_configs_root_dir()
+        )
+        pipeline = Pipeline.from_pipeline_config(config)
+        pipeline_dict = pipeline.to_web_json()
+        assert pipeline_dict["name"] == "Pipeline"
+        for node in pipeline_dict["nodes"]:
+            assert node["registry_name"] in [
+                "MMLAPIPE_MFSortVideo",
+                "MMLAPIPE_MFSortVideo",
+                "MMLAPIPE_MFSortDetector",
+                "MMLAPIPE_BBoxPainter",
+                "MMLAPIPE_MFSortTracker",
+            ]

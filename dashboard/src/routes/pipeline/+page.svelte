@@ -14,20 +14,21 @@
     import {PipelineUtils} from '$lib/Services/PipelineUtils';
     import {ClusterUtils} from '$lib/Services/ClusterUtils';
     import {debounce} from '$lib/utils';
-
-    import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
-    import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
-    import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
-    import * as joint from 'jointjs';
-    import Modal from '$lib/Components/Modal/Modal.svelte';
+	import PartBrowser from '$lib/Components/PipelineBuilder/PartBrowser.svelte';
+	import HorizontalMenu from '$lib/Components/PipelineBuilder/HorizontalMenu.svelte';
+	import EditableList from '$lib/Components/PipelineBuilder/EditableList.svelte';
+	import PluginInstaller from '$lib/Components/PluginInstaller/PluginInstaller.svelte';
+	import PipelineImporter from '$lib/Components/PipelineImporter/PipelineImporter.svelte';
+	import * as joint from 'jointjs';
+	import Modal from '$lib/Components/Modal/Modal.svelte';
+	import { CreatePipelineStages } from '$lib/models';
+	import type { Pipeline, ClusterState, NodeState } from '$lib/models';
+	import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
+	import { Icons } from '$lib/Icons';
     import TabbedOrchestrationViews from '$lib/Components/ClusterComponents/TabbedOrchestrationViews.svelte';
 
-    import type {ClusterState, NodeState, Pipeline} from '$lib/models';
-    import {CreatePipelineStages} from '$lib/models';
-    import EditableDagViewer from '$lib/Components/PipelineBuilder/EditableDAGViewer.svelte';
-    import {Icons} from '$lib/Icons';
-
     import {Input, Label, Select, Spinner} from 'flowbite-svelte';
+
 
     let networkStore = getStore('network');
 
@@ -45,6 +46,8 @@
     let activePipeline: Pipeline | null = null;
     let pipelineGraph: EditableDagViewer;
     let tabbedOrchestrationViews: TabbedOrchestrationViews;
+    let pluginInstaller: PluginInstaller;
+	let pipelineImporter: PipelineImporter;
     let infoModalContent: { title: string; content: any; alertMessage?: string } | null = null;
     let selectedNode: NodeState | null = null;
     let selectedWorkerId: string | null = null;
@@ -114,11 +117,12 @@
             return;
         }
 
-        const node = {
-            name: cell.prop('registryName'),
-            registry_name: cell.prop('registryName'),
-            id: cell.id
-        };
+       const node = {
+			name: cell.prop('registryName'),
+			registry_name: cell.prop('registryName'),
+			package: cell.prop('package'),
+			id: cell.id
+		};
 
         const result = await pipelineClient.addNodeTo(activePipeline.id, node);
         result.mapAsync(async (node) => {
@@ -240,7 +244,6 @@
         const pipelineNode = activePipeline?.nodes.find((n) => n.id === node.id);
         if (pipelineNode) {
             selectedNode = pipelineNode;
-            console.log(selectedNode);
             if (selectedNode.worker_id) {
                 const foundWorker = workers.find((w) => w.value === selectedNode.worker_id);
 
@@ -295,15 +298,14 @@
     }
 
     // Pipeline Creator/ Info List
-    function showPipelineModal() {
-        createPipelineStage = CreatePipelineStages.ACTIVE;
-    }
+    function showAddPipelineModal() {
+		createPipelineStage = CreatePipelineStages.ACTIVE;
+	}
 
     async function requestPipelineCreation() {
         if (createPipelineStage === CreatePipelineStages.CREATING) {
             return;
         }
-
         createPipelineStage = CreatePipelineStages.CREATING;
 
         const result = await pipelineClient.createPipeline(pipelineName, pipelineDescription);
@@ -400,49 +402,67 @@
         selectedNode.worker_id = selectedWorkerId;
         selectedNode = selectedNode;
     }
+
+	function showPluginInstaller() {
+		pluginInstaller?.display();
+	}
+
+	function showPipelineImporter() {
+		pipelineImporter.display();
+	}
 </script>
 
 <div class="h-full flex">
-    <div class="w-1/5 flex flex-col border-r-2 border-gray-400">
-        <div class="flex flex-col flex-1 overflow-hidden">
-            <div>
-                <HorizontalMenu
-                        on:refresh={debouncedFetchNodes}
-                        title="Nodes"
-                        icons={[{ type: Icons.refresh, tooltip: 'Refresh nodes' }]}
-                        backgroundClass="bg-blue-600"
-                />
-            </div>
-            <div class="flex-1 bg-[#F3F7F6] overflow-hidden">
-                <PartBrowser
-                        on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
-                        cells={nodeCells}
-                />
-            </div>
-        </div>
-        <div class="flex flex-col flex-1">
-            <div>
-                <HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600"/>
-            </div>
-            <div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-                <EditableList
-                        editable={false}
-                        items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}
-                        on:info={(event) => displayWorkerInfo(event.detail)}
-                />
-            </div>
-        </div>
-    </div>
-    <div class="flex flex-col w-3/5 h-full bg-indigo-100 border-r-2 border-gray-400">
-        <div bind:this={editorContainer} class="flex-1 flex h-0.5 flex-col overflow-hidden">
-            <div>
-                <HorizontalMenu
-                        bind:this={horizontalMenu}
-                        on:magnify={() => pipelineGraph?.zoomIn()}
-                        on:reduce={() => pipelineGraph?.zoomOut()}
-                        on:refresh={() => pipelineGraph?.scaleContentToFit()}
-                        on:bolt={() => displayActivationIntent()}
-                        icons={[
+	<div class="w-1/5 flex flex-col border-r-2 border-gray-400">
+		<div class="flex flex-col flex-1 overflow-hidden">
+			<div>
+				<HorizontalMenu
+					on:refresh={debouncedFetchNodes}
+					on:add={() => showPluginInstaller()}
+					title="Nodes"
+					icons={[
+						{
+							type: Icons.refresh,
+							tooltip: 'Refresh nodes'
+						},
+						{
+							type: Icons.add,
+							tooltip: 'Plugins'
+						}
+					]}
+					backgroundClass="bg-blue-600"
+				/>
+			</div>
+			<div class="flex-1 bg-[#F3F7F6] overflow-hidden">
+				<PartBrowser
+					on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
+					cells={nodeCells}
+				/>
+			</div>
+		</div>
+		<div class="flex flex-col flex-1">
+			<div>
+				<HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600" />
+			</div>
+			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+				<EditableList
+					editable={false}
+					items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}
+					on:info={(event) => displayWorkerInfo(event.detail)}
+				/>
+			</div>
+		</div>
+	</div>
+	<div class="flex flex-col w-3/5 h-full bg-indigo-100 border-r-2 border-gray-400">
+		<div bind:this={editorContainer} class="flex-1 flex flex-col overflow-hidden">
+			<div>
+				<HorizontalMenu
+					bind:this={horizontalMenu}
+					on:magnify={() => pipelineGraph?.zoomIn()}
+					on:reduce={() => pipelineGraph?.zoomOut()}
+					on:refresh={() => pipelineGraph?.scaleContentToFit()}
+					on:bolt={() => displayActivationIntent()}
+					icons={[
 						{
 							type: Icons.magnify,
 							tooltip: 'Zoom in',
@@ -498,10 +518,12 @@
                         backgroundClass="bg-blue-600"
                         icons={[
 						{ type: Icons.refresh, tooltip: 'Refresh Pipelines' },
-						{ type: Icons.add, tooltip: 'Create a new Pipeline' }
+						{ type: Icons.add, tooltip: 'Create a new Pipeline' },
+						{ type: Icons.upload, tooltip: 'Import a Pipeline', fill: 'none', strokeWidth: 2 }
 					]}
-                        on:add={showPipelineModal}
-                        on:refresh={debouncedFetchPipelines}
+                    on:add={showAddPipelineModal}
+                    on:upload={showPipelineImporter}
+                    on:refresh={debouncedFetchPipelines}
                 />
             </div>
             <div class="flex-1 overflow-hidden">
@@ -611,3 +633,12 @@
         <pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
     </div>
 </Modal>
+
+<PluginInstaller bind:this={pluginInstaller} on:pluginInstalled={() => fetchPartBrowserNodes()} />
+<PipelineImporter
+	bind:this={pipelineImporter}
+	on:importSuccess={() => {
+		fetchPipelines();
+		fetchPartBrowserNodes();
+	}}
+/>

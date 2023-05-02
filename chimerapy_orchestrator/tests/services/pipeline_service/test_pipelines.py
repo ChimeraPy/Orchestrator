@@ -158,6 +158,7 @@ class TestPipelines(BaseTest):
                         "worker_id": None,
                         "instance_id": None,
                         "committed": False,
+                        "package": "chimerapy-orchestrator",
                     },
                     {
                         "name": "ShowWindow",
@@ -168,6 +169,7 @@ class TestPipelines(BaseTest):
                         "worker_id": None,
                         "instance_id": None,
                         "committed": False,
+                        "package": "chimerapy-orchestrator",
                     },
                 ],
                 "edges": [
@@ -193,6 +195,7 @@ class TestPipelines(BaseTest):
                         "worker_id": None,
                         "instance_id": None,
                         "committed": False,
+                        "package": "chimerapy-orchestrator",
                     },
                     {
                         "name": "ShowWindow",
@@ -203,6 +206,7 @@ class TestPipelines(BaseTest):
                         "worker_id": None,
                         "instance_id": None,
                         "committed": False,
+                        "package": "chimerapy-orchestrator",
                     },
                 ],
                 "edges": [

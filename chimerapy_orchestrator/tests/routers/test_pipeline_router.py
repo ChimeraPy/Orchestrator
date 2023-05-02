@@ -2,10 +2,12 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from chimerapy_orchestrator.registry import nodes_registry
+from chimerapy_orchestrator.models.pipeline_models import NodesPlugin
+from chimerapy_orchestrator.registry import get_all_nodes, importable_packages
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
+from chimerapy_orchestrator.tests.utils import get_pipeline_config
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -16,15 +18,32 @@ class TestPipelineRouter(BaseTest):
         app.include_router(PipelineRouter(Pipelines()))
         yield TestClient(app)
 
+    def test_installable_plugins(self, pipeline_client):
+        response = pipeline_client.get("/pipeline/plugins")
+        assert response.status_code == 200
+        assert response.json() == [
+            NodesPlugin.from_plugin_registry(package_name=package_name).dict()
+            for package_name in importable_packages()
+        ]
+
     def test_get_pipelines(self, pipeline_client):
         response = pipeline_client.get("/pipeline/list")
         assert response.status_code == 200
         assert response.json() == []
 
+    def test_install_plugin(self, pipeline_client):
+        response = pipeline_client.post(
+            "/pipeline/install-plugin/plugin-nodes-package"
+        )
+        assert response.status_code == 200
+        node_names = [node["name"] for node in response.json()]
+        assert "ANode" in node_names
+        assert "BNode" in node_names
+
     def test_list_nodes(self, pipeline_client):
         response = pipeline_client.get("/pipeline/list-nodes")
         assert response.status_code == 200
-        assert len(response.json()) == len(nodes_registry)
+        assert len(response.json()) == len(get_all_nodes())
 
     def test_create_pipeline(self, pipeline_client):
         pipeline = pipeline_client.put(
@@ -39,10 +58,27 @@ class TestPipelineRouter(BaseTest):
         assert json_response["nodes"] == []
         assert json_response["edges"] == []
 
+    def test_create_pipeline_from_config(self, pipeline_client):
+        config = get_pipeline_config("local_camera")
+        pipeline = pipeline_client.put(
+            "/pipeline/create",
+            json={"config": config.dict()},
+        )
+        assert pipeline.status_code == 200
+        json_response = pipeline.json()
+        assert json_response["name"] == "webcam-demo"
+        assert (
+            json_response["description"]
+            == "A demo of the webcam node and the show window node"
+        )
+        assert json_response["id"] is not None
+        assert len(json_response["nodes"]) == 2
+        assert len(json_response["edges"]) == 1
+
     def test_list_pipelines(self, pipeline_client):
         pipelines = pipeline_client.get("/pipeline/list")
         assert pipelines.status_code == 200
-        assert len(pipelines.json()) == 1
+        assert len(pipelines.json()) == 2
 
     def test_node_edge_operations(self, pipeline_client):
         pipeline = pipeline_client.get("/pipeline/list").json()[0]

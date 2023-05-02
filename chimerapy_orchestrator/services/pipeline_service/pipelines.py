@@ -1,6 +1,8 @@
-from queue import Queue
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 from chimerapy_orchestrator.models.pipeline_models import WrappedNode
 from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
 
@@ -11,7 +13,9 @@ class Pipelines:
     def __init__(self) -> None:
         self._pipelines = {}
 
-    def get_pipeline(self, pipeline_id: str, throw: bool = True) -> Optional[Pipeline]:
+    def get_pipeline(
+        self, pipeline_id: str, throw: bool = True
+    ) -> Optional[Pipeline]:
         """Get a pipeline_service by its ID."""
 
         if pipeline_id not in self._pipelines:
@@ -28,6 +32,14 @@ class Pipelines:
         self._pipelines[pipeline.id] = pipeline
         return pipeline
 
+    def create_pipeline_from_config(
+        self, pipeline_config: ChimeraPyPipelineConfig
+    ):
+        """Create a new pipeline from a ChimeraPyPipelineConfig."""
+        pipeline = Pipeline.from_pipeline_config(pipeline_config)
+        self._pipelines[pipeline.id] = pipeline
+        return pipeline
+
     def remove_pipeline(self, pipeline_id: str) -> Pipeline:
         """Delete a pipeline_service."""
         pipeline = self.get_pipeline(pipeline_id)
@@ -35,12 +47,16 @@ class Pipelines:
         return pipeline
 
     def add_node_to(
-        self, pipeline_id: str, node_id: str, **kwargs
+        self,
+        pipeline_id: str,
+        node_id: str,
+        node_package: Optional[str] = None,
+        **kwargs,
     ) -> WrappedNode:
         """Add a node to a pipeline_service."""
 
         pipeline = self.get_pipeline(pipeline_id)
-        wrapped_node = pipeline.add_node(node_id, **kwargs)
+        wrapped_node = pipeline.add_node(node_id, node_package, **kwargs)
 
         return wrapped_node
 

@@ -3,11 +3,16 @@ from typing import Any, Dict, List
 from fastapi import APIRouter
 
 from chimerapy_orchestrator.models.pipeline_models import (
+    NodesPlugin,
     PipelineRequest,
     WebEdge,
     WebNode,
 )
-from chimerapy_orchestrator.registry import all_nodes
+from chimerapy_orchestrator.registry import (
+    check_registry,
+    get_all_nodes,
+    importable_packages,
+)
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 
 
@@ -15,17 +20,37 @@ class PipelineRouter(APIRouter):
     def __init__(self, pipelines: Pipelines):
         super().__init__(prefix="/pipeline", tags=["pipeline_service"])
         self.pipelines = pipelines
-        self.add_api_route(
-            "/list",
-            self.list_pipelines,
-            methods=["GET"],
-            response_description="List of all the active pipelines",
-        )
+
+        # Nodes and plugins
         self.add_api_route(
             "/list-nodes",
             self.list_nodes,
             methods=["GET"],
             response_description="List of all the nodes available to add to a pipeline",
+        )
+
+        # Import from plugins
+        self.add_api_route(
+            "/plugins",
+            self.installable_plugins,
+            methods=["GET"],
+            response_description="List of all the nodes available to add to a pipeline",
+            description="Import nodes from plugins",
+        )
+
+        self.add_api_route(
+            "/install-plugin/{package}",
+            self.install_plugin,
+            methods=["POST"],
+            response_description="List of all the nodes available to add to a pipeline",
+        )
+
+        # Pipeline operations
+        self.add_api_route(
+            "/list",
+            self.list_pipelines,
+            methods=["GET"],
+            response_description="List of all the active pipelines",
         )
 
         self.add_api_route(
@@ -83,15 +108,21 @@ class PipelineRouter(APIRouter):
         self, pipeline: PipelineRequest
     ) -> Dict[str, Any]:
         """Create a new pipeline."""
-        pipeline = self.pipelines.create_pipeline(
-            pipeline.name, description=pipeline.description
-        )
+        if pipeline.config is not None:
+            pipeline = self.pipelines.create_pipeline_from_config(
+                pipeline.config
+            )
+        else:
+            pipeline = self.pipelines.create_pipeline(
+                pipeline.name, description=pipeline.description
+            )
+
         return pipeline.to_web_json()
 
     async def add_node_to(self, pipeline_id: str, web_node: WebNode) -> WebNode:
         """Add a node to a pipeline."""
         wrapped_node = self.pipelines.add_node_to(
-            pipeline_id, web_node.registry_name
+            pipeline_id, web_node.registry_name, web_node.package
         )
         return wrapped_node.to_web_node()
 
@@ -133,8 +164,23 @@ class PipelineRouter(APIRouter):
 
     async def list_nodes(self) -> List[WebNode]:
         """Get all nodes."""
-        print('all_nodes', all_nodes())
-        return [node.to_web_node() for node in all_nodes().values()]
+        return [node.to_web_node() for node in get_all_nodes()]
+
+    async def install_plugin(self, package: str) -> List[WebNode]:
+        """Import all nodes from a package."""
+        try:
+            check_registry(package)
+        except Exception as e:
+            raise e
+
+        return [node.to_web_node() for node in get_all_nodes()]
+
+    async def installable_plugins(self) -> List[NodesPlugin]:
+        """Get all importable packages."""
+        return [
+            NodesPlugin.from_plugin_registry(package_name=package_name)
+            for package_name in importable_packages()
+        ]
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:
         """Get all pipelines."""

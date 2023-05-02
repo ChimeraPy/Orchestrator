@@ -13,7 +13,6 @@ from chimerapy_orchestrator.orchestrator_config import OrchestratorConfig
 
 
 def orchestrate(config: ChimeraPyPipelineConfig):
-    config.register_external_nodes()  # Register external nodes
     manager, pipeline, mappings, remote_workers = config.pipeline_graph()
 
     print("Waiting for remote workers to connect...")

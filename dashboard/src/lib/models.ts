@@ -37,6 +37,7 @@ export interface PipelineNode {
 	instance_id?: string;
 	worker_id?: string;
 	committed: boolean;
+	package: string;
 }
 
 export interface Edge {
@@ -107,4 +108,12 @@ export interface ResponseError {
 	message: string;
 	code: number;
 	body: any;
+}
+
+export interface NodesPlugin {
+	package: string;
+	nodes: string[];
+	version: string;
+	name: string;
+	description: string;
 }
