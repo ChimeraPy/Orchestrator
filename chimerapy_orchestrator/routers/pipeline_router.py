@@ -108,9 +108,15 @@ class PipelineRouter(APIRouter):
         self, pipeline: PipelineRequest
     ) -> Dict[str, Any]:
         """Create a new pipeline."""
-        pipeline = self.pipelines.create_pipeline(
-            pipeline.name, description=pipeline.description
-        )
+        if pipeline.config is not None:
+            pipeline = self.pipelines.create_pipeline_from_config(
+                pipeline.config
+            )
+        else:
+            pipeline = self.pipelines.create_pipeline(
+                pipeline.name, description=pipeline.description
+            )
+
         return pipeline.to_web_json()
 
     async def add_node_to(self, pipeline_id: str, web_node: WebNode) -> WebNode:

@@ -8,6 +8,7 @@ import type {
 	NodesPlugin
 } from '../models';
 import { Err, Ok } from 'ts-monads';
+import type { ChimeraPyPipelineConfig } from '$lib/pipelineConfig';
 
 class Client {
 	url: string;
@@ -149,6 +150,22 @@ export class PipelineClient extends Client {
 			name: name,
 			description: description
 		};
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'PUT',
+			body: JSON.stringify(requestBody),
+			headers: new Headers({ 'Content-Type': 'application/json' })
+		});
+
+		return response;
+	}
+
+	async importPipeline(config: string): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = '/create';
+
+		const requestBody = {
+			config: config
+		};
+
 		const response = await this._fetch<Pipeline>(prefix, {
 			method: 'PUT',
 			body: JSON.stringify(requestBody),

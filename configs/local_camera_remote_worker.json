@@ -1,4 +1,6 @@
 {
+  "name": "webcam-demo-remote",
+  "description": "A demo with a webcam node and a show window node with remote workers",
   "workers": {
     "manager_ip": "129.59.104.153",
     "manager_port": 9001,
