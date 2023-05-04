@@ -1,10 +1,8 @@
 import json
 import sys
-import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 from chimerapy.config import set
-from requests.exceptions import ConnectionError
 
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
@@ -56,43 +54,11 @@ def orchestrate(config: ChimeraPyPipelineConfig):
 
 
 def orchestrate_worker(
-    config: ChimeraPyPipelineConfig,
-    worker_id: str,
-    wait_until_connected=True,
-    max_retries=10,
+    config: ChimeraPyPipelineConfig, worker_id: str, timeout=100
 ):
     worker = config.instantiate_remote_worker(worker_id)
-
-    if wait_until_connected:
-        for j in range(max_retries):
-            if j == max_retries - 1:
-                print("Max retries reached. Exiting...")
-                sys.exit(1)
-            try:
-                worker.connect(
-                    config.workers.manager_ip, config.workers.manager_port
-                )
-                break
-            except ConnectionError:
-                time.sleep(1)
-                print(
-                    f"Worker {worker_id} not connected yet. Waiting..., retries left: {max_retries - j - 1}"
-                )
-    else:
-        try:
-            worker.connect(
-                config.workers.manager_ip, config.workers.manager_port
-            )
-        except ConnectionError:
-            print(
-                "Connection to manager failed. Please make sure the manager "
-                "is running and the worker is connected to the same network."
-            )
-            sys.exit(1)
-
-    print(f"Worker {worker_id} connected to manager!")
+    worker.connect(method="zeroconf", timeout=timeout)
     worker.idle()
-
     worker.shutdown()
 
 
@@ -138,22 +104,17 @@ def add_orchestrate_worker_parser(subparsers):
 
     orchestrate_worker_parser.add_argument(
         "--worker-id",
-        help="The id of the worker",
+        help="The id of the worker in the config file",
         type=str,
         required=True,
     )
 
-    group = orchestrate_worker_parser.add_mutually_exclusive_group()
-    group.add_argument(
-        "--no-wait",
-        help="Do not wait for the worker to connect to the manager",
-        action="store_true",
-    )
-
-    group.add_argument(
-        "--wait",
-        help="Wait for the worker to connect to the manager",
-        action="store_true",
+    orchestrate_worker_parser.add_argument(
+        "--timeout",
+        help="The timeout for the worker to connect",
+        type=int,
+        default=20,
+        required=False,
     )
 
     return orchestrate_worker_parser
@@ -242,18 +203,11 @@ def run(args=None):
             config_dict = json.load(config_file)
             cp_config = ChimeraPyPipelineConfig.parse_obj(config_dict)
 
-            if args.mode and cp_config.mode != args.mode:
-                cp_config.mode = args.mode
-
     if args.subcommand == "orchestrate":
         orchestrate(cp_config)
 
     elif args.subcommand == "orchestrate-worker":
-        kwargs = {
-            "wait_until_connected": not args.no_wait,
-            "max_retries": args.max_retries,
-        }
-        orchestrate_worker(cp_config, args.worker_id, **kwargs)
+        orchestrate_worker(cp_config, args.worker_id, args.timeout)
 
     elif args.subcommand == "list-remote-workers":
         print("=== Remote Workers ===")
@@ -261,6 +215,9 @@ def run(args=None):
         print("=== End Remote Workers ===")
     elif args.subcommand == "server":
         from uvicorn import run
+
+        if args.mode and cp_config.mode != args.mode:
+            cp_config.mode = args.mode
 
         kwargs = {}
         for field in OrchestratorConfig.__fields__.keys():
