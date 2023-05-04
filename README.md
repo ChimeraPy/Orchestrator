@@ -55,7 +55,7 @@ subcommands:
 Specific subcommands also have their own help messages, and can be used `cp-orchestrator <subcommand> --help`.
 
 ### Orchestrator CLI Example
-In the [`configs`]("./configs") directory, there are few configuration examples for simple `ChimeraPy` pipelines.
+In the [`configs`](./configs) directory, there are few configuration examples for simple `ChimeraPy` pipelines.
 
 The command below will run a pipeline that uses the screen capture and webcamera node and runs it in a local worker:
 ```shell
