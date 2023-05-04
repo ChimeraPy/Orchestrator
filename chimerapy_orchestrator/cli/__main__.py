@@ -204,6 +204,8 @@ def run(args=None):
             cp_config = ChimeraPyPipelineConfig.parse_obj(config_dict)
 
     if args.subcommand == "orchestrate":
+        if args.mode and cp_config.mode != args.mode:
+            cp_config.mode = args.mode
         orchestrate(cp_config)
 
     elif args.subcommand == "orchestrate-worker":
@@ -215,9 +217,6 @@ def run(args=None):
         print("=== End Remote Workers ===")
     elif args.subcommand == "server":
         from uvicorn import run
-
-        if args.mode and cp_config.mode != args.mode:
-            cp_config.mode = args.mode
 
         kwargs = {}
         for field in OrchestratorConfig.__fields__.keys():
