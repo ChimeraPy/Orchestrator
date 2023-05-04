@@ -57,9 +57,9 @@ Specific subcommands also have their own help messages, and can be used `cp-orch
 ### Orchestrator CLI Example
 In the [`configs`](./configs) directory, there are few configuration examples for simple `ChimeraPy` pipelines.
 
-The command below will run a pipeline that uses the screen capture and webcamera node and runs it in a local worker:
+The command below will run a pipeline that uses the webcamera and showwindow nodes and runs it in a local worker:
 ```shell
-$ cp-orchestrator orchestrate --config configs/local_screen_and_web.json
+$ cp-orchestrator orchestrate --config configs/local_camera.json
 ```
 
 The commands below will run a pipeline that uses the webcamera node and runs it in a remote worker:
