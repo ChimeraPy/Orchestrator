@@ -152,6 +152,13 @@ class TestPipeline(BaseTest):
                 "MMLAPIPE_Video",
                 "MMLAPIPE_ShowWindows",
             ]
+            assert node["kwargs"]["name"] in [
+                "test-1",
+                "test-2",
+                "test-3",
+                "test-4",
+                "show",
+            ]
 
     @pytest.mark.skipif(
         not can_find_mmlapipe_configs(), reason="Can't find mmlapipe"
@@ -170,4 +177,16 @@ class TestPipeline(BaseTest):
                 "MMLAPIPE_MFSortDetector",
                 "MMLAPIPE_BBoxPainter",
                 "MMLAPIPE_MFSortTracker",
+            ]
+            assert node["kwargs"]["name"] in [
+                "test-1",
+                "test-2",
+                "test-3",
+                "test-4",
+                "mf-sort-detector",
+                "bbox-painter-1",
+                "mf-sort-tracker-1",
+                "mf-sort-tracker-2",
+                "mf-sort-tracker-3",
+                "mf-sort-tracker-4",
             ]

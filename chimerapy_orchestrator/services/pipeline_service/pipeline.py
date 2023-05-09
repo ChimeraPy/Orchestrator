@@ -221,10 +221,18 @@ class Pipeline(nx.DiGraph):
     def from_pipeline_config(
         cls, config: ChimeraPyPipelineConfig
     ) -> "Pipeline":
-        """Creates a pipeline_service from a ChimeraPyPipelineConfig."""
+        """Creates a pipeline from a ChimeraPyPipelineConfig."""
         pipeline = cls(config.name, config.description)
         node_to_names = {}
         for node in config.nodes:
+            kwargs = node.kwargs
+            if "name" not in kwargs:
+                kwargs["name"] = node.name
+
+            assert (
+                kwargs["name"] == node.name
+            ), "Node name and kwargs name mismatch"
+
             wrapped_node = pipeline.add_node(
                 node.registry_name, node.package, **node.kwargs
             )

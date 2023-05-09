@@ -27,7 +27,7 @@ def can_find_mmlapipe_configs():
     try:
         import mmlapipe  # noqa: F401
 
-        mmlapipe_config_path = Path(mmlapipe.__file__).parent / "configs"
+        mmlapipe_config_path = Path(mmlapipe.__file__).parent.parent / "configs"
         if not mmlapipe_config_path.exists():
             found_mmlapipe_configs = False
     except ImportError:
