@@ -2,13 +2,14 @@
     import type {Attribute} from '$lib/models';
     import Input from './Input.svelte';
     import Bool from './Bool.svelte';
-    import {Button} from 'flowbite-svelte';
 
     export let selectedObject: {id: string, type: string, attributes: Attribute[]};
 
 
     function getComponent(attribute: Attribute) {
-        console.log(attribute);
+        if (attribute.type_info.type === 'Boolean') {
+            return Bool;
+        }
         return Input;
     }
 </script>
