@@ -7,6 +7,7 @@ from chimerapy_orchestrator.registry import get_all_nodes, importable_packages
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 from chimerapy_orchestrator.tests.base_test import BaseTest
+from chimerapy_orchestrator.tests.utils import get_pipeline_config
 from chimerapy_orchestrator.utils import uuid
 
 
@@ -57,10 +58,27 @@ class TestPipelineRouter(BaseTest):
         assert json_response["nodes"] == []
         assert json_response["edges"] == []
 
+    def test_create_pipeline_from_config(self, pipeline_client):
+        config = get_pipeline_config("local_camera")
+        pipeline = pipeline_client.put(
+            "/pipeline/create",
+            json={"config": config.dict()},
+        )
+        assert pipeline.status_code == 200
+        json_response = pipeline.json()
+        assert json_response["name"] == "webcam-demo"
+        assert (
+            json_response["description"]
+            == "A demo of the webcam node and the show window node"
+        )
+        assert json_response["id"] is not None
+        assert len(json_response["nodes"]) == 2
+        assert len(json_response["edges"]) == 1
+
     def test_list_pipelines(self, pipeline_client):
         pipelines = pipeline_client.get("/pipeline/list")
         assert pipelines.status_code == 200
-        assert len(pipelines.json()) == 1
+        assert len(pipelines.json()) == 2
 
     def test_node_edge_operations(self, pipeline_client):
         pipeline = pipeline_client.get("/pipeline/list").json()[0]

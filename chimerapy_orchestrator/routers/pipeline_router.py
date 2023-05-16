@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter
 
 from chimerapy_orchestrator.models.pipeline_models import (
+    NodeSourceCode,
     NodesPlugin,
     PipelineRequest,
     WebEdge,
@@ -27,6 +28,13 @@ class PipelineRouter(APIRouter):
             self.list_nodes,
             methods=["GET"],
             response_description="List of all the nodes available to add to a pipeline",
+        )
+
+        self.add_api_route(
+            "/node/source-code/",
+            self.get_source_code,
+            methods=["GET"],
+            response_description="Get a node's source code",
         )
 
         # Import from plugins
@@ -108,9 +116,15 @@ class PipelineRouter(APIRouter):
         self, pipeline: PipelineRequest
     ) -> Dict[str, Any]:
         """Create a new pipeline."""
-        pipeline = self.pipelines.create_pipeline(
-            pipeline.name, description=pipeline.description
-        )
+        if pipeline.config is not None:
+            pipeline = self.pipelines.create_pipeline_from_config(
+                pipeline.config
+            )
+        else:
+            pipeline = self.pipelines.create_pipeline(
+                pipeline.name, description=pipeline.description
+            )
+
         return pipeline.to_web_json()
 
     async def add_node_to(self, pipeline_id: str, web_node: WebNode) -> WebNode:
@@ -183,3 +197,12 @@ class PipelineRouter(APIRouter):
     async def get_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Get a pipeline."""
         return self.pipelines.get_pipeline(pipeline_id).to_web_json()
+
+    async def get_source_code(
+        self, registry_name: str, package: str
+    ) -> NodeSourceCode:
+        """Get a pipeline."""
+        return NodeSourceCode.from_registry(
+            registry_name,
+            package,
+        )

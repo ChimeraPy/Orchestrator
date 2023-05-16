@@ -8,6 +8,7 @@ import type {
 	NodesPlugin
 } from '../models';
 import { Err, Ok } from 'ts-monads';
+import type { ChimeraPyPipelineConfig } from '$lib/pipelineConfig';
 
 class Client {
 	url: string;
@@ -158,6 +159,22 @@ export class PipelineClient extends Client {
 		return response;
 	}
 
+	async importPipeline(config: string): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = '/create';
+
+		const requestBody = {
+			config: config
+		};
+
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'PUT',
+			body: JSON.stringify(requestBody),
+			headers: new Headers({ 'Content-Type': 'application/json' })
+		});
+
+		return response;
+	}
+
 	async getPlugins(): Promise<Result<NodesPlugin[], ResponseError>> {
 		const prefix = '/plugins';
 		const response = await this._fetch<NodesPlugin[]>(prefix, { method: 'GET' });
@@ -168,6 +185,13 @@ export class PipelineClient extends Client {
 	async installPlugin(pluginName: string): Promise<Result<PipelineNode[], ResponseError>> {
 		const prefix = encodeURIComponent(`/install-plugin/${pluginName}`);
 		const response = await this._fetch<PipelineNode[]>(prefix, { method: 'POST' });
+
+		return response;
+	}
+
+	async getNodeSourceCode(node: PipelineNode): Promise<Result<string, ResponseError>> {
+		const prefix = `/node/source-code/?registry_name=${node.registry_name}&package=${node.package}`;
+		const response = await this._fetch<string>(prefix, { method: 'GET' });
 
 		return response;
 	}

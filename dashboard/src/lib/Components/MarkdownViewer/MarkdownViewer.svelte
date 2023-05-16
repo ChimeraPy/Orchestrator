@@ -5,10 +5,13 @@
 
     const classMap = {
         h1: 'text-2xl',
-        h2: 'text-lg',
+        h2: 'text-lg mt-4',
         ul: 'list-disc list-inside',
         li: 'p-2',
-        code: `bg-gray-200 text-red-500 p-1 font-mono`
+        code: `bg-gray-200 text-red-500 p-1 font-mono`,
+        // Scrolling behavior in flowbyte-svelte is not working properly
+        // https://github.com/themesberg/flowbite-svelte/pull/637/files
+        pre: `bg-gray-200 text-red-500 p-1 max-h-96 overflow-scroll font-mono scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-100 line-numbers`,
     }
 
     const bindings = Object.keys(classMap)

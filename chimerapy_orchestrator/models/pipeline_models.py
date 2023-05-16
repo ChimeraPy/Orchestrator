@@ -1,4 +1,5 @@
 import importlib
+import inspect
 from typing import Any, Dict, List, Optional, Type
 
 from chimerapy.node import Node
@@ -8,18 +9,50 @@ from chimerapy_orchestrator.attributes_parser.parser import (
     Argument,
     get_node_arguments,
 )
+from chimerapy_orchestrator.models.pipeline_config import (
+    ChimeraPyPipelineConfig,
+)
 from chimerapy_orchestrator.models.registry_models import NodeType
-from chimerapy_orchestrator.registry import plugin_registry
+from chimerapy_orchestrator.registry import discovered_nodes, plugin_registry
 from chimerapy_orchestrator.utils import uuid
+
+
+class NodeSourceCode(BaseModel):
+    """A node's source code."""
+
+    source_code: str = Field(..., description="The source code of the node.")
+    module: str = Field(..., description="The module of the node.")
+
+    @classmethod
+    def from_registry(cls, registry_name, package) -> "NodeSourceCode":
+        """Create a NodeSourceCode from a registry_name and package."""
+        wrapped_node = discovered_nodes.get_node(registry_name, package=package)
+        source_code = inspect.getsource(
+            inspect.getmodule(wrapped_node.NodeClass)
+        )
+        return cls(
+            source_code=source_code,
+            module=wrapped_node.NodeClass.__module__,
+        )
+
+    class Config:
+        allow_extra = False
 
 
 class PipelineRequest(BaseModel):
     """A request to create a pipeline."""
 
-    name: str = Field(..., description="The name of the pipeline.")
+    name: Optional[str] = Field(
+        default=None, description="The name of the pipeline."
+    )
 
     description: Optional[str] = Field(
         default=None, description="The description of the pipeline."
+    )
+
+    config: Optional[ChimeraPyPipelineConfig] = Field(
+        default=None,
+        description="The configuration of the pipeline.",
     )
 
     class Config:
@@ -125,6 +158,10 @@ class WrappedNode(BaseModel):
 
     def clone(self, **kwargs) -> "WrappedNode":
         """Creates a new WrappedNode from another one."""
+        if kwargs is None:
+            kwargs = {}
+        if kwargs == {}:
+            kwargs = self.kwargs
         return WrappedNode(
             NodeClass=self.NodeClass,
             node_type=self.node_type,
@@ -165,6 +202,7 @@ class WrappedNode(BaseModel):
             package=self.package,
             attributes=self.attributes,
             doc=self.doc,
+            kwargs=self.kwargs,
         )
 
     def __repr__(self):

@@ -1,5 +1,4 @@
 import pytest
-from plugin_nodes_package.registered_nodes import ANode, BNode
 
 from chimerapy_orchestrator.models.pipeline_models import NodeType, WrappedNode
 from chimerapy_orchestrator.registry import (
@@ -39,6 +38,8 @@ class TestRegisteredNodes(BaseTest):
         reason="plugin-nodes-package not found",
     )
     def test_plugin_nodes_package_nodes(self):
+        from plugin_nodes_package.registered_nodes import ANode, BNode
+
         assert (
             get_registered_node("ANode", "plugin-nodes-package").NodeClass
             is ANode
@@ -49,7 +50,13 @@ class TestRegisteredNodes(BaseTest):
             is BNode
         )
 
+    @pytest.mark.skipif(
+        not can_find_plugin_nodes_package(),
+        reason="plugin-nodes-package not found",
+    )
     def test_discovered_nodes_implementation(self):
+        from plugin_nodes_package.registered_nodes import ANode
+
         dnodes = DiscoveredNodes()
         assert dnodes._nodes["chimerapy-orchestrator"] == {}
         node = WrappedNode.from_node_class(ANode, NodeType.SOURCE, "NewNode")
