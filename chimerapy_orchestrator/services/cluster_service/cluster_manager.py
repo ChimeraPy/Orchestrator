@@ -9,6 +9,16 @@ from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import 
 )
 
 
+class ManagerSocketClient:
+    def __init__(
+        self, host: str, port: int, updater: ClusterUpdatesBroadCaster
+    ):
+        pass
+
+    def listen(self):
+        pass
+
+
 class ClusterManager:
     def __init__(
         self,

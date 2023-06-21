@@ -13,6 +13,55 @@ from chimerapy_orchestrator.models.cluster_models import (
 from chimerapy_orchestrator.utils import uuid
 
 
+class UpdatesBroadcaster:
+    """An asyncio.Queue based updates broadcaster.
+
+    Parameters
+    ----------
+    sentinel: str
+        The sentinel to be used to stop the broadcaster.
+    """
+
+    def __init__(self, sentinel: str = "SHUTDOWN"):
+        self._sentinel = sentinel
+        self._clients: Set[asyncio.Queue] = set()
+
+    async def _initialize(self) -> None:
+        """Initialize the broadcaster."""
+        self.update_queue = asyncio.Queue()
+
+    async def add_client(self, q: asyncio.Queue) -> None:
+        """Add a client queue to the broadcaster."""
+        self._clients.add(q)
+
+    async def remove_client(self, q: asyncio.Queue) -> None:
+        """Remove a client queue from the broadcaster."""
+        self._clients.remove(q)
+
+    async def put_update(self, msg: Dict[str, Any]) -> None:
+        """Put an update to the broadcaster."""
+        if self.update_queue is None:
+            await self._initialize()
+
+        await self.update_queue.put(msg)
+
+    async def enqueue_sentinel(self) -> None:
+        """Enqueue the sentinel message to stop the broadcaster."""
+        self.update_queue.put_nowait(self._sentinel)
+
+    async def start_broadcast(self) -> None:
+        """Start the updates broadcaster"""
+        if self.update_queue is None:
+            await self._initialize()
+
+        while True:
+            msg = await self.update_queue.get()
+            for q in self._clients:
+                q.put_nowait(msg)
+            if msg == self._sentinel:
+                break
+
+
 class ClusterUpdatesBroadCaster:
     """A Queue based updates broadcaster from chimerapy manager to connected client queues.
 
