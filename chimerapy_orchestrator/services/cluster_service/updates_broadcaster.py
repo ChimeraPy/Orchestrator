@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 from chimerapy.networking.enums import GENERAL_MESSAGE, MANAGER_MESSAGE
 from websockets import connect
@@ -25,8 +25,9 @@ class UpdatesBroadcaster:
     def __init__(self, sentinel: str = "SHUTDOWN"):
         self._sentinel = sentinel
         self._clients: Set[asyncio.Queue] = set()
+        self.update_queue: Optional[asyncio.Queue] = None
 
-    async def _initialize(self) -> None:
+    async def initialize(self) -> None:
         """Initialize the broadcaster."""
         self.update_queue = asyncio.Queue()
 
@@ -41,8 +42,7 @@ class UpdatesBroadcaster:
     async def put_update(self, msg: Dict[str, Any]) -> None:
         """Put an update to the broadcaster."""
         if self.update_queue is None:
-            await self._initialize()
-
+            await self.initialize()
         await self.update_queue.put(msg)
 
     async def enqueue_sentinel(self) -> None:
@@ -52,7 +52,7 @@ class UpdatesBroadcaster:
     async def start_broadcast(self) -> None:
         """Start the updates broadcaster"""
         if self.update_queue is None:
-            await self._initialize()
+            await self.initialize()
 
         while True:
             msg = await self.update_queue.get()
@@ -81,7 +81,8 @@ class ClusterUpdatesBroadCaster:
         self.host = host
         self.port = port
         self.manager_update_socket = None
-        self.clients: Set[asyncio.Queue] = set()
+        self.updater = UpdatesBroadcaster(self._sentinel)
+        self.updater_loop_task = None
 
     async def initialize(self) -> None:
         """Initialize the update broadcaster."""
@@ -92,22 +93,27 @@ class ClusterUpdatesBroadCaster:
             json.dumps(self.connect_payload(str(id(self))))
         )
 
+        await self.updater.initialize()
+        self.updater_loop_task = asyncio.create_task(
+            self.updater.start_broadcast()
+        )
+
     async def add_client(
         self, q: asyncio.Queue, message: UpdateMessage = None
     ) -> None:
         """Add a client queue to the broadcaster."""
+        await self.updater.add_client(q)
+
         if message is not None:
             await q.put(message.dict())
-        self.clients.add(q)
 
     async def remove_client(self, q: asyncio.Queue) -> None:
         """Remove a client queue from the broadcaster."""
-        self.clients.remove(q)
+        await self.updater.remove_client(q)
 
     async def enqueue_sentinel(self) -> None:
         """Enqueue a sentinel value to all client queues."""
-        for q in self.clients:
-            q.put_nowait(self._sentinel)
+        await self.updater.enqueue_sentinel()
 
     async def broadcast_updates(self) -> None:
         """Broadcast updates to all clients."""
@@ -127,8 +133,7 @@ class ClusterUpdatesBroadCaster:
                     msg = None
                 if msg is not None:
                     msg_dict = msg.dict()
-                    for q in self.clients:
-                        q.put_nowait(msg_dict)
+                    await self.updater.put_update(msg_dict)
                 if msg and msg.signal is UpdateMessageType.SHUTDOWN:
                     break
             except ConnectionClosedOK:
@@ -139,10 +144,12 @@ class ClusterUpdatesBroadCaster:
 
         await self.enqueue_sentinel()
 
+        if self.updater_loop_task is not None:
+            self.updater_loop_task.cancel()
+
     async def enqueue_error(self) -> None:
         """Enqueue an error message to all client queues."""
-        for q in self.clients:
-            q.put_nowait({"error": "Connection to manager lost."})
+        await self.updater.put_update({"error": "Connection to manager lost."})
 
     @staticmethod
     def is_cluster_update_message(msg: Dict[str, Any]) -> bool:

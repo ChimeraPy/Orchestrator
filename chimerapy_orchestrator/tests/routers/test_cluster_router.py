@@ -1,5 +1,4 @@
 import asyncio
-import sys
 
 import pytest
 from fastapi import FastAPI
@@ -18,11 +17,8 @@ from chimerapy_orchestrator.tests.base_test import BaseTest
 @pytest.mark.slow
 class TestNetworkRouter(BaseTest):
     @pytest.fixture(scope="class")
-    def event_loop_class(self):
-        policy = asyncio.get_event_loop_policy()
-        loop = policy.new_event_loop()
-        yield loop
-        loop.close()
+    def anyio_backend(self):
+        return "asyncio"
 
     @pytest.fixture(scope="class")
     def manager(self):
@@ -33,28 +29,17 @@ class TestNetworkRouter(BaseTest):
         return manager
 
     @pytest.fixture(scope="class")
-    async def cluster_manager_and_client(self, manager, event_loop_class):
-        broadcast_task = event_loop_class.create_task(
-            manager.start_updates_broadcaster()
-        )
+    async def cluster_manager_and_client(self, manager, anyio_backend):
+        asyncio.create_task(manager.start_updates_broadcaster())
         app = FastAPI()
         app.include_router(ClusterRouter(manager))
         yield manager, TestClient(app)
         manager.shutdown()
-        await broadcast_task
         assert manager.has_shutdown()
-        assert broadcast_task.done()
-        for task in asyncio.all_tasks(event_loop_class):
-            await task
-            task.cancel()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_network(self, cluster_manager_and_client):
-        # Python 3.9 and lower:
-        if sys.version_info < (3, 10):
-            manager, client = await cluster_manager_and_client.__anext__()
-        else:
-            manager, client = await anext(cluster_manager_and_client)
+        manager, client = cluster_manager_and_client
 
         response = client.get("/cluster/state")
         assert response.status_code == 200
