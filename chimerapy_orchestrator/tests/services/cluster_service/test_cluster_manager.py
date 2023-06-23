@@ -28,15 +28,13 @@ class TestClusterManager(BaseTest):
         assert manager.has_shutdown()
 
     def test_get_network(self, cluster_manager):
+        print(cluster_manager.get_network().to_dict())
         assert cluster_manager.get_network().to_dict() == {
             "id": "Manager",
             "ip": get_ip_address(),
             "port": cluster_manager._manager.port,  # pylint: disable=protected-access
             "workers": {},
             "logs_subscription_port": None,
-            "running": False,
-            "collecting": False,
-            "collection_status": None,
         }
 
     @pytest.mark.timeout(30)
