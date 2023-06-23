@@ -1,6 +1,12 @@
+import asyncio
+
 import pytest
 from chimerapy.utils import get_ip_address
 
+from chimerapy_orchestrator.models.cluster_models import (
+    UpdateMessage,
+    UpdateMessageType,
+)
 from chimerapy_orchestrator.services.cluster_service import ClusterManager
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
@@ -8,7 +14,11 @@ from chimerapy_orchestrator.tests.base_test import BaseTest
 @pytest.mark.slow
 class TestClusterManager(BaseTest):
     @pytest.fixture(scope="class")
-    def cluster_manager(self):
+    def anyio_backend(self):
+        return "asyncio"
+
+    @pytest.fixture(scope="class")
+    def cluster_manager(self, anyio_backend):
         manager = ClusterManager(
             logdir="./logs",
             port=0,
@@ -18,13 +28,30 @@ class TestClusterManager(BaseTest):
         assert manager.has_shutdown()
 
     def test_get_network(self, cluster_manager):
+        print(cluster_manager.get_network().to_dict())
         assert cluster_manager.get_network().to_dict() == {
             "id": "Manager",
             "ip": get_ip_address(),
             "port": cluster_manager._manager.port,  # pylint: disable=protected-access
             "workers": {},
             "logs_subscription_port": None,
-            "running": False,
-            "collecting": False,
-            "collection_status": None,
         }
+
+    @pytest.mark.timeout(30)
+    @pytest.mark.anyio
+    async def test_network_updates(self, cluster_manager, anyio_backend):
+        client_queue = asyncio.Queue()
+        asyncio.create_task(cluster_manager.start_updates_broadcaster())
+
+        await cluster_manager.subscribe_to_updates(
+            client_queue,
+            UpdateMessage(
+                data=None,
+                signal=UpdateMessageType.NETWORK_UPDATE,
+            ),
+        )
+
+        assert client_queue.qsize() == 1
+        msg = await client_queue.get()
+        assert msg["signal"] == UpdateMessageType.NETWORK_UPDATE
+        assert msg["data"] is None
