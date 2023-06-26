@@ -14,9 +14,9 @@ class TestPipelines(BaseTest):
     def test_create_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
+        ).unwrap()
         assert pipeline.id in pipelines._pipelines
-        assert pipelines.get_pipeline(pipeline.id) is pipeline
+        assert pipelines.get_pipeline(pipeline.id).unwrap() is pipeline
 
     def test_create_pipeline_multiple_threads(self, pipelines):
         from concurrent.futures import ThreadPoolExecutor
@@ -31,21 +31,22 @@ class TestPipelines(BaseTest):
                 for _ in range(10)
             ]
             for future in futures:
-                pipeline = future.result()
+                pipeline = future.result().unwrap()
                 assert pipeline.id in pipelines._pipelines
-                assert pipelines.get_pipeline(pipeline.id) is pipeline
+                assert pipelines.get_pipeline(pipeline.id).unwrap() is pipeline
 
         assert len(pipelines._pipelines) == 10
 
     def test_get_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
-        assert pipelines.get_pipeline(pipeline.id) is pipeline
+        ).unwrap()
+
+        assert pipelines.get_pipeline(pipeline.id).unwrap() is pipeline
 
     def test_get_pipeline_error(self, pipelines):
         with pytest.raises(ValueError):
-            pipelines.get_pipeline("non_existing_pipeline_id")
+            pipelines.get_pipeline("non_existing_pipeline_id").unwrap()
 
     def test_get_pipleines_by_name(self, pipelines):
         pipeline = pipelines.create_pipeline(
@@ -54,30 +55,30 @@ class TestPipelines(BaseTest):
         pipeline2 = pipelines.create_pipeline(
             "test_pipeline", "test_description"
         )
-        assert pipelines.get_pipelines_by_name("test_pipeline") == [
-            pipeline,
-            pipeline2,
+        assert pipelines.get_pipelines_by_name("test_pipeline").unwrap() == [
+            pipeline.unwrap(),
+            pipeline2.unwrap(),
         ]
 
     def test_add_node_to_a_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
-        node = pipelines.add_node_to(pipeline.id, "WebcamNode")
+        ).unwrap()
+        node = pipelines.add_node_to(pipeline.id, "WebcamNode").unwrap()
         assert len(pipeline.nodes) == 1
         assert node.id in pipeline.nodes
 
     def test_add_node_to_a_pipeline_multiple_threads(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
+        ).unwrap()
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [
                 executor.submit(pipeline.add_node, "WebcamNode")
                 for _ in range(10)
             ]
             for future in futures:
-                node = future.result()
+                node = future.result().unwrap()
                 assert node.id in pipeline.nodes
 
         assert len(pipeline.nodes) == 10
@@ -85,10 +86,12 @@ class TestPipelines(BaseTest):
     def test_add_edge_to_a_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
-        node_1 = pipelines.add_node_to(pipeline.id, "WebcamNode")
-        node_2 = pipelines.add_node_to(pipeline.id, "ShowWindow")
-        edge = pipelines.add_edge_to(pipeline.id, (node_1.id, node_2.id))
+        ).unwrap()
+        node_1 = pipelines.add_node_to(pipeline.id, "WebcamNode").unwrap()
+        node_2 = pipelines.add_node_to(pipeline.id, "ShowWindow").unwrap()
+        edge = pipelines.add_edge_to(
+            pipeline.id, (node_1.id, node_2.id)
+        ).unwrap()
         assert edge["source"] is node_1
         assert edge["sink"] is node_2
         assert (node_1.id, node_2.id) in pipeline.edges
@@ -96,19 +99,21 @@ class TestPipelines(BaseTest):
     def test_remove_node_from_a_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
-        node = pipelines.add_node_to(pipeline.id, "WebcamNode")
-        pipelines.remove_node_from(pipeline.id, node.id)
+        ).unwrap()
+        node = pipelines.add_node_to(pipeline.id, "WebcamNode").unwrap()
+        pipelines.remove_node_from(pipeline.id, node.id).unwrap()
         assert node.id not in pipeline.nodes
 
     def test_remove_edge_from_a_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
-        node_1 = pipelines.add_node_to(pipeline.id, "WebcamNode")
-        node_2 = pipelines.add_node_to(pipeline.id, "ShowWindow")
-        edge = pipelines.add_edge_to(pipeline.id, (node_1.id, node_2.id))
-        pipelines.remove_edge_from(pipeline.id, (node_1.id, node_2.id))
+        ).unwrap()
+        node_1 = pipelines.add_node_to(pipeline.id, "WebcamNode").unwrap()
+        node_2 = pipelines.add_node_to(pipeline.id, "ShowWindow").unwrap()
+        edge = pipelines.add_edge_to(
+            pipeline.id, (node_1.id, node_2.id)
+        ).unwrap()
+        pipelines.remove_edge_from(pipeline.id, (node_1.id, node_2.id)).unwrap()
         assert edge["source"] is node_1
         assert edge["sink"] is node_2
         assert (node_1.id, node_2.id) not in pipeline.edges
@@ -116,7 +121,7 @@ class TestPipelines(BaseTest):
     def test_remove_pipeline(self, pipelines):
         pipeline = pipelines.create_pipeline(
             "test_pipeline", "test_description"
-        )
+        ).unwrap()
         pipelines.remove_pipeline(pipeline.id)
         assert pipeline.id not in pipelines._pipelines
 
@@ -128,11 +133,11 @@ class TestPipelines(BaseTest):
         for j in range(2):
             pipeline = pipelines.create_pipeline(
                 f"test_pipeline{j}", "test_description"
-            )
+            ).unwrap()
             edge = []
             nodes = []
             for node_choice in node_choices:
-                n = pipelines.add_node_to(pipeline.id, node_choice)
+                n = pipelines.add_node_to(pipeline.id, node_choice).unwrap()
                 nodes.append(n)
                 edge.append(n.id)
 
@@ -142,7 +147,7 @@ class TestPipelines(BaseTest):
             nodes_created.append(nodes)
             pipelines_created.append(pipeline)
 
-        assert pipelines.web_json() == [
+        assert pipelines.web_json().unwrap() == [
             {
                 "id": pipelines_created[0].id,
                 "name": "test_pipeline0",
