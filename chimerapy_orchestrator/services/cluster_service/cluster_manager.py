@@ -84,6 +84,6 @@ class ClusterManager:
         """Update the network status."""
         await self._updates_broadcaster.put_update(self._manager.state)
 
-    def is_discovery_enabled(self) -> bool:
+    def is_zeroconf_discovery_enabled(self) -> bool:
         """Check if zeroconf discovery is enabled."""
         return self._manager.services.zeroconf.enabled

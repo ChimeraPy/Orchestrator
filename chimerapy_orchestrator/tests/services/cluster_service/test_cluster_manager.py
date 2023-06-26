@@ -55,3 +55,11 @@ class TestClusterManager(BaseTest):
         msg = await client_queue.get()
         assert msg["signal"] == UpdateMessageType.NETWORK_UPDATE
         assert msg["data"] is None
+
+    @pytest.mark.anyio
+    async def test_zeroconf(self, cluster_manager):
+        assert cluster_manager.is_zeroconf_discovery_enabled() is False
+        cluster_manager.enable_zeroconf_discovery()
+        assert cluster_manager.is_zeroconf_discovery_enabled() is True
+        cluster_manager.disable_zeroconf_discovery()
+        assert cluster_manager.is_zeroconf_discovery_enabled() is False

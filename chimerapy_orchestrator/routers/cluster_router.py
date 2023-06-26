@@ -76,7 +76,7 @@ class ClusterRouter(APIRouter):
             UpdateMessage(
                 data=ClusterState.from_cp_manager_state(
                     self.manager.get_network(),
-                    zeroconf_discovery=self.manager.is_discovery_enabled(),
+                    zeroconf_discovery=self.manager.is_zeroconf_discovery_enabled(),
                 ),
                 signal=UpdateMessageType.NETWORK_UPDATE,
             ),
@@ -95,7 +95,7 @@ class ClusterRouter(APIRouter):
         """Get the current state of the cluster."""
         return ClusterState.from_cp_manager_state(
             self.manager.get_network(),
-            zeroconf_discovery=self.manager.is_discovery_enabled(),
+            zeroconf_discovery=self.manager.is_zeroconf_discovery_enabled(),
         )
 
     async def toggle_zeroconf_discovery(self, enable: bool) -> Dict[str, bool]:

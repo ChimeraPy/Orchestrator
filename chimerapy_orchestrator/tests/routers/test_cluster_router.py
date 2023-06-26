@@ -46,7 +46,7 @@ class TestNetworkRouter(BaseTest):
         assert (
             response.json()
             == ClusterState.from_cp_manager_state(
-                manager.get_network(), manager.is_discovery_enabled()
+                manager.get_network(), manager.is_zeroconf_discovery_enabled()
             ).dict()
         )
 
@@ -54,3 +54,15 @@ class TestNetworkRouter(BaseTest):
             state = ws.receive_json()
             state = UpdateMessage.parse_obj(state)
             assert state.signal == UpdateMessageType.NETWORK_UPDATE
+
+    @pytest.mark.anyio
+    async def test_zeroconf_toggle(self, cluster_manager_and_client):
+        manager, client = cluster_manager_and_client
+
+        response = client.post("/cluster/zeroconf?enable=true")
+        assert response.status_code == 200
+        assert response.json() == {"success": True}
+
+        response = client.post("/cluster/zeroconf?enable=false")
+        assert response.status_code == 200
+        assert response.json() == {"success": True}
