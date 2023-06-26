@@ -79,6 +79,7 @@ export interface ClusterState {
 	collection_status?: string;
 	running: boolean;
 	collecting: boolean;
+	zeroconf_discovery: boolean;
 }
 
 export interface ResponseError {

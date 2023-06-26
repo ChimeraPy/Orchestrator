@@ -8,7 +8,7 @@
 	5. Accessibility improvements.
 -->
 <script lang="ts">
-	import { pipelineClient } from '$lib/services';
+	import { pipelineClient, clusterClient } from '$lib/services';
 	import { onMount } from 'svelte';
 	import { getStore } from '$lib/stores';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
@@ -307,6 +307,43 @@
 		return `${clusterState.id}#${clusterState.ip}`;
 	}
 
+	function getNetworkIcons() {
+		if (!$networkStore) {
+			return [];
+		}
+		const zeroConfEnabled = $networkStore?.zeroconf_discovery;
+		const icons = [
+			{
+				type: zeroConfEnabled ? 'eyeOpen' : 'eyeClosed',
+				tooltip: `Zeroconf discovery ${zeroConfEnabled ? 'enabled' : 'disabled'}. Click to toggle`,
+				dispatchEventName: zeroConfEnabled ? 'disableZeroconfDiscovery' : 'enableZeroconfDiscovery',
+				fill: 'none',
+				strokeWidth: 2
+			}
+		];
+
+		return icons;
+	}
+
+	async function enableZeroconfDiscovery() {
+		console.log('enabling zeroconf discovery');
+		(await clusterClient.enableZeroConf()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error enabling zeroconf discovery',
+				content: JSON.stringify(err, null, 2)
+			};
+		});
+	}
+
+	async function disableZeroconfDiscovery() {
+		(await clusterClient.disableZeroConf()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error disabling zeroconf discovery',
+				content: JSON.stringify(err, null, 2)
+			};
+		});
+	}
+
 	function displayWorkerInfo(worker) {
 		const workerDetails = Object.values($networkStore?.workers || []).find(
 			(w) => w.id === worker.id
@@ -358,7 +395,13 @@
 		</div>
 		<div class="flex flex-col flex-1">
 			<div>
-				<HorizontalMenu title={getNetworkTitle($networkStore)} backgroundClass="bg-blue-600" />
+				<HorizontalMenu
+					title={getNetworkTitle($networkStore)}
+					backgroundClass="bg-blue-600"
+					icons={getNetworkIcons($networkStore)}
+					on:enableZeroconfDiscovery={() => enableZeroconfDiscovery()}
+					on:disableZeroconfDiscovery={() => disableZeroconfDiscovery()}
+				/>
 			</div>
 			<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
 				<EditableList

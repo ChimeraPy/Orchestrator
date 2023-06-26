@@ -60,11 +60,14 @@ class ClusterState(BaseModel):
     running: bool = False
     collecting: bool = False
     collection_status: Optional[Literal["PASS", "FAIL"]] = None
+    zeroconf_discovery: bool = False
 
     @classmethod
-    def from_cp_manager_state(cls, state: ManagerState):
+    def from_cp_manager_state(
+        cls, state: ManagerState, zeroconf_discovery: bool
+    ):
         state_dict = state.to_dict()
-        return cls(**state_dict)
+        return cls(**state_dict, zeroconf_discovery=zeroconf_discovery)
 
     class Config:
         allow_extra = False
@@ -86,11 +89,14 @@ class UpdateMessage(BaseModel):
 
     @classmethod
     def from_updates_dict(
-        cls, msg: Dict[str, Any], signal: UpdateMessageType
+        cls,
+        msg: Dict[str, Any],
+        signal: UpdateMessageType,
+        zeroconf_discovery: bool,
     ) -> "UpdateMessage":
         if (data := msg.get("data")) is not None:
             data = ManagerState.from_dict(data)
-            data = ClusterState.from_cp_manager_state(data)
+            data = ClusterState.from_cp_manager_state(data, zeroconf_discovery)
 
         return cls(signal=signal, data=data)
 
