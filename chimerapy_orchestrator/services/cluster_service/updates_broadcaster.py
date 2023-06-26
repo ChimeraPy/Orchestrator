@@ -158,6 +158,15 @@ class ClusterUpdatesBroadCaster:
         """Enqueue an error message to all client queues."""
         await self.updater.put_update({"error": "Connection to manager lost."})
 
+    async def put_update(self, msg: Dict[str, Any]) -> None:
+        """Put an update to the broadcaster."""
+        await self.updater.put_update(
+            {
+                "signal": MANAGER_MESSAGE.NETWORK_STATUS_UPDATE.value,
+                "data": msg,
+            }
+        )
+
     @staticmethod
     def is_cluster_update_message(msg: Dict[str, Any]) -> bool:
         """Check if a message is a network update message."""

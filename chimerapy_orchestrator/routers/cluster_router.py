@@ -1,6 +1,7 @@
 import asyncio
+from typing import Dict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
 from chimerapy_orchestrator.models.cluster_models import (
@@ -17,6 +18,15 @@ class ClusterRouter(APIRouter):
     def __init__(self, manager: ClusterManager):
         super().__init__(prefix="/cluster", tags=["cluster_service"])
         self.manager = manager
+
+        self.add_api_route(
+            "/zeroconf",
+            self.toggle_zeroconf_discovery,
+            methods=["POST"],
+            response_description="Enable/Disable zeroconf discovery",
+            description="Enable/Disable zeroconf discovery",
+        )
+
         self.add_api_route(
             "/state",
             self.get_manager_state,
@@ -24,6 +34,7 @@ class ClusterRouter(APIRouter):
             response_description="The current state of the cluster",
             description="The current state of the cluster",
         )
+
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
@@ -86,3 +97,19 @@ class ClusterRouter(APIRouter):
             self.manager.get_network(),
             zeroconf_discovery=self.manager.is_discovery_enabled(),
         )
+
+    async def toggle_zeroconf_discovery(self, enable: bool) -> Dict[str, bool]:
+        """Enable/Disable zeroconf discovery."""
+        try:
+            if enable:
+                self.manager.enable_zeroconf_discovery()
+            else:
+                self.manager.disable_zeroconf_discovery()
+
+            return {"success": True}
+
+        except Exception as e:
+            raise HTTPException(  # noqa: B904
+                status_code=500,
+                detail=f"Failed to toggle zeroconf discovery: {e}",
+            )
