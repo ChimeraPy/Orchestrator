@@ -190,6 +190,24 @@ export class PipelineClient extends Client {
 	}
 }
 
+export class ClusterClient extends Client {
+	constructor(serverURL: string, prefix: string = '/cluster') {
+		super(serverURL + prefix);
+	}
+
+	async enableZeroConf(): Promise<Result<boolean, ResponseError>> {
+		const prefix = '/zeroconf?enable=true';
+		const result = await this._fetch<any>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async disableZeroConf(): Promise<Result<boolean, ResponseError>> {
+		const prefix = '/zeroconf?enable=false';
+		const result = await this._fetch<any>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+}
+
 export class NetworkClient extends Client {
 	constructor(url: string) {
 		super(url);
