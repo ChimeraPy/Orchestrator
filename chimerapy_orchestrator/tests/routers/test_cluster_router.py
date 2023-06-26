@@ -45,7 +45,9 @@ class TestNetworkRouter(BaseTest):
         assert response.status_code == 200
         assert (
             response.json()
-            == ClusterState.from_cp_manager_state(manager.get_network()).dict()
+            == ClusterState.from_cp_manager_state(
+                manager.get_network(), manager.is_discovery_enabled()
+            ).dict()
         )
 
         with client.websocket_connect("/cluster/updates") as ws:

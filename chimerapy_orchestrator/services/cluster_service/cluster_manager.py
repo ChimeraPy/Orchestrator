@@ -67,3 +67,17 @@ class ClusterManager:
     def is_sentinel(self, msg: str):
         """Check if the message is a sentinel message."""
         return msg == self._updates_broadcaster._sentinel
+
+    def enable_discovery(self) -> None:
+        """Enable discovery of the cluster manager via zeroconf."""
+        self._manager.zeroconf(enable=True)
+        self._updates_broadcaster.set_zeroconf_enabled(True)
+
+    def disable_discovery(self) -> None:
+        """Disable discovery of the cluster manager via zeroconf."""
+        self._manager.zeroconf(enable=False)
+        self._updates_broadcaster.set_zeroconf_enabled(False)
+
+    def is_discovery_enabled(self) -> bool:
+        """Check if zeroconf discovery is enabled."""
+        return self._manager.services.zeroconf.enabled

@@ -83,6 +83,11 @@ class ClusterUpdatesBroadCaster:
         self.manager_update_socket = None
         self.updater = UpdatesBroadcaster(self._sentinel)
         self.updater_loop_task = None
+        self.zeroconf_enabled = False
+
+    def set_zeroconf_enabled(self, enabled: bool) -> None:
+        """Set the zeroconf enabled flag."""
+        self.zeroconf_enabled = enabled
 
     async def initialize(self) -> None:
         """Initialize the update broadcaster."""
@@ -123,11 +128,13 @@ class ClusterUpdatesBroadCaster:
                 msg = json.loads(msg)
                 if self.is_cluster_update_message(msg):
                     msg = UpdateMessage.from_updates_dict(
-                        msg, UpdateMessageType.NETWORK_UPDATE
+                        msg,
+                        UpdateMessageType.NETWORK_UPDATE,
+                        self.zeroconf_enabled,
                     )
                 elif self.is_cluster_shutdown_message(msg):
                     msg = UpdateMessage.from_updates_dict(
-                        msg, UpdateMessageType.SHUTDOWN
+                        msg, UpdateMessageType.SHUTDOWN, self.zeroconf_enabled
                     )
                 else:
                     msg = None
