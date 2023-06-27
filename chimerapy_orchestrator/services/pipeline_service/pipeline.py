@@ -30,6 +30,18 @@ class EdgeNotFoundError(nx.NetworkXError):
         super().__init__(msg)
 
 
+class NodeNotFoundError(nx.NetworkXError):
+    def __init__(self, node_id: str) -> None:
+        msg = f"Node {node_id} does not exist in the pipeline"
+        super().__init__(msg)
+
+
+class InvalidNodeError(ValueError):
+    def __init__(self, node: Any, reason: str) -> None:
+        msg = f"Node {node} is not a valid node: {reason}"
+        super().__init__(msg)
+
+
 class Pipeline(nx.DiGraph):
     """A directed graph representing a ChimeraPy pipeline without instantiated nodes."""
 
@@ -62,7 +74,7 @@ class Pipeline(nx.DiGraph):
     def remove_node(self, node_id: str) -> Result[WrappedNode, Exception]:
         """Removes a node from the pipeline_service."""
         if node_id not in self.nodes:
-            return Err(ValueError(f"{node_id} does not exist in the pipeline"))
+            return Err(NodeNotFoundError(node_id))
 
         wrapped_node = self.nodes[node_id]["wrapped_node"]
         super().remove_node(node_id)
@@ -74,7 +86,8 @@ class Pipeline(nx.DiGraph):
         """Adds an edge to the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
-                return Err(ValueError(f"{node} is not a valid node"))
+                return Err(NodeNotFoundError(node))
+
         edge = {}
         for node_id, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
@@ -83,8 +96,9 @@ class Pipeline(nx.DiGraph):
 
                 if node_type not in {NodeType.SOURCE, NodeType.STEP}:
                     return Err(
-                        ValueError(
-                            f"{node_id}:{wrapped_node.NodeClass.__name__} is not a valid source node"
+                        InvalidNodeError(
+                            f"{node_id}:{wrapped_node.NodeClass.__name__}",
+                            "Expected a source or step node, found a sink node",
                         )
                     )
                 edge["source"] = wrapped_node
@@ -94,8 +108,9 @@ class Pipeline(nx.DiGraph):
 
                 if node_type not in {NodeType.SINK, NodeType.STEP}:
                     return Err(
-                        ValueError(
-                            f"{node_id}:{wrapped_node.NodeClass.__name__} is not a valid sink node"
+                        InvalidNodeError(
+                            f"{node_id}:{wrapped_node.NodeClass.__name__}",
+                            "Expected a sink or step node, found a source node",
                         )
                     )
 
@@ -122,7 +137,7 @@ class Pipeline(nx.DiGraph):
         """Removes an edge from the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
-                return Err(ValueError(f"{node} is not a valid node"))
+                return Err(NodeNotFoundError(node))
 
         src_wrapped_node = self.nodes[source]["wrapped_node"]
         dst_wrapped_node = self.nodes[sink]["wrapped_node"]

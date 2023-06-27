@@ -13,6 +13,7 @@ from chimerapy_orchestrator.registry import (
     get_all_nodes,
     importable_packages,
 )
+from chimerapy_orchestrator.routers.error_mappers import get_mapping
 from chimerapy_orchestrator.services.pipeline_service import Pipelines
 
 
@@ -117,50 +118,80 @@ class PipelineRouter(APIRouter):
                 pipeline.name, description=pipeline.description
             )
 
-        return pipeline.to_web_json()
+        return (
+            pipeline.map(lambda p: p.to_web_json())
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
+        )
 
     async def add_node_to(self, pipeline_id: str, web_node: WebNode) -> WebNode:
         """Add a node to a pipeline."""
         wrapped_node = self.pipelines.add_node_to(
             pipeline_id, web_node.registry_name, web_node.package
         )
-        return wrapped_node.to_web_node()
+
+        return (
+            wrapped_node.map(lambda n: n.to_web_node())
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
+        )
 
     async def remove_node_from(
         self, pipeline_id: str, web_node: WebNode
     ) -> WebNode:
         """Remove a node from a pipeline."""
         wrapped_node = self.pipelines.remove_node_from(pipeline_id, web_node.id)
-        return wrapped_node.to_web_node()
+
+        return (
+            wrapped_node.map(lambda n: n.to_web_node())
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
+        )
 
     async def add_edge_to(self, pipeline_id: str, edge: WebEdge) -> WebEdge:
         """Add an edge to a pipeline."""
-        created = self.pipelines.add_edge_to(
-            pipeline_id, (edge.source.id, edge.sink.id), edge.id
-        )
-        return WebEdge(
-            id=edge.id,
-            source=created["source"].to_web_node(),
-            sink=created["sink"].to_web_node(),
+        return (
+            self.pipelines.add_edge_to(
+                pipeline_id, (edge.source.id, edge.sink.id), edge.id
+            )
+            .map(
+                lambda c: WebEdge(
+                    id=edge.id,
+                    source=c["source"].to_web_node(),
+                    sink=c["sink"].to_web_node(),
+                )
+            )
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
         )
 
     async def remove_edge_from(
         self, pipeline_id: str, edge: WebEdge
     ) -> WebEdge:
         """Remove an edge from a pipeline."""
-        created = self.pipelines.remove_edge_from(
-            pipeline_id, (edge.source.id, edge.sink.id), edge.id
-        )
-        return WebEdge(
-            id=edge.id,
-            source=created["source"].to_web_node(),
-            sink=created["sink"].to_web_node(),
+        return (
+            self.pipelines.remove_edge_from(
+                pipeline_id, (edge.source.id, edge.sink.id), edge.id
+            )
+            .map(
+                lambda c: WebEdge(
+                    id=edge.id,
+                    source=c["source"].to_web_node(),
+                    sink=c["sink"].to_web_node(),
+                )
+            )
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
         )
 
     async def remove_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Delete a pipeline."""
-        pipeline = self.pipelines.remove_pipeline(pipeline_id)
-        return pipeline.to_web_json()
+        return (
+            self.pipelines.remove_pipeline(pipeline_id)
+            .map(lambda p: p.to_web_json())
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
+        )
 
     async def list_nodes(self) -> List[WebNode]:
         """Get all nodes."""
@@ -184,8 +215,13 @@ class PipelineRouter(APIRouter):
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:
         """Get all pipelines."""
-        return self.pipelines.web_json()
+        return self.pipelines.web_json().unwrap()
 
     async def get_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Get a pipeline."""
-        return self.pipelines.get_pipeline(pipeline_id).to_web_json()
+        return (
+            self.pipelines.get_pipeline(pipeline_id)
+            .map(lambda p: p.to_web_json())
+            .map_error(lambda err: get_mapping(err).to_fastapi())
+            .unwrap()
+        )

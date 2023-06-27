@@ -4,6 +4,7 @@ from networkx import NetworkXError
 
 from chimerapy_orchestrator.registry.utils import step_node
 from chimerapy_orchestrator.services.pipeline_service.pipeline import (
+    NodeNotFoundError,
     NotADagError,
     Pipeline,
 )
@@ -93,7 +94,7 @@ class TestPipeline(BaseTest):
             )
 
     def test_pipeline_removing_nodes_error(self, pipeline):
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(NodeNotFoundError) as e:
             pipeline.remove_node("invalid_id").unwrap()
             assert "invalid_id is not a valid node" in str(e.value)
 
@@ -103,7 +104,7 @@ class TestPipeline(BaseTest):
         with pytest.raises(NetworkXError):
             pipeline.remove_edge(wrapped_node_1.id, wrapped_node_2.id).unwrap()
 
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(NodeNotFoundError) as e:
             pipeline.remove_edge("invalid_id", wrapped_node_2.id).unwrap()
             assert "invalid_id is not a valid node" in str(e.value)
 
