@@ -10,6 +10,17 @@ from chimerapy_orchestrator.init_services import get, initialize, teardown
 from chimerapy_orchestrator.routers.cluster_router import ClusterRouter
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 
+APP_DESCRIPTION = """
+REST API for managing the ChimeraPy cluster.
+
+With this API, any client application can manage the cluster, including:
+- Creating and managing pipelines for ChimeraPy
+- Managing the cluster itself
+- Running pipelines on the cluster
+
+For more information, please visit the [documentation](https://chimerapy.readthedocs.io/en/latest/).
+"""
+
 
 @asynccontextmanager
 async def lifespan(app: "Orchestrator"):
@@ -44,5 +55,13 @@ def create_orchestrator_app() -> "Orchestrator":
     with concurrent.futures.ThreadPoolExecutor() as pool:  # This had to be done because uvicorn blocks the event loop
         pool.submit(initialize)
 
-    orchestrator = Orchestrator(lifespan=lifespan)
+    orchestrator = Orchestrator(
+        title="ChimeraPyOrchestrator",
+        lifespan=lifespan,
+        description=APP_DESCRIPTION,
+        contact={
+            "name": "Umesh Timalsina",
+            "email": "umesh.timalsina@vanderbilt.edu",
+        },
+    )
     return orchestrator
