@@ -108,7 +108,16 @@ class PipelineRouter(APIRouter):
     async def create_pipeline(
         self, pipeline: PipelineRequest
     ) -> Dict[str, Any]:
-        """Create a new pipeline."""
+        """This method creates a new pipeline.
+
+        The pipeline request is a json object with the following structure:
+        - **name**: the name of the pipeline
+        - **description**: the description of the pipeline
+        - **config**: the configuration of the pipeline
+
+        Note that a pipeline can be created using a chimerapy orchestrator configuration json (config). Or simply by
+        providing a name and an optional description. Precedence is given to the config json.
+        """
         if pipeline.config is not None:
             pipeline = self.pipelines.create_pipeline_from_config(
                 pipeline.config
@@ -125,7 +134,15 @@ class PipelineRouter(APIRouter):
         )
 
     async def add_node_to(self, pipeline_id: str, web_node: WebNode) -> WebNode:
-        """Add a node to a pipeline."""
+        """Add a node to an existing pipeline.
+
+        The request body should a json object with the following required fields:
+        - **name**: the name of the node (same as the registry name)
+        - **registry_name**: the name of the node in the registry
+        - **package**: the package of the node
+
+        The response will return the newly added node. If the pipeline does not exist, a 404 error will be returned.
+        """
         wrapped_node = self.pipelines.add_node_to(
             pipeline_id, web_node.registry_name, web_node.package
         )
@@ -139,7 +156,15 @@ class PipelineRouter(APIRouter):
     async def remove_node_from(
         self, pipeline_id: str, web_node: WebNode
     ) -> WebNode:
-        """Remove a node from a pipeline."""
+        """Remove a node from an existing pipeline.
+
+        The request body should a json object with the following required fields:
+        - **id**: the id of the node to remove
+        - **name**: the name of the node (same as the registry name)
+        - **registry_name**: the name of the node in the registry
+
+        The response will return the removed node as json. If the pipeline/node does not exist, a 404 error will be returned.
+        """
         wrapped_node = self.pipelines.remove_node_from(pipeline_id, web_node.id)
 
         return (
@@ -168,7 +193,15 @@ class PipelineRouter(APIRouter):
     async def remove_edge_from(
         self, pipeline_id: str, edge: WebEdge
     ) -> WebEdge:
-        """Remove an edge from a pipeline."""
+        """Remove an edge from a pipeline.
+
+        The request body should a json object with the following required fields:
+        - **id**: the id of the edge to remove
+        - **source**: the source node of the edge
+        - **sink**: the sink node of the edge
+
+        The response will return the removed edge as json. If the pipeline, edge or the nodes do not exist, a 404 error will be returned.
+        """
         return (
             self.pipelines.remove_edge_from(
                 pipeline_id, (edge.source.id, edge.sink.id), edge.id
@@ -185,7 +218,10 @@ class PipelineRouter(APIRouter):
         )
 
     async def remove_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
-        """Delete a pipeline."""
+        """Delete a pipeline.
+
+        The response will return the deleted pipeline as json. If the pipeline does not exist, a 404 error will be returned.
+        """
         return (
             self.pipelines.remove_pipeline(pipeline_id)
             .map(lambda p: p.to_web_json())
@@ -194,11 +230,17 @@ class PipelineRouter(APIRouter):
         )
 
     async def list_nodes(self) -> List[WebNode]:
-        """Get all nodes."""
+        """Get all nodes.
+
+        The response will return a list of all nodes (that can be used to create pipelines) as json.
+        """
         return [node.to_web_node() for node in get_all_nodes()]
 
     async def install_plugin(self, package: str) -> List[WebNode]:
-        """Import all nodes from a package."""
+        """Import all nodes from a package.
+
+        The response will return a list of all nodes (that can be used to create pipelines) as json.
+        """
         try:
             check_registry(package)
         except Exception as e:
@@ -207,18 +249,27 @@ class PipelineRouter(APIRouter):
         return [node.to_web_node() for node in get_all_nodes()]
 
     async def installable_plugins(self) -> List[NodesPlugin]:
-        """Get all importable packages."""
+        """Get all importable packages.
+
+        The response will return a list of all importable packages as json.
+        """
         return [
             NodesPlugin.from_plugin_registry(package_name=package_name)
             for package_name in importable_packages()
         ]
 
     async def list_pipelines(self) -> List[Dict[str, Any]]:
-        """Get all pipelines."""
+        """Get all pipelines.
+
+        The response will return a list of all pipelines as json.
+        """
         return self.pipelines.web_json().unwrap()
 
     async def get_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
-        """Get a pipeline."""
+        """Get a pipeline.
+
+        The response will return the pipeline as json. If the pipeline does not exist, a 404 error will be returned.
+        """
         return (
             self.pipelines.get_pipeline(pipeline_id)
             .map(lambda p: p.to_web_json())
