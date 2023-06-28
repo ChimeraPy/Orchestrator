@@ -69,7 +69,7 @@ class Pipelines:
         """Remove an edge from a pipeline_service."""
 
         return self.get_pipeline(pipeline_id).map(
-            lambda p: p.remove_edge(edge[0], edge[1], edge_id=edge_id)
+            lambda p: p.remove_edge(edge[0], edge[1], edge_id=edge_id).unwrap()
         )
 
     def remove_node_from(
@@ -77,7 +77,7 @@ class Pipelines:
     ) -> Result[WrappedNode, Exception]:
         """Remove a node from a pipeline_service."""
         return self.get_pipeline(pipeline_id).map(
-            lambda p: p.remove_node(node_id)
+            lambda p: p.remove_node(node_id).unwrap()
         )
 
     def get_pipelines_by_name(
@@ -98,7 +98,7 @@ class Pipelines:
         if pipeline_id is None:
             return Ok(
                 [
-                    pipeline.to_web_json().unwrap()
+                    pipeline.to_web_json()
                     for pipeline in self._pipelines.values()
                 ]
             )

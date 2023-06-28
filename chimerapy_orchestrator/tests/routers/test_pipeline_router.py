@@ -135,7 +135,6 @@ class TestPipelineRouter(BaseTest):
                 "id": edge_id,
             },
         )
-
         assert edge.status_code == 200
         edge_json = edge.json()
         assert edge_json["source"]["id"] == webcam_node_json["id"]

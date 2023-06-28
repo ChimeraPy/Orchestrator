@@ -166,24 +166,22 @@ class Pipeline(nx.DiGraph):
     def __repr__(self) -> str:
         return f"Pipeline<{self.name}>"
 
-    def to_web_json(self) -> Result[Dict[str, Any], Exception]:
+    def to_web_json(self) -> Dict[str, Any]:
         """Returns a JSON representation of the pipeline_service for the web interface."""
-        return Ok(
-            {
-                "id": self.id,
-                "name": self.name,
-                "instantiated": self.instantiated,
-                "description": self.description,
-                "nodes": [
-                    data["wrapped_node"].to_web_node().dict()
-                    for node_id, data in self.nodes(data=True)
-                ],
-                "edges": [
-                    {"source": source, "sink": sink, "id": data["id"]}
-                    for (source, sink, data) in self.edges(data=True)
-                ],
-            }
-        )
+        return {
+            "id": self.id,
+            "name": self.name,
+            "instantiated": self.instantiated,
+            "description": self.description,
+            "nodes": [
+                data["wrapped_node"].to_web_node().dict()
+                for node_id, data in self.nodes(data=True)
+            ],
+            "edges": [
+                {"source": source, "sink": sink, "id": data["id"]}
+                for (source, sink, data) in self.edges(data=True)
+            ],
+        }
 
     @classmethod
     def from_pipeline_config(

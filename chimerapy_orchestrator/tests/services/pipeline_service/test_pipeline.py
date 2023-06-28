@@ -123,7 +123,7 @@ class TestPipeline(BaseTest):
         wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
         wrapped_node_2 = pipeline.add_node("ShowWindow").unwrap()
         pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
-        web_json = pipeline.to_web_json().unwrap()
+        web_json = pipeline.to_web_json()
         assert web_json["name"] == pipeline.name
         assert len(web_json["nodes"]) == 2
         assert len(web_json["edges"]) == 1
@@ -146,7 +146,7 @@ class TestPipeline(BaseTest):
             "displays/all_local", get_mmlapipe_configs_root_dir()
         )
         pipeline = Pipeline.from_pipeline_config(config)
-        pipeline_dict = pipeline.to_web_json().unwrap()
+        pipeline_dict = pipeline.to_web_json()
         assert pipeline_dict["name"] == "Pipeline"
         for node in pipeline_dict["nodes"]:
             assert node["registry_name"] in [
@@ -169,7 +169,7 @@ class TestPipeline(BaseTest):
             "mf_sort/all_local", get_mmlapipe_configs_root_dir()
         )
         pipeline = Pipeline.from_pipeline_config(config)
-        pipeline_dict = pipeline.to_web_json().unwrap()
+        pipeline_dict = pipeline.to_web_json()
         assert pipeline_dict["name"] == "Pipeline"
         for node in pipeline_dict["nodes"]:
             assert node["registry_name"] in [
