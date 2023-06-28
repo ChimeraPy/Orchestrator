@@ -46,7 +46,8 @@ class TestNetworkRouter(BaseTest):
         assert (
             response.json()
             == ClusterState.from_cp_manager_state(
-                manager.get_network(), manager.is_zeroconf_discovery_enabled()
+                manager.get_network().unwrap(),
+                manager.is_zeroconf_discovery_enabled(),
             ).dict()
         )
 

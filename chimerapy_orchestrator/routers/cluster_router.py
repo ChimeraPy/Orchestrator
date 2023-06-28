@@ -75,7 +75,7 @@ class ClusterRouter(APIRouter):
             update_queue,
             UpdateMessage(
                 data=ClusterState.from_cp_manager_state(
-                    self.manager.get_network(),
+                    self.manager.get_network().unwrap(),
                     zeroconf_discovery=self.manager.is_zeroconf_discovery_enabled(),
                 ),
                 signal=UpdateMessageType.NETWORK_UPDATE,
@@ -94,7 +94,7 @@ class ClusterRouter(APIRouter):
     async def get_manager_state(self) -> ClusterState:
         """Get the current state of the cluster."""
         return ClusterState.from_cp_manager_state(
-            self.manager.get_network(),
+            self.manager.get_network().unwrap(),
             zeroconf_discovery=self.manager.is_zeroconf_discovery_enabled(),
         )
 
