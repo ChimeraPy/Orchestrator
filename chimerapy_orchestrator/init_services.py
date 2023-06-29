@@ -27,7 +27,7 @@ def initialize():
     available_services["pipelines"] = pipelines
     if config.mode == "dev":
         if config.num_dev_workers > 0:
-            cluster_manager.enable_zeroconf_discovery()
+            cluster_manager._manager.zeroconf(enable=True)
         for j in range(config.num_dev_workers):
             worker = create_dev_worker(f"DevWorker-{j+1}")
             available_services["workers"].append(worker)
