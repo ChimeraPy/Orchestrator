@@ -94,3 +94,8 @@ export interface NodesPlugin {
 	name: string;
 	description: string;
 }
+
+export interface SelectedPipeline {
+	pipeline: Pipeline | null;
+	selectedNodeId: string | null;
+}

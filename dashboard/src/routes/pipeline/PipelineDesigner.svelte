@@ -185,6 +185,18 @@
 		}
 	}
 
+	function highlightPipelineNode(cell) {
+		const otherNodes = activePipeline?.nodes.filter((n) => {
+			return n.id !== cell.id;
+		});
+
+		otherNodes.forEach((n) => {
+			pipelineGraph?.setCellStrokeWidth(n.id, 2);
+		});
+
+		pipelineGraph?.setCellStrokeWidth(cell.id, 4);
+	}
+
 	function highlightPipelineEdge(link: joint.dia.Link) {
 		const otherLinks = activePipeline?.edges.filter((e) => {
 			return e.id !== link.id;
@@ -362,6 +374,7 @@
 					on:linkAdd={(event) => addLinkToPipeline(event.detail)}
 					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
 					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
+					on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
 					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
 					on:blankClick={(event) => clearPipelineEdgeHighlight()}
 				/>

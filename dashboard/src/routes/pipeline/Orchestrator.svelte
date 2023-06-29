@@ -7,8 +7,10 @@
 	import EditableList from '$lib/Components/JointJS/EditableList.svelte';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import type { ClusterState } from '$lib/models';
+	import {Select, Label} from 'flowbite-svelte';
 
 	let networkStore = getStore('network');
+	let selectedPipelineStore = getStore('selectedPipeline');
 
 	let infoModalContent: { title: string; content: any } | null = null;
 
@@ -66,6 +68,22 @@
 			};
 		}
 	}
+
+	let workers = [];
+	let selectedWorkerId: string | null = null;
+
+	$: {
+		workers = Object.values($networkStore?.workers || {})
+				.map(w => ({value: w.id, name: w.name}))
+				.concat([{value: null, name: 'Select a worker'}]);
+	}
+
+	function onWorkerIdSelectionChange() {
+		if ($selectedPipelineStore?.selectedNodeId === null) return;
+        let selectedNode = $selectedPipelineStore?.pipeline?.nodes.find(n => n.id === $selectedPipelineStore?.selectedNodeId);
+        selectedNode.worker_id = selectedWorkerId;
+        selectedNode = selectedNode;
+    }
 </script>
 
 <div class="flex flex-row w-full h-full">
@@ -99,6 +117,17 @@
 		</div>
 		<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
 			<p>Selected Node attributes</p>
+			{#if $selectedPipelineStore?.selectedNodeId}
+				 <div class="p-2">
+						<Label>Select a worker</Label>
+						<Select
+								mt-2
+								items={workers}
+								bind:value={selectedWorkerId}
+								on:change={onWorkerIdSelectionChange}
+						/>
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>
