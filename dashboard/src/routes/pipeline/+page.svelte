@@ -13,10 +13,10 @@
 </script>
 
 <div class="h-full flex flex-col">
-	<div class="flex-1">
+	<div class="h-1/2">
 		<PipelineDesigner />
 	</div>
-	<div class="flex-1">
+	<div class="h-1/2">
 		<Orchestrator />
 	</div>
 </div>

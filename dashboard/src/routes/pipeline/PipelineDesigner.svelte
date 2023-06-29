@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { pipelineClient, clusterClient } from '$lib/services';
+	import { pipelineClient } from '$lib/services';
 	import { onMount } from 'svelte';
-	import { getStore } from '$lib/stores';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
-	import { ClusterUtils } from '$lib/Services/ClusterUtils';
 	import { debounce } from '$lib/utils';
 
 	import PartBrowser from '$lib/Components/JointJS/PartBrowser.svelte';
@@ -14,12 +12,11 @@
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import { CreatePipelineStages } from '$lib/models';
-	import type { Pipeline, ClusterState } from '$lib/models';
+	import type { Pipeline } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/JointJS/EditableDAGViewer.svelte';
 	import { Icons } from '$lib/Icons';
 
 	import { Input, Label, Spinner } from 'flowbite-svelte';
-	let networkStore = getStore('network');
 
 	let nodeCells: joint.dia.Cell[];
 	let pipelineName: string = '',
