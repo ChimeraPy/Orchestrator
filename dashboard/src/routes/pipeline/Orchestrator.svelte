@@ -38,7 +38,6 @@
 	}
 
 	async function enableZeroconfDiscovery() {
-		console.log('enabling zeroconf discovery');
 		(await clusterClient.enableZeroConf()).mapError((err) => {
 			infoModalContent = {
 				title: 'Error enabling zeroconf discovery',
