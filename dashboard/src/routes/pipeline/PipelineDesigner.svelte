@@ -15,6 +15,7 @@
 	import type { Pipeline } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/JointJS/EditableDAGViewer.svelte';
 	import { Icons } from '$lib/Icons';
+	import { getStore } from '$lib/stores';
 
 	import { Input, Label, Spinner } from 'flowbite-svelte';
 
@@ -26,6 +27,7 @@
 	export let modalOpen: boolean;
 	let confirmMessage = 'Create Pipeline';
 	let cancelMessage;
+	const selectedPipelineStore = getStore('selectedPipeline');
 
 	let pipelines = [],
 		pipelineListItems = [];
@@ -128,6 +130,7 @@
 		} else {
 			activePipeline = pipelines.find((p) => p.id === activePipeline.id);
 		}
+		$selectedPipelineStore.pipeline = activePipeline;
 		rerender ? await renderActivePipelineGraph() : null;
 	}
 
@@ -185,22 +188,33 @@
 		}
 	}
 
-	function highlightPipelineEdge(link: joint.dia.Link) {
-		const otherLinks = activePipeline?.edges.filter((e) => {
-			return e.id !== link.id;
-		});
+	function highlightPipelineNode(cell) {
+		clearPipelineHighlights();
 
-		otherLinks.forEach((l) => {
-			pipelineGraph?.setCellStrokeWidth(l.id, 2);
-		});
+		pipelineGraph?.setCellStrokeWidth(cell.id, 4);
+		if ($selectedPipelineStore) {
+			$selectedPipelineStore.selectedNodeId = cell.id;
+		}
+	}
+
+	function highlightPipelineEdge(link: joint.dia.Link) {
+		clearPipelineHighlights();
 
 		pipelineGraph?.setCellStrokeWidth(link.id, 4);
 	}
 
-	function clearPipelineEdgeHighlight() {
+	function clearPipelineHighlights() {
 		activePipeline?.edges.forEach((l) => {
 			pipelineGraph?.setCellStrokeWidth(l.id, 2);
 		});
+
+		activePipeline?.nodes.forEach((n) => {
+			pipelineGraph?.setCellStrokeWidth(n.id, 2);
+		});
+
+		if ($selectedPipelineStore) {
+			$selectedPipelineStore.selectedNodeId = null;
+		}
 	}
 
 	function showNodeInfo(node) {
@@ -362,8 +376,9 @@
 					on:linkAdd={(event) => addLinkToPipeline(event.detail)}
 					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
 					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
+					on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
 					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-					on:blankClick={(event) => clearPipelineEdgeHighlight()}
+					on:blankClick={(event) => clearPipelineHighlights()}
 				/>
 			</div>
 		</div>
