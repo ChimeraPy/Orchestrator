@@ -18,7 +18,7 @@ export function populateStores() {
 
 	const selectedPipelineStore = writable<SelectedPipeline>({
 		pipeline: null,
-		selectedNodeId: null,
+		selectedNodeId: null
 	});
 
 	stores.set('network', networkStore);
