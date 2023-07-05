@@ -65,6 +65,7 @@ class TestPipelineModels(BaseTest):
             "kwargs": {},
             "type": NodeType.SOURCE,
             "package": None,
+            "worker_id": None,
         }
 
     @pytest.mark.skipif(

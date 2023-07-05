@@ -153,12 +153,33 @@ class TestPipelineRouter(BaseTest):
         assert node_json["registry_name"] == webcam_node_json["registry_name"]
         assert node_json["type"] == webcam_node_json["type"]
 
+        pipeline_json = pipeline_client.get(
+            f"/pipeline/get/{pipeline_id}"
+        ).json()
+
+        # Update pipeline
+        for node in pipeline_json["nodes"]:
+            node["name"] = "UpdatedNodeName"
+            node["worker_id"] = uuid()
+
+        pipeline_json["name"] = "UpdatedName"
+
+        pipeline = pipeline_client.post(
+            f"/pipeline/update/{pipeline_json['id']}", json=pipeline_json
+        )
+
+        assert pipeline.status_code == 200
+        pipeline_json_updated = pipeline.json()
+        assert pipeline_json_updated["id"] == pipeline_id
+        assert pipeline_json_updated["name"] == "UpdatedName"
+        assert pipeline_json_updated["description"] == "test_description"
+        assert pipeline_json_updated["nodes"] == pipeline_json["nodes"]
+
         # Remove pipeline
         pipeline = pipeline_client.delete(f"/pipeline/remove/{pipeline_id}")
 
         assert pipeline.status_code == 200
         pipeline_json = pipeline.json()
         assert pipeline_json["id"] == pipeline_id
-        assert pipeline_json["name"] == "test_pipeline"
+        assert pipeline_json["name"] == "UpdatedName"
         assert pipeline_json["description"] == "test_description"
-        assert pipeline_json["nodes"] == [show_window_node_json]

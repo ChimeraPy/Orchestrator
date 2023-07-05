@@ -31,7 +31,7 @@
 
 	let pipelines = [],
 		pipelineListItems = [];
-	let activePipeline: Pipeline | null = null;
+	let selectedPipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
 	let pluginInstaller: PluginInstaller;
 	let pipelineImporter: PipelineImporter;
@@ -46,7 +46,7 @@
 		)
 			? 'Close'
 			: 'Cancel';
-		createPipelineStage === CreatePipelineStages.OK ? (activePipeline = null) : null;
+		createPipelineStage === CreatePipelineStages.OK ? (selectedPipeline = null) : null;
 		[CreatePipelineStages.OK, CreatePipelineStages.ERROR].includes(createPipelineStage)
 			? fetchPipelines()
 			: null;
@@ -77,7 +77,7 @@
 
 	// Pipeline Editor
 	async function addNodeToActivePipeline(cell) {
-		if (!activePipeline) {
+		if (!selectedPipeline) {
 			infoModalContent = {
 				title: 'No active  ',
 				content: 'Please create or activate a pipeline to add nodes to it.'
@@ -92,69 +92,70 @@
 			id: cell.id
 		};
 
-		const result = await pipelineClient.addNodeTo(activePipeline.id, node);
+		const result = await pipelineClient.addNodeTo(selectedPipeline.id, node);
 		result.mapAsync(async (node) => {
-			await renderActivePipelineGraph();
+			await renderSelectedPipelineGraph();
 		});
 	}
 
 	async function removeNodeFromPipeline(cell) {
-		if (!activePipeline) {
+		if (!selectedPipeline) {
 			return;
 		}
-		const nodeToRemove = activePipeline.nodes.find((n) => n.id === cell.id);
+		const nodeToRemove = selectedPipeline.nodes.find((n) => n.id === cell.id);
 		if (nodeToRemove) {
-			const result = await pipelineClient.removeNodeFrom(activePipeline.id, nodeToRemove);
+			const result = await pipelineClient.removeNodeFrom(selectedPipeline.id, nodeToRemove);
 			result.mapError((error) => {
 				infoModalContent = {
 					title: 'Error removing node',
 					content: error
 				};
 			});
-			await renderActivePipelineGraph(true);
+			await renderSelectedPipelineGraph(true);
 		}
 	}
 
 	async function fetchPipelines(rerender = true) {
 		const result = await pipelineClient.getPipelines();
 
-		pipelineListItems = PipelineUtils.pipelinesResultToEditableListItems(result, activePipeline);
+		pipelineListItems = PipelineUtils.pipelinesResultToEditableListItems(result, selectedPipeline);
 		pipelineListItems = pipelineListItems;
 
 		result.map((p) => {
 			pipelines = p;
 		});
 
-		if (!activePipeline) {
-			activePipeline = pipelines.length ? pipelines[0] : null;
+		if (!selectedPipeline) {
+			selectedPipeline = pipelines.length ? pipelines[0] : null;
 		} else {
-			activePipeline = pipelines.find((p) => p.id === activePipeline.id);
+			selectedPipeline = pipelines.find((p) => p.id === selectedPipeline.id);
 		}
-		$selectedPipelineStore.pipeline = activePipeline;
-		rerender ? await renderActivePipelineGraph() : null;
+		$selectedPipelineStore.pipeline = selectedPipeline;
+		rerender ? await renderSelectedPipelineGraph() : null;
 	}
 
 	const debouncedFetchPipelines = debounce(fetchPipelines);
 
-	async function renderActivePipelineGraph(clear = true) {
-		if (!activePipeline) {
+	async function renderSelectedPipelineGraph(clear = true) {
+		if (!selectedPipeline) {
 			return;
 		}
-		const result = await pipelineClient.getPipeline(activePipeline.id);
+		const result = await pipelineClient.getPipeline(selectedPipeline.id);
 		result.map((pipeline) => {
-			activePipeline = pipeline;
+			selectedPipeline = pipeline;
 		});
 		const cells = PipelineUtils.pipelineResultToJointCells(result);
 		pipelineGraph?.render(cells, clear);
 		pipelineGraph?.layout();
+		$selectedPipelineStore.pipeline = selectedPipeline;
 	}
 
 	async function addLinkToPipeline({ src, tgt, link }) {
-		const source = activePipeline?.nodes.find((n) => n.id === src?.id);
-		const target = activePipeline?.nodes.find((n) => n.id === tgt?.id);
+		const source = selectedPipeline?.nodes.find((n) => n.id === src?.id);
+		const target = selectedPipeline?.nodes.find((n) => n.id === tgt?.id);
 
 		if (source && target) {
-			const result = await pipelineClient.addEdgeTo(activePipeline.id, source, target, link.id);
+			const result = await pipelineClient.addEdgeTo(selectedPipeline.id, source, target, link.id);
 			result.map((edge) => {
 				link.prop('id', edge.id);
 			});
@@ -164,12 +165,12 @@
 	}
 
 	async function removeLinkFromPipeline({ src, tgt, link }) {
-		const source = activePipeline?.nodes.find((n) => n.id === src?.id);
-		const target = activePipeline?.nodes.find((n) => n.id === tgt?.id);
+		const source = selectedPipeline?.nodes.find((n) => n.id === src?.id);
+		const target = selectedPipeline?.nodes.find((n) => n.id === tgt?.id);
 
 		if (source && target) {
 			const result = await pipelineClient.removeEdgeFrom(
-				activePipeline.id,
+				selectedPipeline.id,
 				source,
 				target,
 				link.id
@@ -204,11 +205,11 @@
 	}
 
 	function clearPipelineHighlights() {
-		activePipeline?.edges.forEach((l) => {
+		selectedPipeline?.edges.forEach((l) => {
 			pipelineGraph?.setCellStrokeWidth(l.id, 2);
 		});
 
-		activePipeline?.nodes.forEach((n) => {
+		selectedPipeline?.nodes.forEach((n) => {
 			pipelineGraph?.setCellStrokeWidth(n.id, 2);
 		});
 
@@ -218,7 +219,7 @@
 	}
 
 	function showNodeInfo(node) {
-		const nodeDetails = activePipeline?.nodes.find((n) => n.id === node.id);
+		const nodeDetails = selectedPipeline?.nodes.find((n) => n.id === node.id);
 		if (nodeDetails) {
 			infoModalContent = {
 				title: nodeDetails.name,
@@ -236,7 +237,7 @@
 		const sourceNodeModel = sourceNode.model;
 		const targetNodeModel = targetNode.model;
 
-		const linkExists = activePipeline?.edges.some(
+		const linkExists = selectedPipeline?.edges.some(
 			(e) => e.source === sourceNodeModel.id && e.sink === targetNodeModel.id
 		);
 		return !linkExists;
@@ -272,8 +273,8 @@
 
 	async function requestPipelineDeletion(item) {
 		await pipelineClient.removePipeline(item.id);
-		if (activePipeline?.id === item.id) {
-			activePipeline = null;
+		if (selectedPipeline?.id === item.id) {
+			selectedPipeline = null;
 			pipelineGraph?.clearGraph();
 		}
 
@@ -290,16 +291,16 @@
 		});
 	}
 
-	function activatePipeline(item) {
+	function selectPipeline(item) {
 		pipelineListItems = pipelineListItems.map((i) => {
 			i.active = i.id === item.id;
 			return i;
 		});
-		if (activePipeline && activePipeline.id !== item.id) {
+		if (selectedPipeline && selectedPipeline.id !== item.id) {
 			pipelineGraph?.clearGraph();
 		}
-		activePipeline = pipelines.find((p) => p.id === item.id);
-		renderActivePipelineGraph();
+		selectedPipeline = pipelines.find((p) => p.id === item.id);
+		renderSelectedPipelineGraph();
 	}
 
 	function showPluginInstaller() {
@@ -308,6 +309,19 @@
 
 	function showPipelineImporter() {
 		pipelineImporter.display();
+	}
+
+	function activatePipeline() {
+		if (!selectedPipeline) {
+			return;
+		}
+
+		pipelineClient.updatePipeline(selectedPipeline.id, selectedPipeline).then((result) => {
+			result.map((pipeline) => {
+				selectedPipeline = pipeline;
+				renderSelectedPipelineGraph();
+			});
+		});
 	}
 </script>
 
@@ -348,21 +362,28 @@
 					on:magnify={() => pipelineGraph?.zoomIn()}
 					on:reduce={() => pipelineGraph?.zoomOut()}
 					on:refresh={() => pipelineGraph?.scaleContentToFit()}
+					on:activatePipeline={() => activatePipeline()}
 					icons={[
 						{
 							type: Icons.magnify,
 							tooltip: 'Zoom in',
-							disabled: !activePipeline
+							disabled: !selectedPipeline
 						},
 						{
 							type: Icons.reduce,
 							tooltip: 'Zoom out',
-							disabled: !activePipeline
+							disabled: !selectedPipeline
 						},
 						{
 							type: Icons.refresh,
 							tooltip: 'Fit to screen',
-							disabled: !activePipeline
+							disabled: !selectedPipeline
+						},
+						{
+							type: Icons.bolt,
+							tooltip: 'Activate pipeline',
+							disabled: !selectedPipeline,
+							dispatchEventName: 'activatePipeline'
 						}
 					]}
 					title="Pipeline Editor"
@@ -403,7 +424,7 @@
 				<EditableList
 					items={pipelineListItems}
 					on:info={(event) => requestPipelineInfo(event.detail)}
-					on:click={(event) => activatePipeline(event.detail)}
+					on:click={(event) => selectPipeline(event.detail)}
 					on:delete={(event) => requestPipelineDeletion(event.detail)}
 				/>
 			</div>

@@ -104,3 +104,13 @@ class Pipelines:
             )
         else:
             return self.get_pipeline(pipeline_id).map(lambda p: p.to_web_json())
+
+    def update_from_web_json(
+        self, pipeline_id, web_json: Dict[str, Any]
+    ) -> Result[Dict[str, Any], Exception]:
+        """Update the pipelines from a JSON representation of the pipelines for the web interface."""
+        return (
+            self.get_pipeline(pipeline_id)
+            .map(lambda p: p.update_from_web_json(web_json))
+            .map(lambda p: p.unwrap())
+        )
