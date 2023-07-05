@@ -5,7 +5,7 @@ import networkx as nx
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
-from chimerapy_orchestrator.models.pipeline_models import WrappedNode
+from chimerapy_orchestrator.models.pipeline_models import WebNode, WrappedNode
 from chimerapy_orchestrator.models.registry_models import NodeType
 from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.registry import get_registered_node
@@ -182,6 +182,36 @@ class Pipeline(nx.DiGraph):
                 for (source, sink, data) in self.edges(data=True)
             ],
         }
+
+    def update_from_web_json(
+        self, web_json: Dict[str, Any]
+    ) -> Result[Dict[str, Any], Exception]:
+        """Update a pipeline from its web json representation."""
+        try:
+            assert self.id == web_json["id"], "Pipeline id mismatch"
+            # Check the name of the pipeline
+            if web_json["name"] != self.name:
+                self.name = web_json["name"]
+
+            # Check the description of the pipeline
+            if web_json.get("description") != self.description:
+                self.description = web_json["description"]
+
+            # Update Nodes
+            for node in web_json["nodes"]:
+                wrapped_node = self.nodes[node["id"]]["wrapped_node"]
+                wrapped_node.update_from_web_node(WebNode.parse_obj(node))
+
+            # Verify Edges, ToDo: Update edges after chimerapy update
+            for edge in web_json["edges"]:
+                assert self.has_edge(
+                    edge["source"], edge["sink"]
+                ), "Edge not found"
+
+            return Ok(self.to_web_json())
+
+        except Exception as e:
+            return Err(e)
 
     @classmethod
     def from_pipeline_config(

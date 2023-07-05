@@ -188,6 +188,20 @@ export class PipelineClient extends Client {
 
 		return response;
 	}
+
+	async updatePipeline(
+		pipelineId: string,
+		pipeline: Pipeline
+	): Promise<Result<Pipeline, ResponseError>> {
+		const prefix = encodeURIComponent(`/update/${pipelineId}`);
+		const response = await this._fetch<Pipeline>(prefix, {
+			method: 'POST',
+			body: JSON.stringify(pipeline),
+			headers: new Headers({ 'Content-Type': 'application/json' })
+		});
+
+		return response;
+	}
 }
 
 export class ClusterClient extends Client {

@@ -49,7 +49,7 @@
 			? (selectedWorkerId = null)
 			: (selectedWorkerId =
 					selectedPipelineDetails?.pipeline?.nodes.find((n) => n.id === nodeId)?.worker_id || null);
-		return workers;
+		return workers; // TODO: Fix this after proper worker heartbeat handling
 	}
 
 	function getNodeTitle() {

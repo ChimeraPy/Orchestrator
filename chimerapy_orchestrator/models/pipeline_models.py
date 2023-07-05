@@ -55,6 +55,10 @@ class WebNode(BaseModel):
         default=None, description="The package that registered this node."
     )
 
+    worker_id: Optional[str] = Field(
+        default=None, description="The id of the worker that runs this node."
+    )
+
     class Config:
         allow_extra = False
 
@@ -103,6 +107,14 @@ class WrappedNode(BaseModel):
         default=None, description="The package that registered this node."
     )
 
+    name: Optional[str] = Field(
+        default=None, description="The name of the node."
+    )
+
+    worker_id: Optional[str] = Field(
+        default=None, description="The id of the worker that runs this node."
+    )
+
     @property
     def instantiated(self) -> bool:
         return self.instance is not None
@@ -119,11 +131,13 @@ class WrappedNode(BaseModel):
         if kwargs == {}:
             kwargs = self.kwargs
         return WrappedNode(
+            name=self.name,
             NodeClass=self.NodeClass,
             node_type=self.node_type,
             registry_name=self.registry_name,
             kwargs=kwargs,
             package=self.package,
+            worker_id=self.worker_id,
         )
 
     @classmethod
@@ -139,6 +153,7 @@ class WrappedNode(BaseModel):
 
         wrapped_node = cls(
             NodeClass=NodeClass,
+            name=NodeClass.__name__,
             kwargs=kwargs,
             node_type=node_type,
             registry_name=registry_name,
@@ -146,15 +161,30 @@ class WrappedNode(BaseModel):
 
         return wrapped_node
 
-    def to_web_node(self, name: str = None) -> WebNode:
+    def to_web_node(self) -> WebNode:
         return WebNode(
-            name=name or self.NodeClass.__name__,
+            name=self.name or self.NodeClass.__name__,
             registry_name=self.registry_name,
             id=self.id,
             type=self.node_type,
             package=self.package,
             kwargs=self.kwargs,
+            worker_id=self.worker_id,
         )
+
+    def update_from_web_node(self, web_node: WebNode) -> None:
+        if self.instantiated:
+            raise RuntimeError("Cannot update instantiated node.")
+
+        if self.id != web_node.id:
+            raise ValueError("Cannot update node with different id.")
+
+        self.name = web_node.name
+        self.kwargs = web_node.kwargs
+        self.node_type = web_node.type
+        self.registry_name = web_node.registry_name
+        self.package = web_node.package
+        self.worker_id = web_node.worker_id
 
     def __repr__(self):
         return f"<WrappedNode: {self.NodeClass.__name__}>"

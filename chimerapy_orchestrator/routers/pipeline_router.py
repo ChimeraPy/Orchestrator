@@ -105,6 +105,14 @@ class PipelineRouter(APIRouter):
             response_description="The deleted pipeline",
         )
 
+        # Update a pipeline
+        self.add_api_route(
+            "/update/{pipeline_id}",
+            self.update_pipeline,
+            methods=["POST"],
+            response_description="The updated pipeline",
+        )
+
     async def create_pipeline(
         self, pipeline: PipelineRequest
     ) -> Dict[str, Any]:
@@ -276,3 +284,13 @@ class PipelineRouter(APIRouter):
             .map_error(lambda err: get_mapping(err).to_fastapi())
             .unwrap()
         )
+
+    async def update_pipeline(
+        self, pipeline_id: str, pipeline: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Update a pipeline.
+
+        The response will return the pipeline as json. If the pipeline does not exist, a 404 error will be returned.
+        """
+        updated = self.pipelines.update_from_web_json(pipeline_id, pipeline)
+        return updated.unwrap()
