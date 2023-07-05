@@ -30,7 +30,7 @@ class TestNetworkRouter(BaseTest):
 
     @pytest.fixture(scope="class")
     async def cluster_manager_and_client(self, manager, anyio_backend):
-        asyncio.create_task(manager.start_updates_broadcaster())
+        asyncio.create_task(manager.start_async_tasks())
         app = FastAPI()
         app.include_router(ClusterRouter(manager))
         yield manager, TestClient(app)

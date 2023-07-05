@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 from chimerapy_orchestrator.state_machine.exceptions import (
     FSMFinishedError,
@@ -64,6 +64,8 @@ class FSM:
         return {t.key for t in self.current_state.valid_transitions}
 
     def transition(self, transition: Union[Transition, str]) -> None:
+        """Transition to a new state."""
+        self.transitioning = True
         if self.transitioning:
             raise StateTransitionError("Cannot transition while transitioning")
 
@@ -93,6 +95,7 @@ class FSM:
                 transition = tmp
 
         self.current_state = self._get_state_from_transition(transition)
+        self.transitioning = False
 
     def _get_state_from_transition(self, transition: Transition) -> State:
         for state in self.states:
@@ -112,6 +115,14 @@ class FSM:
         for transition in self.current_state.valid_transitions:
             if transition.name == transition_name:
                 return transition
+
+    def can_transition(self, transition_name) -> Tuple[bool, str]:
+        if self.transitioning:
+            return False, "Cannot transition while transitioning"
+        if transition_name in self.allowed_transitions:
+            return True, ""
+        else:
+            return False, f"Invalid transition: {transition_name} from state {self.current_state.name} is not possible"
 
     def get_transition(self, transition_name: str) -> Optional[Transition]:
         # Check if the transition is valid in any state

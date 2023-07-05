@@ -21,6 +21,7 @@
 		[ToolViewType.HOVER_CONNECT]: {}
 	};
 
+	export let editable = true;
 	let cells: joint.dia.Cell[] = [];
 	const dispatchers: { [key in ToolViewType]: DispatcherFunc | null } = {
 		[ToolViewType.DELETE]: deleteEvent,
@@ -34,6 +35,7 @@
 	let paperContainer: HTMLDivElement;
 	const dispatch = createEventDispatcher();
 	let paperScaler: PaperScaler | null = null;
+	let animationIntervalFunctionId;
 
 	onMount(() => {
 		graph = new joint.dia.Graph();
@@ -52,7 +54,7 @@
 					thickness: 1
 				}
 			},
-			interactive: true,
+			interactive: editable,
 			allowLink: validator.isValidLink.bind(validator),
 			defaultRouter: {
 				name: 'manhattan',
@@ -208,7 +210,20 @@
 
 	export function resize() {
 		if (!paperContainer) return;
-		paper?.setDimensions(paperContainer.clientWidth, paperContainer.clientHeight);
+		const paperWidth = paper.options.width;
+		const paperHeight = paper.options.height;
+
+		// Check if paperWidth is a string
+		if (typeof paperWidth === 'string' || typeof paperHeight === 'string') {
+			const width = paperContainer.clientWidth;
+			const height = paperContainer.clientHeight;
+			paper?.setDimensions(width, height);
+			scaleContentToFit();
+		} else {
+			const width = Math.max(paperContainer.clientWidth, paperWidth as number);
+			const height = Math.max(paperContainer.clientHeight, paperHeight as number);
+			paper?.setDimensions(width, height);
+		}
 	}
 
 	export function scaleContentToFit() {

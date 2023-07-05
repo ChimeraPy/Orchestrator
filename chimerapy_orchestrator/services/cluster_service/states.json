@@ -1,0 +1,44 @@
+{
+  "description": "The state machine for the chimerapy cluster",
+  "states": {
+    "INITIALIZED": {
+      "name": "INITIALIZED",
+      "valid_transitions": [
+        {
+          "name": "/activate",
+          "from_state": "INITIALIZED",
+          "to_state": "ACTIVATED"
+        }
+      ],
+      "description": "The cluster is initialized and ready to be committed"
+    },
+    "ACTIVATED": {
+      "name": "ACTIVATED",
+      "valid_transitions": [
+        {
+          "name": "/commit",
+          "from_state": "ACTIVATED",
+          "to_state": "COMMITTED"
+        },
+        {
+          "name": "/reset",
+          "from_state": "ACTIVATED",
+          "to_state": "INITIALIZED"
+        }
+      ],
+      "description": "The cluster is activated and a pipeline ready to be committed"
+    },
+    "COMMITTED": {
+      "name": "COMMITTED",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "COMMITTED",
+          "to_state": "INITIALIZED"
+        }
+      ],
+      "description": "The cluster is committed and ready to be run or reset"
+    }
+  },
+  "initial_state": "INITIALIZED"
+}

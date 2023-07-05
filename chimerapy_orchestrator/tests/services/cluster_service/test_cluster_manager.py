@@ -42,9 +42,9 @@ class TestClusterManager(BaseTest):
     @pytest.mark.anyio
     async def test_network_updates(self, cluster_manager, anyio_backend):
         client_queue = asyncio.Queue()
-        asyncio.create_task(cluster_manager.start_updates_broadcaster())
+        asyncio.create_task(cluster_manager.start_async_tasks())
 
-        await cluster_manager.subscribe_to_updates(
+        await cluster_manager.subscribe_to_network_updates(
             client_queue,
             UpdateMessage(
                 data=None,

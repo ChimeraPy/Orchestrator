@@ -311,7 +311,7 @@
 		pipelineImporter.display();
 	}
 
-	function activatePipeline() {
+	async function activatePipeline() {
 		if (!selectedPipeline) {
 			return;
 		}

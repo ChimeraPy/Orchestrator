@@ -1,7 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 import networkx as nx
 
+import chimerapy as cp
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
@@ -238,3 +239,51 @@ class Pipeline(nx.DiGraph):
             pipeline.add_edge(node_to_names[source].id, node_to_names[sink].id)
 
         return pipeline
+
+    def instantiate(self) -> Result[Dict[str, Any], Exception]:
+        """Instantiates the pipeline."""
+        if not self.can_instantiate():
+            return Err(ValueError("Cannot instantiate the pipeline, some nodes don't have worker ids"))
+
+        if not self.instantiated:
+            cp_graph = cp.Graph()
+            node_to_cp_node = {}
+            for node_id, data in self.nodes(data=True):
+                wrapped_node: WrappedNode = data["wrapped_node"]
+                node = wrapped_node.instantiate()
+                cp_graph.add_node(node)
+                node_to_cp_node[node_id] = node
+
+            for source, sink, data in self.edges(data=True):
+                edge = cp_graph.add_edge(node_to_cp_node[source], node_to_cp_node[sink])
+                cp_graph.add_edge(edge)
+
+            self.instantiated = True
+            self.chimerapy_graph = cp_graph
+            return Ok(self.to_web_json())
+        else:
+            return Err(ValueError("Pipeline already instantiated"))
+
+    def worker_graph_mapping(self) -> Result[Dict[str, List[str]], Exception]:
+        worker_graph_mapping = {}
+
+        if not self.instantiated:
+            return Err(ValueError("Pipeline not instantiated"))
+
+        for node_id, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+
+            if wrapped_node.worker_id not in worker_graph_mapping:
+                worker_graph_mapping[wrapped_node.worker_id] = []
+
+            worker_graph_mapping[wrapped_node.worker_id].append(wrapped_node.instance.id)
+
+        return Ok(worker_graph_mapping)
+
+    def can_instantiate(self):
+        """Checks if the pipeline can be instantiated."""
+        for node_id, data in self.nodes(data=True):
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            if wrapped_node.worker_id is None:
+                return False
+        return True

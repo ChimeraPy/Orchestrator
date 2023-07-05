@@ -35,6 +35,13 @@ class ClusterRouter(APIRouter):
             description="The current state of the cluster",
         )
 
+        self.add_api_route(
+            "/instantiate/{pipeline_id}",
+            self.instantiate_pipeline,
+            methods=["POST"],
+            response_description="Instantiate a pipeline",
+        )
+
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
@@ -56,7 +63,7 @@ class ClusterRouter(APIRouter):
 
         async def on_disconnect() -> None:
             """Handle the disconnect of the client websocket."""
-            await self.manager.unsubscribe_from_updates(update_queue)
+            await self.manager.unsubscribe_from_network_updates(update_queue)
             if not relay_task.cancelled():
                 relay_task.cancel()
 
@@ -71,7 +78,7 @@ class ClusterRouter(APIRouter):
         update_queue = asyncio.Queue()
         relay_task = asyncio.create_task(relay(update_queue, websocket))
         poll_task = asyncio.create_task(poll(websocket))
-        await self.manager.subscribe_to_updates(
+        await self.manager.subscribe_to_network_updates(
             update_queue,
             UpdateMessage(
                 data=ClusterState.from_cp_manager_state(
@@ -113,3 +120,9 @@ class ClusterRouter(APIRouter):
                 status_code=500,
                 detail=f"Failed to toggle zeroconf discovery: {e}",
             )
+
+    # Pipeline orchestration
+    async def instantiate_pipeline(self, pipeline_id: str) -> Dict[str, bool]:
+        """Instantiate a pipeline."""
+        result = await self.manager.instantiate_pipeline(pipeline_id)
+        return result.map(lambda p: p.to_web_json()).unwrap()

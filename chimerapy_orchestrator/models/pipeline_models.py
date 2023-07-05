@@ -121,7 +121,7 @@ class WrappedNode(BaseModel):
 
     def instantiate(self, **kwargs) -> Node:
         """Instantiates the node."""
-        self.instance = self.NodeClass(**kwargs)
+        self.instance = self.NodeClass(self.kwargs)
         return self.instance
 
     def clone(self, **kwargs) -> "WrappedNode":
