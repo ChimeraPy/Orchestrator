@@ -22,7 +22,11 @@ class Client {
 		if (res.ok) {
 			return new Ok<T>(await res.json());
 		} else {
-			return new Err({ message: res.statusText, code: res.status });
+			return new Err({
+				message: res.statusText,
+				code: res.status,
+				serverMessage: await res.text()
+			});
 		}
 	}
 }
@@ -218,6 +222,12 @@ export class ClusterClient extends Client {
 	async disableZeroConf(): Promise<Result<boolean, ResponseError>> {
 		const prefix = '/zeroconf?enable=false';
 		const result = await this._fetch<any>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async instantiatePipeline(pipelineID: string): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/instantiate/${pipelineID}`;
+		const result = await this._fetch<PipelineNode>(prefix, { method: 'POST' });
 		return result.map((_) => true);
 	}
 }

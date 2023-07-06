@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { pipelineClient } from '$lib/services';
+	import { pipelineClient, clusterClient } from '$lib/services';
 	import { onMount } from 'svelte';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
 	import { debounce } from '$lib/utils';
@@ -316,11 +316,23 @@
 			return;
 		}
 
-		pipelineClient.updatePipeline(selectedPipeline.id, selectedPipeline).then((result) => {
-			result.map((pipeline) => {
-				selectedPipeline = pipeline;
-				renderSelectedPipelineGraph();
-			});
+		const updateResult = await pipelineClient.updatePipeline(selectedPipeline.id, selectedPipeline)
+		updateResult.map(pipeline => {
+			selectedPipeline = pipeline;
+			renderSelectedPipelineGraph();
+		}).mapError(err => {
+			infoModalContent = {
+				title: "Error activating pipeline",
+				content: err
+			};
+		});
+
+		const instantiationResult = await clusterClient.instantiatePipeline(selectedPipeline.id);
+		instantiationResult.mapError(err => {
+			infoModalContent = {
+				title: "Error instantiating pipeline",
+				content: err
+			};
 		});
 	}
 </script>

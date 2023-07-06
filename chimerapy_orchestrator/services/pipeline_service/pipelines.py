@@ -115,8 +115,12 @@ class Pipelines:
             .map(lambda p: p.unwrap())
         )
 
-    def instantiate_pipeline(self, pipeline_id) -> Result[Pipeline, Exception]:
+    def instantiate_pipeline(
+        self, pipeline_id
+    ) -> Result[Dict[str, Any], Exception]:
         """Instantiate a pipeline."""
-        return self.get_pipeline(pipeline_id)\
-            .map(lambda p: p.instantiate())\
+        return (
+            self.get_pipeline(pipeline_id)
+            .map(lambda p: p.instantiate())
             .map(lambda p: p.unwrap())
+        )

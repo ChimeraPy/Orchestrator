@@ -6,11 +6,17 @@ from chimerapy.manager import Manager
 from chimerapy.states import ManagerState
 
 from chimerapy_orchestrator.models.cluster_models import UpdateMessage
-from chimerapy_orchestrator.monads import Ok, Err, Result
+from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import (
-    ClusterUpdatesBroadCaster, UpdatesBroadcaster
+    ClusterUpdatesBroadCaster,
+    UpdatesBroadcaster,
 )
-from chimerapy_orchestrator.services.pipeline_service.pipelines import Pipeline, Pipelines as PipelineService
+from chimerapy_orchestrator.services.pipeline_service.pipelines import (
+    Pipeline,
+)
+from chimerapy_orchestrator.services.pipeline_service.pipelines import (
+    Pipelines as PipelineService,
+)
 from chimerapy_orchestrator.state_machine.fsm import FSM, StateTransitionError
 
 
@@ -50,9 +56,7 @@ class ClusterManager(FSM):
         )
 
         self._sentinel = "STOP"
-        self._pipeline_updates_broadcaster = UpdatesBroadcaster(
-            self._sentinel
-        )
+        self._pipeline_updates_broadcaster = UpdatesBroadcaster(self._sentinel)
 
         self._pipeline_service = pipeline_service
         self._active_pipeline = None
@@ -74,8 +78,12 @@ class ClusterManager(FSM):
     async def start_async_tasks(self) -> None:
         """Begin the updates broadcaster."""
         await self._network_updates_broadcaster.initialize()
-        fut1 = asyncio.ensure_future(self._network_updates_broadcaster.broadcast_updates())
-        fut2 = asyncio.ensure_future(self._pipeline_updates_broadcaster.start_broadcast())
+        fut1 = asyncio.ensure_future(
+            self._network_updates_broadcaster.broadcast_updates()
+        )
+        fut2 = asyncio.ensure_future(
+            self._pipeline_updates_broadcaster.start_broadcast()
+        )
 
         self._futures = [fut1, fut2]
 
@@ -100,9 +108,7 @@ class ClusterManager(FSM):
 
     async def unsubscribe_from_commit_updates(self, q: asyncio.Queue) -> None:
         """Unsubscribe from commit updates from the cluster manager."""
-        q.put_nowait(
-            self.get_pipeline_update_message()
-        )
+        q.put_nowait(self.get_pipeline_update_message())
         await self._pipeline_updates_broadcaster.remove_client(q)
 
     def has_shutdown(self) -> bool:
@@ -111,7 +117,10 @@ class ClusterManager(FSM):
 
     def is_sentinel(self, msg: str) -> bool:
         """Check if the message is a sentinel message."""
-        return msg == self._network_updates_broadcaster._sentinel or msg == self._pipeline_updates_broadcaster._sentinel
+        return (
+            msg == self._network_updates_broadcaster._sentinel
+            or msg == self._pipeline_updates_broadcaster._sentinel
+        )
 
     def enable_zeroconf_discovery(self) -> None:
         """Enable discovery of the cluster manager via zeroconf."""
@@ -141,11 +150,15 @@ class ClusterManager(FSM):
             "fsm": self.to_dict(),
         }
 
-    async def instantiate_pipeline(self, pipeline_id) -> Result[Pipeline, Exception]:
-        can, reason = self.can_transition("/activate")
+    async def instantiate_pipeline(
+        self, pipeline_id
+    ) -> Result[Pipeline, Exception]:
+        can, reason = self.can_transition("/instantiate")
 
         if self._is_transitioning:
-            return Err(Exception("Cannot transition while transitioning"))
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
 
         if not can:
             return Err(StateTransitionError(reason))

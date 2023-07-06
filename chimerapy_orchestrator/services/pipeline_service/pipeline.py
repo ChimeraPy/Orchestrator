@@ -1,8 +1,8 @@
-from typing import Any, Dict, Optional, List
-
-import networkx as nx
+from typing import Any, Dict, List, Optional
 
 import chimerapy as cp
+import networkx as nx
+
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
@@ -40,6 +40,13 @@ class NodeNotFoundError(nx.NetworkXError):
 class InvalidNodeError(ValueError):
     def __init__(self, node: Any, reason: str) -> None:
         msg = f"Node {node} is not a valid node: {reason}"
+        super().__init__(msg)
+
+
+class PipelineInstantiationError(Exception):
+    """An error that occurs when a pipeline cannot be instantiated."""
+
+    def __init__(self, msg: str):
         super().__init__(msg)
 
 
@@ -243,7 +250,11 @@ class Pipeline(nx.DiGraph):
     def instantiate(self) -> Result[Dict[str, Any], Exception]:
         """Instantiates the pipeline."""
         if not self.can_instantiate():
-            return Err(ValueError("Cannot instantiate the pipeline, some nodes don't have worker ids"))
+            return Err(
+                PipelineInstantiationError(
+                    "Cannot instantiate the pipeline, some nodes don't have worker ids"
+                )
+            )
 
         if not self.instantiated:
             cp_graph = cp.Graph()
@@ -255,14 +266,17 @@ class Pipeline(nx.DiGraph):
                 node_to_cp_node[node_id] = node
 
             for source, sink, data in self.edges(data=True):
-                edge = cp_graph.add_edge(node_to_cp_node[source], node_to_cp_node[sink])
-                cp_graph.add_edge(edge)
+                cp_graph.add_edge(
+                    node_to_cp_node[source], node_to_cp_node[sink]
+                )
 
             self.instantiated = True
             self.chimerapy_graph = cp_graph
             return Ok(self.to_web_json())
         else:
-            return Err(ValueError("Pipeline already instantiated"))
+            return Err(
+                PipelineInstantiationError("Pipeline already instantiated")
+            )
 
     def worker_graph_mapping(self) -> Result[Dict[str, List[str]], Exception]:
         worker_graph_mapping = {}
@@ -276,7 +290,9 @@ class Pipeline(nx.DiGraph):
             if wrapped_node.worker_id not in worker_graph_mapping:
                 worker_graph_mapping[wrapped_node.worker_id] = []
 
-            worker_graph_mapping[wrapped_node.worker_id].append(wrapped_node.instance.id)
+            worker_graph_mapping[wrapped_node.worker_id].append(
+                wrapped_node.instance.id
+            )
 
         return Ok(worker_graph_mapping)
 

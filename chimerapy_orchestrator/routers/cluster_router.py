@@ -9,6 +9,7 @@ from chimerapy_orchestrator.models.cluster_models import (
     UpdateMessage,
     UpdateMessageType,
 )
+from chimerapy_orchestrator.routers.error_mappers import get_mapping
 from chimerapy_orchestrator.services.cluster_service import (
     ClusterManager,
 )
@@ -125,4 +126,6 @@ class ClusterRouter(APIRouter):
     async def instantiate_pipeline(self, pipeline_id: str) -> Dict[str, bool]:
         """Instantiate a pipeline."""
         result = await self.manager.instantiate_pipeline(pipeline_id)
-        return result.map(lambda p: p.to_web_json()).unwrap()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()

@@ -5,31 +5,31 @@
       "name": "INITIALIZED",
       "valid_transitions": [
         {
-          "name": "/activate",
+          "name": "/instantiate",
           "from_state": "INITIALIZED",
-          "to_state": "ACTIVATED"
+          "to_state": "INSTANTIATED"
         }
       ],
       "description": "The cluster is initialized and ready to be committed"
     },
-    "ACTIVATED": {
-      "name": "ACTIVATED",
+    "INSTANTIATED": {
+      "name": "INSTANTIATED",
       "valid_transitions": [
         {
           "name": "/commit",
-          "from_state": "ACTIVATED",
+          "from_state": "INSTANTIATED",
           "to_state": "COMMITTED"
         },
         {
           "name": "/reset",
-          "from_state": "ACTIVATED",
+          "from_state": "INSTANTIATED",
           "to_state": "INITIALIZED"
         }
       ],
-      "description": "The cluster is activated and a pipeline ready to be committed"
+      "description": "The cluster is instantiated with a pipeline and it is ready to be committed"
     },
     "COMMITTED": {
-      "name": "COMMITTED",
+      "name": "INSTANTIATED",
       "valid_transitions": [
         {
           "name": "/reset",

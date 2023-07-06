@@ -5,6 +5,7 @@ from chimerapy_orchestrator.services.pipeline_service.pipeline import (
     InvalidNodeError,
     NodeNotFoundError,
     NotADagError,
+    PipelineInstantiationError,
 )
 
 
@@ -26,5 +27,8 @@ def get_mapping(err: Exception) -> CustomError:
         return CustomError(404, str(err))
     elif isinstance(err, (InvalidNodeError, NotADagError)):
         return CustomError(500, str(err))
+    elif isinstance(err, PipelineInstantiationError):
+        return CustomError(400, str(err))
     else:
+        print(f"Unknown error: {err}")
         return CustomError(500, f"Internal server error {err}")
