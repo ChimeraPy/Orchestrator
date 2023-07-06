@@ -168,3 +168,9 @@ class ClusterManager(FSM):
 
     async def reset_pipeline(self, pipeline_id):
         pass
+
+    def get_states_info(self):
+        """Return the FSM states info."""
+        info = self.to_dict()
+        return info
+

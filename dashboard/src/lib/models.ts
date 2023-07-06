@@ -99,3 +99,21 @@ export interface SelectedPipeline {
 	pipeline: Pipeline | null;
 	selectedNodeId: string | null;
 }
+
+export interface Transition {
+	name: string;
+	from_state: string;
+	to_state: string;
+}
+
+export interface ActionsFSMState {
+	name: string;
+	description: string;
+	valid_transitions: Transition[];
+}
+
+export interface ActionsFSM {
+	current_state: string;
+	states: { [key: string]: ActionsFSMState }[];
+	description: string;
+}

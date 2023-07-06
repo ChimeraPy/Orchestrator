@@ -7,13 +7,23 @@
 	import EditableList from '$lib/Components/JointJS/EditableList.svelte';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
 	import type { ClusterState } from '$lib/models';
+	import type { IconType } from '$lib/Icons';
+	import { Icons, getIconFromFSMActions } from '$lib/Icons';
+
 	import { Select, Label } from 'flowbite-svelte';
 	import type { Pipeline, PipelineNode } from '$lib/models';
+	import { onMount } from 'svelte';
 
 	let networkStore = getStore('network');
 	let selectedPipelineStore = getStore('selectedPipeline');
 
 	let infoModalContent: { title: string; content: any } | null = null;
+	let icons: IconType[] = [];
+
+	onMount(async () => {
+		const clusterActionsResult = await clusterClient.getActionsFSM();
+		clusterActionsResultToIcons(clusterActionsResult);
+	});
 
 	function getNetworkTitle(clusterState: ClusterState | null) {
 		if (!clusterState) {
@@ -105,6 +115,34 @@
 
 		return pipeline.nodes.find((n) => n.id === nodeId);
 	}
+
+	function clusterActionsResultToIcons(clusterActionsResult) {
+		clusterActionsResult.map((fsm) => {
+			const statesArray = Object.values(fsm.states);
+			const currentState = statesArray.find((state) => state.name === fsm.current_state);
+			const validTransitions = currentState.valid_transitions.map((transition) => transition.name);
+			const actions = [];
+			Object.values(fsm.states).forEach((state) => {
+				state.valid_transitions.forEach((transition) => {
+					if (!actions.includes(transition.name)) {
+						actions.push(transition.name);
+					}
+				});
+			});
+
+			icons = actions
+				.map((action) => {
+					return getIconFromFSMActions(action, !validTransitions.includes(action));
+				})
+				.concat({
+					tooltip: 'Get Actions and States Info',
+					type: Icons.info,
+					disabled: false,
+					fill: 'none',
+					strokeWidth: 2
+				});
+		});
+	}
 </script>
 
 <div class="flex flex-row w-full h-full">
@@ -127,7 +165,7 @@
 		</div>
 	</div>
 	<div class="flex flex-col w-4/6 h-full bg-indigo-100 border-r-2 border-gray-400">
-		<HorizontalMenu title="Active Jobs" />
+		<HorizontalMenu {icons} title="Active Jobs" />
 		<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
 			<p>Active Jobs go here</p>
 		</div>

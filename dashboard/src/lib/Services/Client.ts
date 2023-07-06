@@ -5,6 +5,7 @@ import type {
 	Edge,
 	ResponseError,
 	ClusterState,
+	ActionsFSM,
 	NodesPlugin
 } from '../models';
 import { Err, Ok } from 'ts-monads';
@@ -171,7 +172,7 @@ export class PipelineClient extends Client {
 		return response;
 	}
 
-	async importPipeline(config: string): Promise<Result<Pipeline, ResponseError>> {
+	async importPipeline(config: ChimeraPyPipelineConfig): Promise<Result<Pipeline, ResponseError>> {
 		const prefix = '/create';
 
 		const requestBody = {
@@ -238,48 +239,11 @@ export class ClusterClient extends Client {
 		const result = await this._fetch<PipelineNode>(prefix, { method: 'POST' });
 		return result.map((_) => true);
 	}
-}
 
-export class NetworkClient extends Client {
-	constructor(url: string) {
-		super(url);
+	async getActionsFSM(): Promise<Result<ActionsFSM, ResponseError>> {
+		const prefix = '/actions-fsm';
+		const response = await this._fetch<ActionsFSM>(prefix, { method: 'GET' });
+
+		return response;
 	}
-
-	async getNetworkMap(
-		fetch: (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response>
-	): Promise<Ok<ClusterState> | Err<ResponseError>> {
-		const res = await fetch('/mocks/networkMap.json');
-		if (res.ok) {
-			return new Ok(await res.json());
-		} else {
-			return new Err({ message: res.statusText, code: res.status });
-		}
-	}
-
-	async load(
-		fetch: (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response>
-	) {
-		console.log(await (await fetch(`${this.url}/network`)).json());
-	}
-
-	async subscribeToLogsZMQ(ip: string, port: number, callable: (e: MessageEvent) => void) {
-		const ws = new WebSocket(`ws://localhost:${port}/logs`);
-		ws.onmessage = (e) => {
-			callable(e);
-		};
-
-		ws.onerror = (e) => {
-			console.error(e);
-		};
-
-		const close = () => {
-			ws.close();
-		};
-
-		return close;
-	}
-
-	async createPipeline() {}
-
-	async deletePipeline() {}
 }
