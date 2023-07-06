@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict
+from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -123,9 +123,10 @@ class ClusterRouter(APIRouter):
             )
 
     # Pipeline orchestration
-    async def instantiate_pipeline(self, pipeline_id: str) -> Dict[str, bool]:
+    async def instantiate_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
         """Instantiate a pipeline."""
         result = await self.manager.instantiate_pipeline(pipeline_id)
+        print(result._value)
         return result.map_error(
             lambda err: get_mapping(err).to_fastapi()
         ).unwrap()

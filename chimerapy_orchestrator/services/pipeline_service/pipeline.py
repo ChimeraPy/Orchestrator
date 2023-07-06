@@ -66,35 +66,32 @@ class Pipeline(nx.DiGraph):
         node_name: str,
         node_package: Optional[str] = None,
         **kwargs: Dict[str, Any],
-    ) -> Result[WrappedNode, Exception]:
+    ) -> WrappedNode:
         """Adds a node to the pipeline_service."""
-        try:
-            wrapped_node = get_registered_node(
-                node_name, package=node_package
-            ).clone(**kwargs)
+        wrapped_node = get_registered_node(
+            node_name, package=node_package
+        ).clone(**kwargs)
 
-            super().add_node(wrapped_node.id, wrapped_node=wrapped_node)
+        super().add_node(wrapped_node.id, wrapped_node=wrapped_node)
 
-            return Ok(wrapped_node)
-        except Exception as e:
-            return Err(e)
+        return wrapped_node
 
-    def remove_node(self, node_id: str) -> Result[WrappedNode, Exception]:
+    def remove_node(self, node_id: str) -> WrappedNode:
         """Removes a node from the pipeline_service."""
         if node_id not in self.nodes:
-            return Err(NodeNotFoundError(node_id))
+            raise NodeNotFoundError(node_id)
 
         wrapped_node = self.nodes[node_id]["wrapped_node"]
         super().remove_node(node_id)
-        return Ok(wrapped_node)
+        return wrapped_node
 
     def add_edge(
         self, source: str, sink: str, *, edge_id: str = None
-    ) -> Result[Dict[str, WrappedNode], Exception]:
+    ) -> Dict[str, WrappedNode]:
         """Adds an edge to the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
-                return Err(NodeNotFoundError(node))
+                raise NodeNotFoundError(node)
 
         edge = {}
         for node_id, data in self.nodes(data=True):
@@ -103,24 +100,21 @@ class Pipeline(nx.DiGraph):
                 node_type = wrapped_node.node_type
 
                 if node_type not in {NodeType.SOURCE, NodeType.STEP}:
-                    return Err(
-                        InvalidNodeError(
+                    raise InvalidNodeError(
                             f"{node_id}:{wrapped_node.NodeClass.__name__}",
                             "Expected a source or step node, found a sink node",
                         )
-                    )
+
                 edge["source"] = wrapped_node
 
             elif node_id == sink:
                 node_type = wrapped_node.node_type
 
                 if node_type not in {NodeType.SINK, NodeType.STEP}:
-                    return Err(
-                        InvalidNodeError(
+                    raise InvalidNodeError(
                             f"{node_id}:{wrapped_node.NodeClass.__name__}",
                             "Expected a sink or step node, found a source node",
                         )
-                    )
 
                 edge["sink"] = wrapped_node
 
@@ -135,17 +129,17 @@ class Pipeline(nx.DiGraph):
 
         if not self.is_dag():
             super().remove_edge(source, sink)
-            return Err(NotADagError(edge))
+            raise NotADagError(edge)
 
-        return Ok(edge)
+        return edge
 
     def remove_edge(
         self, source: str, sink: str, *, edge_id: str = None
-    ) -> Result[Dict[str, WrappedNode], Exception]:
+    ) -> Dict[str, WrappedNode]:
         """Removes an edge from the pipeline_service."""
         for node in (source, sink):
             if node not in self.nodes:
-                return Err(NodeNotFoundError(node))
+                raise NodeNotFoundError(node)
 
         src_wrapped_node = self.nodes[source]["wrapped_node"]
         dst_wrapped_node = self.nodes[sink]["wrapped_node"]
@@ -155,17 +149,15 @@ class Pipeline(nx.DiGraph):
                 edge_id is not None
                 and not self.edges[(source, sink)]["id"] == edge_id
             ):
-                return Err(
-                    ValueError(
+                raise ValueError(
                         f"Edge {source} -> {sink} does not have id {edge_id}"
                     )
-                )
 
             super().remove_edge(source, sink)
         else:
-            return Err(EdgeNotFoundError(edge_id))
+            raise EdgeNotFoundError(edge_id)
 
-        return Ok({"source": src_wrapped_node, "sink": dst_wrapped_node})
+        return {"source": src_wrapped_node, "sink": dst_wrapped_node}
 
     def is_dag(self) -> bool:
         """Returns True if the pipeline_service is a DAG, False otherwise."""
@@ -193,33 +185,29 @@ class Pipeline(nx.DiGraph):
 
     def update_from_web_json(
         self, web_json: Dict[str, Any]
-    ) -> Result[Dict[str, Any], Exception]:
+    ) -> Dict[str, Any]:
         """Update a pipeline from its web json representation."""
-        try:
-            assert self.id == web_json["id"], "Pipeline id mismatch"
-            # Check the name of the pipeline
-            if web_json["name"] != self.name:
-                self.name = web_json["name"]
+        assert self.id == web_json["id"], "Pipeline id mismatch"
+        # Check the name of the pipeline
+        if web_json["name"] != self.name:
+            self.name = web_json["name"]
 
-            # Check the description of the pipeline
-            if web_json.get("description") != self.description:
-                self.description = web_json["description"]
+        # Check the description of the pipeline
+        if web_json.get("description") != self.description:
+            self.description = web_json["description"]
 
-            # Update Nodes
-            for node in web_json["nodes"]:
-                wrapped_node = self.nodes[node["id"]]["wrapped_node"]
-                wrapped_node.update_from_web_node(WebNode.parse_obj(node))
+        # Update Nodes
+        for node in web_json["nodes"]:
+            wrapped_node = self.nodes[node["id"]]["wrapped_node"]
+            wrapped_node.update_from_web_node(WebNode.parse_obj(node))
 
-            # Verify Edges, ToDo: Update edges after chimerapy update
-            for edge in web_json["edges"]:
-                assert self.has_edge(
-                    edge["source"], edge["sink"]
-                ), "Edge not found"
+        # Verify Edges, ToDo: Update edges after chimerapy update
+        for edge in web_json["edges"]:
+            assert self.has_edge(
+                edge["source"], edge["sink"]
+            ), "Edge not found"
 
-            return Ok(self.to_web_json())
-
-        except Exception as e:
-            return Err(e)
+        return self.to_web_json()
 
     @classmethod
     def from_pipeline_config(
@@ -247,14 +235,12 @@ class Pipeline(nx.DiGraph):
 
         return pipeline
 
-    def instantiate(self) -> Result[Dict[str, Any], Exception]:
+    def instantiate(self) -> Dict[str, Any]:
         """Instantiates the pipeline."""
         if not self.can_instantiate():
-            return Err(
-                PipelineInstantiationError(
+            raise PipelineInstantiationError(
                     "Cannot instantiate the pipeline, some nodes don't have worker ids"
                 )
-            )
 
         if not self.instantiated:
             cp_graph = cp.Graph()
@@ -272,17 +258,15 @@ class Pipeline(nx.DiGraph):
 
             self.instantiated = True
             self.chimerapy_graph = cp_graph
-            return Ok(self.to_web_json())
+            return self.to_web_json()
         else:
-            return Err(
-                PipelineInstantiationError("Pipeline already instantiated")
-            )
+            raise PipelineInstantiationError("Pipeline already instantiated")
 
-    def worker_graph_mapping(self) -> Result[Dict[str, List[str]], Exception]:
+    def worker_graph_mapping(self) -> Dict[str, List[str]]:
         worker_graph_mapping = {}
 
         if not self.instantiated:
-            return Err(ValueError("Pipeline not instantiated"))
+            raise ValueError("Pipeline not instantiated")
 
         for node_id, data in self.nodes(data=True):
             wrapped_node: WrappedNode = data["wrapped_node"]
@@ -294,7 +278,7 @@ class Pipeline(nx.DiGraph):
                 wrapped_node.instance.id
             )
 
-        return Ok(worker_graph_mapping)
+        return worker_graph_mapping
 
     def can_instantiate(self):
         """Checks if the pipeline can be instantiated."""

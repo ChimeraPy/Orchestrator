@@ -316,21 +316,23 @@
 			return;
 		}
 
-		const updateResult = await pipelineClient.updatePipeline(selectedPipeline.id, selectedPipeline)
-		updateResult.map(pipeline => {
-			selectedPipeline = pipeline;
-			renderSelectedPipelineGraph();
-		}).mapError(err => {
-			infoModalContent = {
-				title: "Error activating pipeline",
-				content: err
-			};
-		});
+		const updateResult = await pipelineClient.updatePipeline(selectedPipeline.id, selectedPipeline);
+		updateResult
+			.map((pipeline) => {
+				selectedPipeline = pipeline;
+				renderSelectedPipelineGraph();
+			})
+			.mapError((err) => {
+				infoModalContent = {
+					title: 'Error activating pipeline',
+					content: err
+				};
+			});
 
 		const instantiationResult = await clusterClient.instantiatePipeline(selectedPipeline.id);
-		instantiationResult.mapError(err => {
+		instantiationResult.mapError((err) => {
 			infoModalContent = {
-				title: "Error instantiating pipeline",
+				title: 'Error instantiating pipeline',
 				content: err
 			};
 		});

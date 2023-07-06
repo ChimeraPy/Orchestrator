@@ -22,11 +22,19 @@ class Client {
 		if (res.ok) {
 			return new Ok<T>(await res.json());
 		} else {
-			return new Err({
-				message: res.statusText,
-				code: res.status,
-				serverMessage: await res.text()
-			});
+			if (res.status < 500) {
+				return new Err({
+					message: res.statusText,
+					code: res.status,
+					serverMessage: await res.json()
+				});
+			} else {
+				return new Err({
+					message: res.statusText,
+					code: res.status,
+					serverMessage: await res.text()
+				});
+			}
 		}
 	}
 }

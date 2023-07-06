@@ -2,6 +2,7 @@ import asyncio
 import json
 from pathlib import Path
 
+from typing import Dict, List, Optional, Tuple, Any
 from chimerapy.manager import Manager
 from chimerapy.states import ManagerState
 
@@ -10,9 +11,6 @@ from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.services.cluster_service.updates_broadcaster import (
     ClusterUpdatesBroadCaster,
     UpdatesBroadcaster,
-)
-from chimerapy_orchestrator.services.pipeline_service.pipelines import (
-    Pipeline,
 )
 from chimerapy_orchestrator.services.pipeline_service.pipelines import (
     Pipelines as PipelineService,
@@ -152,7 +150,7 @@ class ClusterManager(FSM):
 
     async def instantiate_pipeline(
         self, pipeline_id
-    ) -> Result[Pipeline, Exception]:
+    ) -> Result[Dict[str, Any], Exception]:
         can, reason = self.can_transition("/instantiate")
 
         if self._is_transitioning:
