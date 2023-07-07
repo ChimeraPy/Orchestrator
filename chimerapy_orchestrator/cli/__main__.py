@@ -25,7 +25,7 @@ def orchestrate(config: ChimeraPyPipelineConfig):
             break
 
     # Commit the graph
-    manager.worker_graph_mapping(graph=pipeline, mapping=mappings).result(
+    manager.commit_graph(graph=pipeline, mapping=mappings).result(
         timeout=config.timeouts.commit_timeout
     )
 
