@@ -96,6 +96,38 @@ export const getIconFromFSMActions = (action: string, disabled: boolean): IconTy
 				strokeWidth: 2,
 				dispatchEventName: 'commit'
 			};
+		case '/preview':
+			return {
+				type: Icons.preview,
+				tooltip: 'preview',
+				disabled: disabled,
+				fill: 'none',
+				strokeWidth: 2,
+				dispatchEventName: 'preview'
+			};
+		case '/record':
+			return {
+				type: Icons.play,
+				tooltip: 'record',
+				disabled: disabled,
+				dispatchEventName: 'record'
+			};
+		case '/stop':
+			return {
+				type: Icons.stop,
+				tooltip: 'stop',
+				disabled: disabled,
+				dispatchEventName: 'stop'
+			};
+		case '/collect':
+			return {
+				type: Icons.collect,
+				tooltip: 'Collect data',
+				disabled: disabled,
+				fill: 'none',
+				strokeWidth: 2,
+				dispatchEventName: 'collect'
+			};
 		case '/reset':
 			return {
 				type: Icons.refresh,

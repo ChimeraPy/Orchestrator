@@ -48,6 +48,7 @@ export interface Pipeline {
 	name: string;
 	description: string;
 	instantiated: boolean;
+	committed: boolean;
 	nodes: PipelineNode[];
 	edges: Edge[];
 }
@@ -116,4 +117,10 @@ export interface ActionsFSM {
 	current_state: string;
 	states: { [key: string]: ActionsFSMState }[];
 	description: string;
+	active_pipeline_id: string | null;
+}
+
+export interface LifeCycle {
+	fsm: ActionsFSM;
+	pipeline: Pipeline;
 }

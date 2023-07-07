@@ -7,6 +7,7 @@ from chimerapy_orchestrator.services.pipeline_service.pipeline import (
     NotADagError,
     PipelineInstantiationError,
 )
+from chimerapy_orchestrator.state_machine.exceptions import StateTransitionError
 
 
 class CustomError:
@@ -29,6 +30,8 @@ def get_mapping(err: Exception) -> CustomError:
         return CustomError(500, str(err))
     elif isinstance(err, PipelineInstantiationError):
         return CustomError(400, str(err))
+    elif isinstance(err, StateTransitionError):
+        return CustomError(409, str(err))
     else:
         print(f"Unknown error: {err}")
         return CustomError(500, f"Internal server error {err}")

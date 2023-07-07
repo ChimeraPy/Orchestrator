@@ -2,7 +2,6 @@ import asyncio
 import json
 from pathlib import Path
 
-from typing import Dict, List, Optional, Tuple, Any
 from chimerapy.manager import Manager
 from chimerapy.states import ManagerState
 
@@ -59,7 +58,6 @@ class ClusterManager(FSM):
         self._pipeline_service = pipeline_service
         self._active_pipeline = None
         self._futures = []
-        self._is_transitioning = False
 
     @property
     def host(self):
@@ -103,6 +101,7 @@ class ClusterManager(FSM):
     async def subscribe_to_commit_updates(self, q: asyncio.Queue) -> None:
         """Subscribe to commit updates from the cluster manager."""
         await self._pipeline_updates_broadcaster.add_client(q)
+        self.put_pipeline_update()
 
     async def unsubscribe_from_commit_updates(self, q: asyncio.Queue) -> None:
         """Unsubscribe from commit updates from the cluster manager."""
@@ -150,10 +149,11 @@ class ClusterManager(FSM):
 
     async def instantiate_pipeline(
         self, pipeline_id
-    ) -> Result[Dict[str, Any], Exception]:
+    ) -> Result[bool, Exception]:
         can, reason = self.can_transition("/instantiate")
-
-        if self._is_transitioning:
+        print(can, reason, self.transitioning)
+        if self.transitioning:
+            print("???????")
             return Err(
                 StateTransitionError("Cannot transition while transitioning")
             )
@@ -161,16 +161,82 @@ class ClusterManager(FSM):
         if not can:
             return Err(StateTransitionError(reason))
 
-        return self._pipeline_service.instantiate_pipeline(pipeline_id)
+        try:
+            active_pipeline = self._pipeline_service.get_pipeline(
+                pipeline_id
+            ).unwrap()
+            result = await self._pipeline_service.instantiate_pipeline(
+                pipeline_id
+            )
+            _ = result.unwrap()
+            self._active_pipeline = active_pipeline
+            self.transition("/instantiate")
+            self.transitioning = False
+            self.put_pipeline_update()
+            return Ok(True)
+        except Exception as e:
+            self.transitioning = False
+            return Err(e)
 
-    async def commit_pipeline(self, pipeline_id):
-        pass
+    async def commit_pipeline(self) -> Result[bool, Exception]:
+        can, reason = self.can_transition("/commit")
 
-    async def reset_pipeline(self, pipeline_id):
-        pass
+        if self.transitioning:
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
+
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self._active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline"))
+
+        self.transitioning = True
+        commit_task = asyncio.create_task(self.commit_active_pipeline())
+        commit_task.add_done_callback(
+            lambda result: self.transition_if_success(result, "/commit")
+        )
+        return Ok(True)
+
+    async def commit_active_pipeline(self):
+        await self._manager.async_reset(keep_workers=True)
+        graph = self._active_pipeline.chimerapy_graph
+        worker_graph_mapping = self._active_pipeline.worker_graph_mapping()
+        print(worker_graph_mapping, graph, "???")
+        result = await self._manager.async_commit(graph, worker_graph_mapping)
+        self._active_pipeline.committed = True
+        return result
+
+    def transition_if_success(self, result, transition):
+        print(result.exception())
+        if result.exception() is None:
+            self.transitioning = False
+            self.transition(transition)
+            self.transitioning = False
+            self.put_pipeline_update()
+        else:
+            self.transitioning = False
+            self.put_pipeline_update()
+
+    def put_pipeline_update(self):
+        asyncio.create_task(
+            self._pipeline_updates_broadcaster.put_update(
+                {
+                    "data": {
+                        "fsm": self.to_dict(),
+                        "pipeline": self._active_pipeline.to_web_json()
+                        if self._active_pipeline
+                        else None,
+                    }
+                }
+            )
+        )
 
     def get_states_info(self):
         """Return the FSM states info."""
         info = self.to_dict()
+        info["active_pipeline_id"] = (
+            self._active_pipeline.id if self._active_pipeline else None
+        )
         return info
-

@@ -1,8 +1,9 @@
 import asyncio
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 
 from chimerapy_orchestrator.models.cluster_models import (
     ClusterState,
@@ -13,7 +14,7 @@ from chimerapy_orchestrator.routers.error_mappers import get_mapping
 from chimerapy_orchestrator.services.cluster_service import (
     ClusterManager,
 )
-from starlette.websockets import WebSocketState
+
 
 async def relay(q: asyncio.Queue, ws: WebSocket, is_sentinel) -> None:
     """Relay messages from the queue to the websocket."""
@@ -75,8 +76,32 @@ class ClusterRouter(APIRouter):
             response_description="Get the actions FSM",
         )
 
+        # FSM actions
+        self.add_api_route(
+            "/commit",
+            self.commit,
+            methods=["POST"],
+            response_description="Commit the current pipeline in the cluster",
+        )
+
+        self.add_api_route(
+            "/preview",
+            self.preview,
+            methods=["POST"],
+            response_description="Preview the current pipeline in the cluster",
+        )
+
+        self.add_api_route(
+            "/reset",
+            self.reset,
+            methods=["POST"],
+            response_description="Reset the current pipeline in the cluster",
+        )
+
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
-        self.add_websocket_route("/cluster/pipeline-lifecycle", self.get_pipeline_updates)
+        self.add_websocket_route(
+            "/cluster/pipeline-lifecycle", self.get_pipeline_updates
+        )
 
     async def get_cluster_updates(self, websocket: WebSocket):  # noqa: C901
         """Get updates from the cluster manager and relay them to the client websocket."""
@@ -118,11 +143,7 @@ class ClusterRouter(APIRouter):
 
         update_queue = asyncio.Queue()
         relay_task = asyncio.create_task(
-            relay(
-                update_queue,
-                websocket,
-                self.manager.is_sentinel
-            )
+            relay(update_queue, websocket, self.manager.is_sentinel)
         )
         poll_task = asyncio.create_task(poll(websocket))
         await self.manager.subscribe_to_commit_updates(update_queue)
@@ -162,7 +183,7 @@ class ClusterRouter(APIRouter):
             )
 
     # Pipeline orchestration
-    async def instantiate_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
+    async def instantiate_pipeline(self, pipeline_id: str) -> bool:
         """Instantiate a pipeline."""
         result = await self.manager.instantiate_pipeline(pipeline_id)
         return result.map_error(
@@ -172,3 +193,19 @@ class ClusterRouter(APIRouter):
     async def get_actions_fsm(self) -> Dict[str, Any]:
         """Get the actions FSM."""
         return self.manager.get_states_info()
+
+    async def commit(self):
+        result = await self.manager.commit_pipeline()
+        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+
+    async def preview(self):
+        result = await self.manager.preview_pipeline()
+        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+
+    async def record(self):
+        result = await self.manager.record_pipeline()
+        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+
+    async def reset(self):
+        result = await self.manager.reset_pipeline()
+        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()

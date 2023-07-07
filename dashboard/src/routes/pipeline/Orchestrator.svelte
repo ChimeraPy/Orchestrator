@@ -2,13 +2,17 @@
 	import { clusterClient } from '$lib/services';
 	import { getStore } from '$lib/stores';
 	import { ClusterUtils } from '$lib/Services/ClusterUtils';
+	import { Ok } from 'ts-monads';
+	import { ToolViewType } from '$lib/Components/JointJS/utils';
 
 	import HorizontalMenu from '$lib/Components/JointJS/HorizontalMenu.svelte';
 	import EditableList from '$lib/Components/JointJS/EditableList.svelte';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
+	import EditableDagViewer from '$lib/Components/JointJS/EditableDAGViewer.svelte';
 	import type { ClusterState } from '$lib/models';
 	import type { IconType } from '$lib/Icons';
 	import { Icons, getIconFromFSMActions } from '$lib/Icons';
+	import { PipelineUtils } from '$lib/Services/PipelineUtils';
 
 	import { Select, Label } from 'flowbite-svelte';
 	import type { Pipeline, PipelineNode } from '$lib/models';
@@ -16,9 +20,12 @@
 
 	let networkStore = getStore('network');
 	let selectedPipelineStore = getStore('selectedPipeline');
+	let lifeCycleStore = getStore('lifeCycle');
 
 	let infoModalContent: { title: string; content: any } | null = null;
 	let icons: IconType[] = [];
+	let pipelineGraph: any = null;
+	let pipelineCells = [];
 
 	onMount(async () => {
 		const clusterActionsResult = await clusterClient.getActionsFSM();
@@ -131,8 +138,12 @@
 			});
 
 			icons = actions
+				.filter((action) => action !== '/instantiate')
 				.map((action) => {
-					return getIconFromFSMActions(action, !validTransitions.includes(action));
+					return getIconFromFSMActions(
+						action,
+						fsm.active_pipeline_id === null || !validTransitions.includes(action)
+					);
 				})
 				.concat({
 					tooltip: 'Get Actions and States Info',
@@ -143,6 +154,48 @@
 				});
 		});
 	}
+
+	async function displayClusterStatesInfo() {
+		(await clusterClient.getActionsFSM())
+			.map((fsm) => {
+				infoModalContent = {
+					title: 'Cluster States Info',
+					content: fsm
+				};
+			})
+			.mapError((err) => {
+				infoModalContent = {
+					title: 'Error getting cluster states info',
+					content: err
+				};
+			});
+	}
+
+	function renderChanges(pipeline, fsm) {
+		if (pipeline) {
+			pipelineCells = PipelineUtils.committablePipelineToJointCells(pipeline);
+			pipelineCells = pipelineCells;
+		} else {
+			pipelineCells = [];
+		}
+
+		pipelineGraph?.render(pipelineCells, pipelineCells.length === 0);
+		pipelineGraph?.layout();
+		if (fsm) {
+			clusterActionsResultToIcons(new Ok(fsm));
+		}
+	}
+
+	async function commitPipeline() {
+		(await clusterClient.commitPipeline()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error committing pipeline',
+				content: JSON.stringify(err, null, 2)
+			};
+		});
+	}
+
+	$: renderChanges($lifeCycleStore?.pipeline, $lifeCycleStore?.fsm);
 </script>
 
 <div class="flex flex-row w-full h-full">
@@ -165,9 +218,19 @@
 		</div>
 	</div>
 	<div class="flex flex-col w-4/6 h-full bg-indigo-100 border-r-2 border-gray-400">
-		<HorizontalMenu {icons} title="Active Jobs" />
+		<HorizontalMenu
+			{icons}
+			on:info={displayClusterStatesInfo}
+			on:commit={commitPipeline}
+			title="Active Jobs"
+		/>
 		<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
-			<p>Active Jobs go here</p>
+			<EditableDagViewer
+				bind:this={pipelineGraph}
+				editable={false}
+				additionalLinkValidators={[]}
+				toolViewAttachments={[ToolViewType.INFO]}
+			/>
 		</div>
 	</div>
 	<div class="w-1/6 flex flex-col border-gray-400">

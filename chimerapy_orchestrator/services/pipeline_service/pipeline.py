@@ -8,7 +8,6 @@ from chimerapy_orchestrator.models.pipeline_config import (
 )
 from chimerapy_orchestrator.models.pipeline_models import WebNode, WrappedNode
 from chimerapy_orchestrator.models.registry_models import NodeType
-from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.registry import get_registered_node
 from chimerapy_orchestrator.utils import uuid
 
@@ -58,6 +57,7 @@ class Pipeline(nx.DiGraph):
         self.id = uuid()
         self.name = name
         self.instantiated = False
+        self.committed = False
         self.description = description or "A pipeline"
         self.chimerapy_graph = None
 
@@ -101,9 +101,9 @@ class Pipeline(nx.DiGraph):
 
                 if node_type not in {NodeType.SOURCE, NodeType.STEP}:
                     raise InvalidNodeError(
-                            f"{node_id}:{wrapped_node.NodeClass.__name__}",
-                            "Expected a source or step node, found a sink node",
-                        )
+                        f"{node_id}:{wrapped_node.NodeClass.__name__}",
+                        "Expected a source or step node, found a sink node",
+                    )
 
                 edge["source"] = wrapped_node
 
@@ -112,9 +112,9 @@ class Pipeline(nx.DiGraph):
 
                 if node_type not in {NodeType.SINK, NodeType.STEP}:
                     raise InvalidNodeError(
-                            f"{node_id}:{wrapped_node.NodeClass.__name__}",
-                            "Expected a sink or step node, found a source node",
-                        )
+                        f"{node_id}:{wrapped_node.NodeClass.__name__}",
+                        "Expected a sink or step node, found a source node",
+                    )
 
                 edge["sink"] = wrapped_node
 
@@ -150,8 +150,8 @@ class Pipeline(nx.DiGraph):
                 and not self.edges[(source, sink)]["id"] == edge_id
             ):
                 raise ValueError(
-                        f"Edge {source} -> {sink} does not have id {edge_id}"
-                    )
+                    f"Edge {source} -> {sink} does not have id {edge_id}"
+                )
 
             super().remove_edge(source, sink)
         else:
@@ -172,6 +172,7 @@ class Pipeline(nx.DiGraph):
             "id": self.id,
             "name": self.name,
             "instantiated": self.instantiated,
+            "committed": self.committed,
             "description": self.description,
             "nodes": [
                 data["wrapped_node"].to_web_node().dict()
@@ -183,9 +184,7 @@ class Pipeline(nx.DiGraph):
             ],
         }
 
-    def update_from_web_json(
-        self, web_json: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def update_from_web_json(self, web_json: Dict[str, Any]) -> Dict[str, Any]:
         """Update a pipeline from its web json representation."""
         assert self.id == web_json["id"], "Pipeline id mismatch"
         # Check the name of the pipeline
@@ -203,9 +202,7 @@ class Pipeline(nx.DiGraph):
 
         # Verify Edges, ToDo: Update edges after chimerapy update
         for edge in web_json["edges"]:
-            assert self.has_edge(
-                edge["source"], edge["sink"]
-            ), "Edge not found"
+            assert self.has_edge(edge["source"], edge["sink"]), "Edge not found"
 
         return self.to_web_json()
 
@@ -239,8 +236,8 @@ class Pipeline(nx.DiGraph):
         """Instantiates the pipeline."""
         if not self.can_instantiate():
             raise PipelineInstantiationError(
-                    "Cannot instantiate the pipeline, some nodes don't have worker ids"
-                )
+                "Cannot instantiate the pipeline, some nodes don't have worker ids"
+            )
 
         if not self.instantiated:
             cp_graph = cp.Graph()
@@ -251,7 +248,7 @@ class Pipeline(nx.DiGraph):
                 cp_graph.add_node(node)
                 node_to_cp_node[node_id] = node
 
-            for source, sink, data in self.edges(data=True):
+            for source, sink, data in self.edges(data=True):  # noqa: B007
                 cp_graph.add_edge(
                     node_to_cp_node[source], node_to_cp_node[sink]
                 )
@@ -268,7 +265,7 @@ class Pipeline(nx.DiGraph):
         if not self.instantiated:
             raise ValueError("Pipeline not instantiated")
 
-        for node_id, data in self.nodes(data=True):
+        for node_id, data in self.nodes(data=True):  # noqa: B007
             wrapped_node: WrappedNode = data["wrapped_node"]
 
             if wrapped_node.worker_id not in worker_graph_mapping:
@@ -282,7 +279,7 @@ class Pipeline(nx.DiGraph):
 
     def can_instantiate(self):
         """Checks if the pipeline can be instantiated."""
-        for node_id, data in self.nodes(data=True):
+        for node_id, data in self.nodes(data=True):  # noqa: B007
             wrapped_node: WrappedNode = data["wrapped_node"]
             if wrapped_node.worker_id is None:
                 return False

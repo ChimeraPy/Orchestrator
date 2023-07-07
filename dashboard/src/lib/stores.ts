@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { ClusterState, ResponseError, SelectedPipeline } from './models';
+import type { ClusterState, ResponseError, SelectedPipeline, LifeCycle } from './models';
 import readableWebSocketStore from './Services/ReadableWebSocketStore';
 
 // ToDo: this store is fine for now and distributed async requires the tree to be regenerated in realtime. But something diff based maybe?
@@ -14,7 +14,7 @@ export function populateStores() {
 		(payload) => payload.data
 	);
 
-	const lifeCycleStore = readableWebSocketStore<ClusterState>(
+	const lifeCycleStore = readableWebSocketStore<LifeCycle>(
 		'/cluster/pipeline-lifecycle',
 		null,
 		(payload) => payload.data
@@ -27,6 +27,7 @@ export function populateStores() {
 
 	stores.set('network', networkStore);
 	stores.set('selectedPipeline', selectedPipelineStore);
+	stores.set('lifeCycle', lifeCycleStore);
 }
 
 export function getStore<T>(name: string): T | null {

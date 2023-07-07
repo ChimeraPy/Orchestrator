@@ -236,7 +236,13 @@ export class ClusterClient extends Client {
 
 	async instantiatePipeline(pipelineID: string): Promise<Result<boolean, ResponseError>> {
 		const prefix = `/instantiate/${pipelineID}`;
-		const result = await this._fetch<PipelineNode>(prefix, { method: 'POST' });
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async commitPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/commit`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
 		return result.map((_) => true);
 	}
 

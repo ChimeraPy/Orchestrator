@@ -109,12 +109,11 @@ class Pipelines:
         self, pipeline_id, web_json: Dict[str, Any]
     ) -> Result[Dict[str, Any], Exception]:
         """Update the pipelines from a JSON representation of the pipelines for the web interface."""
-        return (
-            self.get_pipeline(pipeline_id)
-            .map(lambda p: p.update_from_web_json(web_json))
+        return self.get_pipeline(pipeline_id).map(
+            lambda p: p.update_from_web_json(web_json)
         )
 
-    def instantiate_pipeline(
+    async def instantiate_pipeline(
         self, pipeline_id
     ) -> Result[Dict[str, Any], Exception]:
         """Instantiate a pipeline."""
@@ -129,4 +128,3 @@ class Pipelines:
                 return Ok(instance)
             except Exception as e:
                 return Err(e)
-

@@ -45,7 +45,7 @@ class UpdatesBroadcaster:
             await self.initialize()
         await self.update_queue.put(msg)
 
-    async def enqueue_sentinel(self) -> None:
+    def enqueue_sentinel(self) -> None:
         """Enqueue the sentinel message to stop the broadcaster."""
         self.update_queue.put_nowait(self._sentinel)
 
