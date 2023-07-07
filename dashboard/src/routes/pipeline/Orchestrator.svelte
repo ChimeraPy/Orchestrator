@@ -26,6 +26,7 @@
 	let icons: IconType[] = [];
 	let pipelineGraph: any = null;
 	let pipelineCells = [];
+	let selectedWorkerId: string | null = null;
 
 	onMount(async () => {
 		const clusterActionsResult = await clusterClient.getActionsFSM();
@@ -103,8 +104,6 @@
 			};
 		}
 	}
-
-	let selectedWorkerId: string | null = null;
 
 	function onWorkerIdSelectionChange() {
 		if ($selectedPipelineStore?.selectedNodeId === null) return;
@@ -190,7 +189,43 @@
 		(await clusterClient.commitPipeline()).mapError((err) => {
 			infoModalContent = {
 				title: 'Error committing pipeline',
-				content: JSON.stringify(err, null, 2)
+				content: err
+			};
+		});
+	}
+
+	async function previewPipeline() {
+		(await clusterClient.previewPipeline()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error previewing pipeline',
+				content: err
+			};
+		});
+	}
+
+	async function recordPipeline() {
+		(await clusterClient.recordPipeline()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error recording pipeline',
+				content: err
+			};
+		});
+	}
+
+	async function stopPipeline() {
+		(await clusterClient.stopPipeline()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error stopping pipeline',
+				content: err
+			};
+		});
+	}
+
+	async function resetPipeline() {
+		(await clusterClient.resetPipeline()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error resetting pipeline',
+				content: err
 			};
 		});
 	}
@@ -222,6 +257,10 @@
 			{icons}
 			on:info={displayClusterStatesInfo}
 			on:commit={commitPipeline}
+			on:preview={previewPipeline}
+			on:record={recordPipeline}
+			on:stop={stopPipeline}
+			on:reset={resetPipeline}
 			title="Active Jobs"
 		/>
 		<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">

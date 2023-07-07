@@ -246,6 +246,30 @@ export class ClusterClient extends Client {
 		return result.map((_) => true);
 	}
 
+	async previewPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/preview`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async recordPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/record`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async stopPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/stop`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async resetPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/reset`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
 	async getActionsFSM(): Promise<Result<ActionsFSM, ResponseError>> {
 		const prefix = '/actions-fsm';
 		const response = await this._fetch<ActionsFSM>(prefix, { method: 'GET' });

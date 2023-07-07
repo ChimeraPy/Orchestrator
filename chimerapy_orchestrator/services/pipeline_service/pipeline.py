@@ -163,9 +163,6 @@ class Pipeline(nx.DiGraph):
         """Returns True if the pipeline_service is a DAG, False otherwise."""
         return nx.is_directed_acyclic_graph(self)
 
-    def __repr__(self) -> str:
-        return f"Pipeline<{self.name}>"
-
     def to_web_json(self) -> Dict[str, Any]:
         """Returns a JSON representation of the pipeline_service for the web interface."""
         return {
@@ -205,32 +202,6 @@ class Pipeline(nx.DiGraph):
             assert self.has_edge(edge["source"], edge["sink"]), "Edge not found"
 
         return self.to_web_json()
-
-    @classmethod
-    def from_pipeline_config(
-        cls, config: ChimeraPyPipelineConfig
-    ) -> "Pipeline":  # TODO: <Monadic?>
-        """Creates a pipeline from a ChimeraPyPipelineConfig."""
-        pipeline = cls(config.name, config.description)
-        node_to_names = {}
-        for node in config.nodes:
-            kwargs = node.kwargs
-            if "name" not in kwargs:
-                kwargs["name"] = node.name
-
-            assert (
-                kwargs["name"] == node.name
-            ), "Node name and kwargs name mismatch"
-
-            wrapped_node = pipeline.add_node(
-                node.registry_name, node.package, **node.kwargs
-            )
-            node_to_names[node.name] = wrapped_node.unwrap()
-        for edge in config.adj:
-            source, sink = edge
-            pipeline.add_edge(node_to_names[source].id, node_to_names[sink].id)
-
-        return pipeline
 
     def instantiate(self) -> Dict[str, Any]:
         """Instantiates the pipeline."""
@@ -277,10 +248,48 @@ class Pipeline(nx.DiGraph):
 
         return worker_graph_mapping
 
-    def can_instantiate(self):
+    def can_instantiate(self) -> bool:
         """Checks if the pipeline can be instantiated."""
         for node_id, data in self.nodes(data=True):  # noqa: B007
             wrapped_node: WrappedNode = data["wrapped_node"]
             if wrapped_node.worker_id is None:
                 return False
         return True
+
+    def destroy(self) -> None:
+        """Destroys the pipeline instance."""
+        self.instantiated = False
+        self.committed = False
+        self.chimerapy_graph = None
+        for node_id, data in self.nodes(data=True):  # noqa: B007
+            wrapped_node: WrappedNode = data["wrapped_node"]
+            wrapped_node.instance = None
+
+    def __repr__(self) -> str:
+        return f"Pipeline<{self.name}>"
+
+    @classmethod
+    def from_pipeline_config(
+        cls, config: ChimeraPyPipelineConfig
+    ) -> "Pipeline":  # TODO: <Monadic?>
+        """Creates a pipeline from a ChimeraPyPipelineConfig."""
+        pipeline = cls(config.name, config.description)
+        node_to_names = {}
+        for node in config.nodes:
+            kwargs = node.kwargs
+            if "name" not in kwargs:
+                kwargs["name"] = node.name
+
+            assert (
+                kwargs["name"] == node.name
+            ), "Node name and kwargs name mismatch"
+
+            wrapped_node = pipeline.add_node(
+                node.registry_name, node.package, **node.kwargs
+            )
+            node_to_names[node.name] = wrapped_node.unwrap()
+        for edge in config.adj:
+            source, sink = edge
+            pipeline.add_edge(node_to_names[source].id, node_to_names[sink].id)
+
+        return pipeline

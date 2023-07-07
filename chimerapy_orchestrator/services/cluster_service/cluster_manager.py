@@ -101,11 +101,10 @@ class ClusterManager(FSM):
     async def subscribe_to_commit_updates(self, q: asyncio.Queue) -> None:
         """Subscribe to commit updates from the cluster manager."""
         await self._pipeline_updates_broadcaster.add_client(q)
-        self.put_pipeline_update()
+        self.put_commit_update()
 
     async def unsubscribe_from_commit_updates(self, q: asyncio.Queue) -> None:
         """Unsubscribe from commit updates from the cluster manager."""
-        q.put_nowait(self.get_pipeline_update_message())
         await self._pipeline_updates_broadcaster.remove_client(q)
 
     def has_shutdown(self) -> bool:
@@ -139,21 +138,13 @@ class ClusterManager(FSM):
         """Check if zeroconf discovery is enabled."""
         return self._manager.services.zeroconf.enabled
 
-    def get_pipeline_update_message(self):
-        return {
-            "pipeline": self._active_pipeline.to_web_json()
-            if self._active_pipeline
-            else None,
-            "fsm": self.to_dict(),
-        }
-
     async def instantiate_pipeline(
         self, pipeline_id
     ) -> Result[bool, Exception]:
+        """Instantiate a pipeline."""
         can, reason = self.can_transition("/instantiate")
-        print(can, reason, self.transitioning)
+
         if self.transitioning:
-            print("???????")
             return Err(
                 StateTransitionError("Cannot transition while transitioning")
             )
@@ -172,13 +163,14 @@ class ClusterManager(FSM):
             self._active_pipeline = active_pipeline
             self.transition("/instantiate")
             self.transitioning = False
-            self.put_pipeline_update()
+            self.put_commit_update()
             return Ok(True)
         except Exception as e:
             self.transitioning = False
             return Err(e)
 
     async def commit_pipeline(self) -> Result[bool, Exception]:
+        """Commit the active pipeline."""
         can, reason = self.can_transition("/commit")
 
         if self.transitioning:
@@ -193,38 +185,129 @@ class ClusterManager(FSM):
             return Err(StateTransitionError("No active pipeline"))
 
         self.transitioning = True
-        commit_task = asyncio.create_task(self.commit_active_pipeline())
+        commit_task = asyncio.create_task(self._commit_active_pipeline())
         commit_task.add_done_callback(
             lambda result: self.transition_if_success(result, "/commit")
         )
         return Ok(True)
 
-    async def commit_active_pipeline(self):
+    async def _commit_active_pipeline(self):
+        """Commit the active pipeline."""
         await self._manager.async_reset(keep_workers=True)
         graph = self._active_pipeline.chimerapy_graph
         worker_graph_mapping = self._active_pipeline.worker_graph_mapping()
-        print(worker_graph_mapping, graph, "???")
         result = await self._manager.async_commit(graph, worker_graph_mapping)
         self._active_pipeline.committed = True
         return result
 
+    async def preview_pipeline(self) -> Result[bool, Exception]:
+        """Preview the active pipeline."""
+        can, reason = self.can_transition("/preview")
+
+        if self.transitioning:
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
+
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self._active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline"))
+
+        self.transitioning = True
+        preview_task = asyncio.create_task(self._manager.async_start())
+        preview_task.add_done_callback(
+            lambda result: self.transition_if_success(result, "/preview")
+        )
+        return Ok(True)
+
+    async def record_pipeline(self) -> Result[bool, Exception]:
+        """Record the active pipeline."""
+        can, reason = self.can_transition("/record")
+
+        if self.transitioning:
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
+
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self._active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline"))
+
+        self.transitioning = True
+        record_task = asyncio.create_task(self._manager.async_record())
+        record_task.add_done_callback(
+            lambda result: self.transition_if_success(result, "/record")
+        )
+        return Ok(True)
+
+    async def stop_pipeline(self) -> Result[bool, Exception]:
+        """Stop the active pipeline."""
+        can, reason = self.can_transition("/stop")
+
+        if self.transitioning:
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
+
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self._active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline"))
+
+        self.transitioning = True
+        stop_task = asyncio.create_task(self._manager.async_stop())
+        stop_task.add_done_callback(
+            lambda result: self.transition_if_success(result, "/stop")
+        )
+        return Ok(True)
+
+    async def reset_pipeline(self) -> Result[bool, Exception]:
+        can, reason = self.can_transition("/reset")
+
+        if self.transitioning:
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
+
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        self.transitioning = True
+        reset_task = asyncio.create_task(self._reset_active_pipeline())
+        reset_task.add_done_callback(
+            lambda result: self.transition_if_success(result, "/reset")
+        )
+        return Ok(True)
+
+    async def _reset_active_pipeline(self):
+        """Reset the active pipeline."""
+        await self._manager.async_reset(keep_workers=True)
+        self._active_pipeline.destroy()
+        self._active_pipeline = None
+
     def transition_if_success(self, result, transition):
-        print(result.exception())
+        """Transition if the result is successful."""
         if result.exception() is None:
             self.transitioning = False
             self.transition(transition)
             self.transitioning = False
-            self.put_pipeline_update()
+            self.put_commit_update()
         else:
             self.transitioning = False
-            self.put_pipeline_update()
+            self.put_commit_update()
 
-    def put_pipeline_update(self):
+    def put_commit_update(self):
+        """Put a pipeline/commit update."""
         asyncio.create_task(
             self._pipeline_updates_broadcaster.put_update(
                 {
                     "data": {
-                        "fsm": self.to_dict(),
+                        "fsm": self.get_states_info(),
                         "pipeline": self._active_pipeline.to_web_json()
                         if self._active_pipeline
                         else None,

@@ -92,12 +92,27 @@ class ClusterRouter(APIRouter):
         )
 
         self.add_api_route(
+            "/record",
+            self.record,
+            methods=["POST"],
+            response_description="Record the current pipeline in the cluster",
+        )
+
+        self.add_api_route(
+            "/stop",
+            self.stop,
+            methods=["POST"],
+            response_description="Stop the current pipeline in the cluster",
+        )
+
+        self.add_api_route(
             "/reset",
             self.reset,
             methods=["POST"],
             response_description="Reset the current pipeline in the cluster",
         )
 
+        # Websocket routes
         self.add_websocket_route("/cluster/updates", self.get_cluster_updates)
         self.add_websocket_route(
             "/cluster/pipeline-lifecycle", self.get_pipeline_updates
@@ -194,18 +209,32 @@ class ClusterRouter(APIRouter):
         """Get the actions FSM."""
         return self.manager.get_states_info()
 
-    async def commit(self):
+    async def commit(self) -> bool:
         result = await self.manager.commit_pipeline()
-        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()
 
-    async def preview(self):
+    async def preview(self) -> bool:
         result = await self.manager.preview_pipeline()
-        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()
 
-    async def record(self):
+    async def record(self) -> bool:
         result = await self.manager.record_pipeline()
-        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()
 
-    async def reset(self):
+    async def stop(self) -> bool:
+        result = await self.manager.stop_pipeline()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()
+
+    async def reset(self) -> bool:
         result = await self.manager.reset_pipeline()
-        result.map_error(lambda err: get_mapping(err).to_fastapi()).unwrap()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()
