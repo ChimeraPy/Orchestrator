@@ -63,7 +63,7 @@ class Orchestrator(FastAPI):
             if not STATIC_FILES_DIR.exists():
                 raise FileNotFoundError(
                     "The build directory does not exist. Please run `cd dashboard` followed "
-                    "by npm run build` to build the frontend from the root directory."
+                    "by `npm run build` to build the frontend from the root directory."
                 )
 
             self.middleware("http")(self.static_middleware)

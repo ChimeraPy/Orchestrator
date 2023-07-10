@@ -140,10 +140,6 @@
 	}
 </script>
 
-<!--<svelte:head>-->
-<!--	<link rel="stylesheet" type="text/css" href="node_modules/jointjs/dist/joint.css" />-->
-<!--</svelte:head>-->
-
 <div
 	class="relative
 			h-full
