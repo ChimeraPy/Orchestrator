@@ -8,6 +8,13 @@ from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
 
 
+class PipelineNotFoundError(Exception):
+    """Raised when a pipeline_service is not found."""
+
+    def __init__(self, pipeline_id: str) -> None:
+        super().__init__(f"Pipeline {pipeline_id} not found")
+
+
 class Pipelines:
     """A service for managing pipelines."""
 
@@ -17,7 +24,7 @@ class Pipelines:
     def get_pipeline(self, pipeline_id: str) -> Result[Pipeline, Exception]:
         """Get a pipeline_service by its ID."""
         if pipeline_id not in self._pipelines:
-            return Err(ValueError(f"Pipeline {pipeline_id} does not exist"))
+            return Err(PipelineNotFoundError(pipeline_id))
 
         return Ok(self._pipelines[pipeline_id])
 

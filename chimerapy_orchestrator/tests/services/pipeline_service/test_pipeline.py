@@ -37,7 +37,7 @@ class TestPipeline(BaseTest):
         return DummyStepNode
 
     def test_pipeline_adding_nodes(self, pipeline):
-        wrapped_node = pipeline.add_node("WebcamNode").unwrap()
+        wrapped_node = pipeline.add_node("WebcamNode")
         assert wrapped_node.to_web_node().id == wrapped_node.id
         assert (
             wrapped_node.to_web_node().name == wrapped_node.NodeClass.__name__
@@ -48,23 +48,23 @@ class TestPipeline(BaseTest):
         )
 
     def test_pipeline_removing_nodes(self, pipeline):
-        wrapped_node = pipeline.add_node("WebcamNode").unwrap()
+        wrapped_node = pipeline.add_node("WebcamNode")
         pipeline.remove_node(wrapped_node.id)
         assert wrapped_node.id not in pipeline.nodes
 
     def test_pipeline_adding_edges(self, pipeline):
-        wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
-        wrapped_node_2 = pipeline.add_node("ShowWindow").unwrap()
-        edge = pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id).unwrap()
+        wrapped_node_1 = pipeline.add_node("WebcamNode")
+        wrapped_node_2 = pipeline.add_node("ShowWindow")
+        edge = pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
         assert edge["source"] is wrapped_node_1
         assert edge["sink"] is wrapped_node_2
         assert (wrapped_node_1.id, wrapped_node_2.id) in pipeline.edges
 
     def test_pipeline_removing_edges(self, pipeline):
-        wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
-        wrapped_node_2 = pipeline.add_node("ShowWindow").unwrap()
-        edge = pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id).unwrap()
-        pipeline.remove_edge(wrapped_node_1.id, wrapped_node_2.id).unwrap()
+        wrapped_node_1 = pipeline.add_node("WebcamNode")
+        wrapped_node_2 = pipeline.add_node("ShowWindow")
+        edge = pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
+        pipeline.remove_edge(wrapped_node_1.id, wrapped_node_2.id)
 
         assert edge["source"] is wrapped_node_1
         assert edge["sink"] is wrapped_node_2
@@ -73,21 +73,21 @@ class TestPipeline(BaseTest):
 
     def test_pipeline_adding_nodes_error(self, pipeline):
         with pytest.raises(ValueError) as e:
-            pipeline.add_node("WebcamNode2").unwrap()
+            pipeline.add_node("WebcamNode2")
             assert "WebcamNode2 is not a valid node" in str(e.value)
 
     def test_pipeline_adding_edges_error(self, pipeline):
-        wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
-        wrapped_node_2 = pipeline.add_node("WebcamNode").unwrap()
+        wrapped_node_1 = pipeline.add_node("WebcamNode")
+        wrapped_node_2 = pipeline.add_node("WebcamNode")
         with pytest.raises(ValueError) as e:
-            pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id).unwrap()
+            pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
             assert (
                 f"{wrapped_node_2.id}:{wrapped_node_2.__class__.__name__} is not a valid sink node"
                 in str(e.value)
             )
 
         with pytest.raises(ValueError) as e:
-            pipeline.add_edge(wrapped_node_2.id, wrapped_node_1.id).unwrap()
+            pipeline.add_edge(wrapped_node_2.id, wrapped_node_1.id)
             assert (
                 f"{wrapped_node_1.id}:{wrapped_node_1.__class__.__name__} is not a valid sink node"
                 in str(e.value)
@@ -95,33 +95,33 @@ class TestPipeline(BaseTest):
 
     def test_pipeline_removing_nodes_error(self, pipeline):
         with pytest.raises(NodeNotFoundError) as e:
-            pipeline.remove_node("invalid_id").unwrap()
+            pipeline.remove_node("invalid_id")
             assert "invalid_id is not a valid node" in str(e.value)
 
     def test_pipeline_removing_edges_error(self, pipeline):
-        wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
-        wrapped_node_2 = pipeline.add_node("ShowWindow").unwrap()
+        wrapped_node_1 = pipeline.add_node("WebcamNode")
+        wrapped_node_2 = pipeline.add_node("ShowWindow")
         with pytest.raises(NetworkXError):
-            pipeline.remove_edge(wrapped_node_1.id, wrapped_node_2.id).unwrap()
+            pipeline.remove_edge(wrapped_node_1.id, wrapped_node_2.id)
 
         with pytest.raises(NodeNotFoundError) as e:
-            pipeline.remove_edge("invalid_id", wrapped_node_2.id).unwrap()
+            pipeline.remove_edge("invalid_id", wrapped_node_2.id)
             assert "invalid_id is not a valid node" in str(e.value)
 
     def test_pipeline_dag_error(self, pipeline):
-        wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
-        wrapped_node_2 = pipeline.add_node("DummyStepNode").unwrap()
-        wrapped_node_3 = pipeline.add_node("DummyStepNode").unwrap()
+        wrapped_node_1 = pipeline.add_node("WebcamNode")
+        wrapped_node_2 = pipeline.add_node("DummyStepNode")
+        wrapped_node_3 = pipeline.add_node("DummyStepNode")
         pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
         pipeline.add_edge(wrapped_node_2.id, wrapped_node_3.id)
 
         with pytest.raises(NotADagError):
-            pipeline.add_edge(wrapped_node_3.id, wrapped_node_2.id).unwrap()
+            pipeline.add_edge(wrapped_node_3.id, wrapped_node_2.id)
 
     def test_web_json(self, pipeline):
         pipeline.description = "Webcam to ShowWindow"
-        wrapped_node_1 = pipeline.add_node("WebcamNode").unwrap()
-        wrapped_node_2 = pipeline.add_node("ShowWindow").unwrap()
+        wrapped_node_1 = pipeline.add_node("WebcamNode")
+        wrapped_node_2 = pipeline.add_node("ShowWindow")
         pipeline.add_edge(wrapped_node_1.id, wrapped_node_2.id)
         web_json = pipeline.to_web_json()
         assert web_json["name"] == pipeline.name

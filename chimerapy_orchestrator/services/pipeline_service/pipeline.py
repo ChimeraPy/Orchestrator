@@ -287,7 +287,7 @@ class Pipeline(nx.DiGraph):
             wrapped_node = pipeline.add_node(
                 node.registry_name, node.package, **node.kwargs
             )
-            node_to_names[node.name] = wrapped_node.unwrap()
+            node_to_names[node.name] = wrapped_node
         for edge in config.adj:
             source, sink = edge
             pipeline.add_edge(node_to_names[source].id, node_to_names[sink].id)

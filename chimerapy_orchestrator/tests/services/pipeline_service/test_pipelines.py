@@ -78,7 +78,7 @@ class TestPipelines(BaseTest):
                 for _ in range(10)
             ]
             for future in futures:
-                node = future.result().unwrap()
+                node = future.result()
                 assert node.id in pipeline.nodes
 
         assert len(pipeline.nodes) == 10
@@ -146,12 +146,14 @@ class TestPipelines(BaseTest):
 
             nodes_created.append(nodes)
             pipelines_created.append(pipeline)
+        print(pipelines.web_json().unwrap())
 
         assert pipelines.web_json().unwrap() == [
             {
                 "id": pipelines_created[0].id,
                 "name": "test_pipeline0",
                 "instantiated": False,
+                "committed": False,
                 "description": "test_description",
                 "nodes": [
                     {
@@ -185,6 +187,7 @@ class TestPipelines(BaseTest):
                 "id": pipelines_created[1].id,
                 "name": "test_pipeline1",
                 "instantiated": False,
+                "committed": False,
                 "description": "test_description",
                 "nodes": [
                     {
