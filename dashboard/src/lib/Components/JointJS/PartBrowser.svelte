@@ -1,4 +1,5 @@
 <script lang="ts">
+	import 'jointjs/dist/joint.css';
 	import * as joint from 'jointjs';
 	import { onMount, createEventDispatcher } from 'svelte';
 	import { getAddTool } from './utils';
@@ -139,9 +140,9 @@
 	}
 </script>
 
-<svelte:head>
-	<link rel="stylesheet" type="text/css" href="node_modules/jointjs/dist/joint.css" />
-</svelte:head>
+<!--<svelte:head>-->
+<!--	<link rel="stylesheet" type="text/css" href="node_modules/jointjs/dist/joint.css" />-->
+<!--</svelte:head>-->
 
 <div
 	class="relative

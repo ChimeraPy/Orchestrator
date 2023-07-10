@@ -1,4 +1,5 @@
 <script lang="ts">
+	import 'jointjs/dist/joint.css';
 	import * as joint from 'jointjs';
 	import * as dagre from 'dagre';
 	import * as graphLib from 'graphlib';

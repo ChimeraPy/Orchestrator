@@ -4,7 +4,7 @@
 	1. Search/Filter capabilities for Nodes and Pipelines
 	2. The `InfoModal` component should be used to later customize the pipelines and nodes attributes.
 	3. The `EditableList` component should be used to later customize the pipelines and nodes attributes.
-	4. Add zoom capabilities to the pipeline editor.
+	4. Add zoom capabilities to the pipeline-design editor.
 	5. Accessibility improvements.
 -->
 <script lang="ts">

@@ -1,6 +1,7 @@
 import json
 import sys
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from pathlib import Path
 
 from chimerapy.config import set
 
@@ -225,14 +226,16 @@ def run(args=None):
 
             if getattr(args, field) is not None:
                 kwargs[field] = getattr(args, field)
+
         config = OrchestratorConfig(mode=args.server_mode, **kwargs)
         config.dump_env()
         run(
             "chimerapy_orchestrator.orchestrator:create_orchestrator_app",
             port=args.server_port,
             factory=True,
-            reload=True,
+            reload=True if args.server_mode == "dev" else False,
             lifespan="on",
+            reload_dirs=[str(Path(__file__).parent.parent.resolve())],
         )
 
     else:

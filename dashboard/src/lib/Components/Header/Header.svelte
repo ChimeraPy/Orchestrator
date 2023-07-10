@@ -2,11 +2,13 @@
 	import { page } from '$app/stores';
 	import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from 'flowbite-svelte';
 
-	export let sections: { string: string }[], logo;
+	export let sections: { string: string }[],
+		logo,
+		url = '/';
 </script>
 
 <Navbar let:hidden let:toggle>
-	<NavBrand href="/">
+	<NavBrand href={url}>
 		<img src={logo} class="mr-3 h-6 sm:h-9" alt="ChimeraPy" />
 	</NavBrand>
 	<NavHamburger on:click={toggle} />

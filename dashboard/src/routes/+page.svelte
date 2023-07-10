@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Img, P, Heading, Mark, Button } from 'flowbite-svelte';
+	import { dev } from '$app/environment';
 </script>
 
 <svelte:head>
@@ -7,7 +8,13 @@
 </svelte:head>
 
 <div id="homepage">
-	<Img class="p-2 mt-2" src="/ChimeraPy.png" size="max-w-lg" alignment="mx-auto" alt="ChimeraPy" />
+	<Img
+		class="p-2 mt-2"
+		src={dev ? '/ChimeraPy.png' : '/dashboard/ChimeraPy.png'}
+		size="max-w-lg"
+		alignment="mx-auto"
+		alt="ChimeraPy"
+	/>
 
 	<P class="mb-10 mt-10 text-justify" weight="normal" color="text-black dark:text-gray-400">
 		ChimeraPy is a distributed computing framework for
