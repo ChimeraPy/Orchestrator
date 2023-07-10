@@ -2,7 +2,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from chimerapy_orchestrator.services.pipeline_service import Pipelines
+from chimerapy_orchestrator.services.pipeline_service.pipelines import (
+    PipelineNotFoundError,
+    Pipelines,
+)
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 
@@ -45,7 +48,7 @@ class TestPipelines(BaseTest):
         assert pipelines.get_pipeline(pipeline.id).unwrap() is pipeline
 
     def test_get_pipeline_error(self, pipelines):
-        with pytest.raises(ValueError):
+        with pytest.raises(PipelineNotFoundError):
             pipelines.get_pipeline("non_existing_pipeline_id").unwrap()
 
     def test_get_pipleines_by_name(self, pipelines):
