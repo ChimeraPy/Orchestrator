@@ -31,9 +31,9 @@ class TestPipelineModels(BaseTest):
         wrapped_node = WrappedNode.from_node_class(
             DummyNode, node_type=NodeType.SOURCE, registry_name="DummyNode"
         )
-        chimerapy_node = wrapped_node.instantiate()
+        chimerapy_node = wrapped_node.instantiate(name="dummyNode1")
         assert isinstance(chimerapy_node, DummyNode)
-        assert chimerapy_node.name == "DummyNode"
+        assert chimerapy_node.name == "dummyNode1"
         assert wrapped_node.instantiated
         assert wrapped_node.NodeClass.__name__ == "DummyNode"
 
