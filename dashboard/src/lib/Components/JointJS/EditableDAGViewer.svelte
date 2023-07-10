@@ -4,10 +4,8 @@
 	import * as graphLib from 'graphlib';
 	import { LinkValidator, ToolViewType, getToolType } from './utils';
 	import type { DispatcherFunc, ToolOptions, ValidatorFunc } from './utils';
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import { PaperScaler } from './PaperScaler';
-
-	import { onMount } from 'svelte';
 
 	export let additionalLinkValidators: ValidatorFunc[] = [];
 	export let toolViewAttachments: ToolViewType[] = [
