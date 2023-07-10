@@ -14,7 +14,14 @@ const config = {
 	],
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			pages: '../chimerapy_orchestrator/build',
+			strict: false,
+			fallback: 'index.html'
+		}),
+		paths: {
+			base: process.env.NODE_ENV === 'development' ? '' : '/dashboard'
+		}
 	}
 };
 

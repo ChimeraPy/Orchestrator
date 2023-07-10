@@ -2,11 +2,15 @@ import asyncio
 import concurrent.futures
 import signal
 from contextlib import asynccontextmanager
+from pathlib import Path
 from types import FrameType
 
 from fastapi import FastAPI
+from fastapi.requests import Request
+from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from chimerapy_orchestrator.init_services import get, initialize, teardown
+from chimerapy_orchestrator.orchestrator_config import get_config
 from chimerapy_orchestrator.routers.cluster_router import ClusterRouter
 from chimerapy_orchestrator.routers.pipeline_router import PipelineRouter
 
@@ -20,6 +24,8 @@ With this API, any client application can manage the cluster, including:
 
 For more information, please visit the [documentation](https://chimerapy.readthedocs.io/en/latest/).
 """
+
+STATIC_FILES_DIR = Path(__file__).parent / "build"
 
 
 @asynccontextmanager
@@ -50,6 +56,44 @@ class Orchestrator(FastAPI):
         pipelines = get("pipelines")
         self.include_router(PipelineRouter(pipelines))
         self.include_router(ClusterRouter(cluster_manager))
+
+        config = get_config()
+        if config.mode != "dev":
+
+            if not STATIC_FILES_DIR.exists():
+                raise FileNotFoundError(
+                    "The build directory does not exist. Please run `cd dashboard` followed "
+                    "by `npm run build` to build the frontend from the root directory."
+                )
+
+            self.middleware("http")(self.static_middleware)
+
+    async def static_middleware(self, request: Request, call_next) -> Response:
+        """Serve the static files from the '/dashboard' path."""
+        if request.url.path.startswith("/dashboard"):
+            return await self._serve_static_file(request)
+
+        return await call_next(request)
+
+    async def _serve_static_file(self, request: Request) -> Response:
+        """Serve the static file from the build directory."""
+        path = request.url.path.replace("/dashboard", "")
+
+        if path == "/" or path == "":
+            path = "index.html"
+            with open(STATIC_FILES_DIR / path) as f:
+                return HTMLResponse(f.read())
+        else:
+            if path.startswith("/"):
+                path = path[1:]
+            if (pth := (STATIC_FILES_DIR / path)).exists() or (
+                pth := (STATIC_FILES_DIR / f"{path.replace('/', '')}.html")
+            ).exists():
+                return FileResponse(pth)
+            else:
+                return Response(
+                    status_code=404, content=f"{request.url.path} not found"
+                )
 
 
 def create_orchestrator_app() -> "Orchestrator":
