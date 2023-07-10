@@ -118,7 +118,7 @@ class ClusterUpdatesBroadCaster:
 
     async def enqueue_sentinel(self) -> None:
         """Enqueue a sentinel value to all client queues."""
-        await self.updater.enqueue_sentinel()
+        self.updater.enqueue_sentinel()
 
     async def broadcast_updates(self) -> None:
         """Broadcast updates to all clients."""
@@ -160,12 +160,12 @@ class ClusterUpdatesBroadCaster:
 
     async def put_update(self, msg: Dict[str, Any]) -> None:
         """Put an update to the broadcaster."""
-        await self.updater.put_update(
-            {
-                "signal": MANAGER_MESSAGE.NETWORK_STATUS_UPDATE.value,
-                "data": msg,
-            }
+        update_msg = UpdateMessage.from_updates_dict(
+            msg,
+            UpdateMessageType.NETWORK_UPDATE,
+            self.zeroconf_enabled,
         )
+        await self.updater.put_update(update_msg.dict())
 
     @staticmethod
     def is_cluster_update_message(msg: Dict[str, Any]) -> bool:
