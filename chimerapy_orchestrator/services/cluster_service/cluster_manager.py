@@ -132,7 +132,9 @@ class ClusterManager(FSM):
 
     async def update_network_status(self) -> None:
         """Update the network status."""
-        await self._network_updates_broadcaster.put_update(self._manager.state)
+        await self._network_updates_broadcaster.put_update(
+            {"data": self._manager.state.to_dict()}
+        )
 
     def is_zeroconf_discovery_enabled(self) -> bool:
         """Check if zeroconf discovery is enabled."""
