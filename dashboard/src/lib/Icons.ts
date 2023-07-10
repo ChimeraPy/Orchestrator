@@ -77,3 +77,68 @@ const IconsPath: { [key in Icons]: string | string[] } = {
 export const getIconPath = (icon: Icons): string | string[] => {
 	return IconsPath[icon] || IconsPath[Icons.default];
 };
+
+export const getIconFromFSMActions = (action: string, disabled: boolean): IconType => {
+	switch (action) {
+		case '/instantiate':
+			return {
+				type: Icons.bolt,
+				tooltip: 'Activate pipeline',
+				disabled: disabled,
+				dispatchEventName: 'activate'
+			};
+		case '/commit':
+			return {
+				type: Icons.lockClosed,
+				tooltip: 'commit',
+				disabled: disabled,
+				fill: 'none',
+				strokeWidth: 2,
+				dispatchEventName: 'commit'
+			};
+		case '/preview':
+			return {
+				type: Icons.preview,
+				tooltip: 'preview',
+				disabled: disabled,
+				fill: 'none',
+				strokeWidth: 2,
+				dispatchEventName: 'preview'
+			};
+		case '/record':
+			return {
+				type: Icons.play,
+				tooltip: 'record',
+				disabled: disabled,
+				dispatchEventName: 'record'
+			};
+		case '/stop':
+			return {
+				type: Icons.stop,
+				tooltip: 'stop',
+				disabled: disabled,
+				dispatchEventName: 'stop'
+			};
+		case '/collect':
+			return {
+				type: Icons.collect,
+				tooltip: 'Collect data',
+				disabled: disabled,
+				fill: 'none',
+				strokeWidth: 2,
+				dispatchEventName: 'collect'
+			};
+		case '/reset':
+			return {
+				type: Icons.refresh,
+				tooltip: 'reset',
+				disabled: disabled,
+				dispatchEventName: 'reset'
+			};
+		default:
+			return {
+				type: Icons.default,
+				disabled: true
+			};
+	}
+};

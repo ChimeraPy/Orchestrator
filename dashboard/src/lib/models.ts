@@ -48,6 +48,7 @@ export interface Pipeline {
 	name: string;
 	description: string;
 	instantiated: boolean;
+	committed: boolean;
 	nodes: PipelineNode[];
 	edges: Edge[];
 }
@@ -98,4 +99,28 @@ export interface NodesPlugin {
 export interface SelectedPipeline {
 	pipeline: Pipeline | null;
 	selectedNodeId: string | null;
+}
+
+export interface Transition {
+	name: string;
+	from_state: string;
+	to_state: string;
+}
+
+export interface ActionsFSMState {
+	name: string;
+	description: string;
+	valid_transitions: Transition[];
+}
+
+export interface ActionsFSM {
+	current_state: string;
+	states: { [key: string]: ActionsFSMState }[];
+	description: string;
+	active_pipeline_id: string | null;
+}
+
+export interface LifeCycle {
+	fsm: ActionsFSM;
+	pipeline: Pipeline;
 }

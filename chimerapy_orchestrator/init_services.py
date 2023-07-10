@@ -17,12 +17,13 @@ def create_dev_worker(name):
 def initialize():
     """Initialize the services. ToDo: Configure services via config file."""
     config = get_config()
+    pipelines = Pipelines()
     cluster_manager = ClusterManager(
+        pipeline_service=pipelines,
         logdir=config.cluster_manager_logdir,
         port=config.cluster_manager_port,
         max_num_of_workers=config.cluster_manager_max_num_of_workers,
     )
-    pipelines = Pipelines()
     available_services["cluster_manager"] = cluster_manager
     available_services["pipelines"] = pipelines
     if config.mode == "dev":

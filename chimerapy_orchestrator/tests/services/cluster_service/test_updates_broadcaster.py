@@ -33,7 +33,7 @@ class TestUpdatesBroadCaster(BaseTest):
                 }
             )
 
-        await updates_broadcaster.enqueue_sentinel()
+        updates_broadcaster.enqueue_sentinel()
 
         for j in range(10):
             msg = await client_queue.get()

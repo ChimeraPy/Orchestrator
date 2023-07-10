@@ -26,7 +26,7 @@ For more information, please visit the [documentation](https://chimerapy.readthe
 async def lifespan(app: "Orchestrator"):
     default_sigint_handler = signal.getsignal(signal.SIGINT)
     cluster_service = get("cluster_manager")
-    task1 = asyncio.create_task(cluster_service.start_updates_broadcaster())
+    task1 = asyncio.create_task(cluster_service.start_async_tasks())
     await cluster_service.update_network_status()
 
     def shutdown():

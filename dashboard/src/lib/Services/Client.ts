@@ -5,6 +5,7 @@ import type {
 	Edge,
 	ResponseError,
 	ClusterState,
+	ActionsFSM,
 	NodesPlugin
 } from '../models';
 import { Err, Ok } from 'ts-monads';
@@ -22,7 +23,19 @@ class Client {
 		if (res.ok) {
 			return new Ok<T>(await res.json());
 		} else {
-			return new Err({ message: res.statusText, code: res.status });
+			if (res.status < 500) {
+				return new Err({
+					message: res.statusText,
+					code: res.status,
+					serverMessage: await res.json()
+				});
+			} else {
+				return new Err({
+					message: res.statusText,
+					code: res.status,
+					serverMessage: await res.text()
+				});
+			}
 		}
 	}
 }
@@ -159,7 +172,7 @@ export class PipelineClient extends Client {
 		return response;
 	}
 
-	async importPipeline(config: string): Promise<Result<Pipeline, ResponseError>> {
+	async importPipeline(config: ChimeraPyPipelineConfig): Promise<Result<Pipeline, ResponseError>> {
 		const prefix = '/create';
 
 		const requestBody = {
@@ -220,48 +233,47 @@ export class ClusterClient extends Client {
 		const result = await this._fetch<any>(prefix, { method: 'POST' });
 		return result.map((_) => true);
 	}
-}
 
-export class NetworkClient extends Client {
-	constructor(url: string) {
-		super(url);
+	async instantiatePipeline(pipelineID: string): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/instantiate/${pipelineID}`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
 	}
 
-	async getNetworkMap(
-		fetch: (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response>
-	): Promise<Ok<ClusterState> | Err<ResponseError>> {
-		const res = await fetch('/mocks/networkMap.json');
-		if (res.ok) {
-			return new Ok(await res.json());
-		} else {
-			return new Err({ message: res.statusText, code: res.status });
-		}
+	async commitPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/commit`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
 	}
 
-	async load(
-		fetch: (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response>
-	) {
-		console.log(await (await fetch(`${this.url}/network`)).json());
+	async previewPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/preview`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
 	}
 
-	async subscribeToLogsZMQ(ip: string, port: number, callable: (e: MessageEvent) => void) {
-		const ws = new WebSocket(`ws://localhost:${port}/logs`);
-		ws.onmessage = (e) => {
-			callable(e);
-		};
-
-		ws.onerror = (e) => {
-			console.error(e);
-		};
-
-		const close = () => {
-			ws.close();
-		};
-
-		return close;
+	async recordPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/record`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
 	}
 
-	async createPipeline() {}
+	async stopPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/stop`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
 
-	async deletePipeline() {}
+	async resetPipeline(): Promise<Result<boolean, ResponseError>> {
+		const prefix = `/reset`;
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
+		return result.map((_) => true);
+	}
+
+	async getActionsFSM(): Promise<Result<ActionsFSM, ResponseError>> {
+		const prefix = '/actions-fsm';
+		const response = await this._fetch<ActionsFSM>(prefix, { method: 'GET' });
+
+		return response;
+	}
 }

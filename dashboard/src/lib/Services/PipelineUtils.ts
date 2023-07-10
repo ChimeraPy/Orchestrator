@@ -123,4 +123,38 @@ export class PipelineUtils {
 		const tgt = link.getTargetElement().prop('nodeType');
 		return PipelineUtils.validLinkTypes.some((type) => type.src === src && type.tgt === tgt);
 	}
+
+	static committablePipelineToJointCells(pipeline: Pipeline): joint.dia.Cell[] {
+		const getNodeColor = (node: PipelineNode): string => {
+			console.log(pipeline.committed);
+			if (pipeline.committed) return 'green';
+			if (pipeline.instantiated) return 'yellow';
+			return 'gray';
+		};
+
+		const getTextColor = (node: PipelineNode): string => {
+			if (pipeline.instantiated) return 'black';
+			return 'white';
+		};
+
+		return pipeline.nodes
+			.map((node) => {
+				const rect = PipelineUtils.rectangle(node.name, getNodeColor(node), node.id);
+				rect.prop('nodeId', node.id);
+				rect.prop('nodeType', node.type);
+				rect.prop('registryName', node.registry_name);
+				rect.attr('label/fill', getTextColor(node));
+				return rect as joint.dia.Cell;
+			})
+			.concat(
+				pipeline.edges.map((edge) => {
+					const link = new joint.shapes.standard.Link({
+						id: edge.id,
+						source: { id: edge.source },
+						target: { id: edge.sink }
+					});
+					return link as joint.dia.Cell;
+				})
+			);
+	}
 }

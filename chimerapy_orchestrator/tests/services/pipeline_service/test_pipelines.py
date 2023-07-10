@@ -2,7 +2,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from chimerapy_orchestrator.services.pipeline_service import Pipelines
+from chimerapy_orchestrator.services.pipeline_service.pipelines import (
+    PipelineNotFoundError,
+    Pipelines,
+)
 from chimerapy_orchestrator.tests.base_test import BaseTest
 
 
@@ -45,7 +48,7 @@ class TestPipelines(BaseTest):
         assert pipelines.get_pipeline(pipeline.id).unwrap() is pipeline
 
     def test_get_pipeline_error(self, pipelines):
-        with pytest.raises(ValueError):
+        with pytest.raises(PipelineNotFoundError):
             pipelines.get_pipeline("non_existing_pipeline_id").unwrap()
 
     def test_get_pipleines_by_name(self, pipelines):
@@ -78,7 +81,7 @@ class TestPipelines(BaseTest):
                 for _ in range(10)
             ]
             for future in futures:
-                node = future.result().unwrap()
+                node = future.result()
                 assert node.id in pipeline.nodes
 
         assert len(pipeline.nodes) == 10
@@ -146,12 +149,14 @@ class TestPipelines(BaseTest):
 
             nodes_created.append(nodes)
             pipelines_created.append(pipeline)
+        print(pipelines.web_json().unwrap())
 
         assert pipelines.web_json().unwrap() == [
             {
                 "id": pipelines_created[0].id,
                 "name": "test_pipeline0",
                 "instantiated": False,
+                "committed": False,
                 "description": "test_description",
                 "nodes": [
                     {
@@ -185,6 +190,7 @@ class TestPipelines(BaseTest):
                 "id": pipelines_created[1].id,
                 "name": "test_pipeline1",
                 "instantiated": False,
+                "committed": False,
                 "description": "test_description",
                 "nodes": [
                     {

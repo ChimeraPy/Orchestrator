@@ -8,6 +8,13 @@ from chimerapy_orchestrator.monads import Err, Ok, Result
 from chimerapy_orchestrator.services.pipeline_service.pipeline import Pipeline
 
 
+class PipelineNotFoundError(Exception):
+    """Raised when a pipeline_service is not found."""
+
+    def __init__(self, pipeline_id: str) -> None:
+        super().__init__(f"Pipeline {pipeline_id} not found")
+
+
 class Pipelines:
     """A service for managing pipelines."""
 
@@ -17,7 +24,7 @@ class Pipelines:
     def get_pipeline(self, pipeline_id: str) -> Result[Pipeline, Exception]:
         """Get a pipeline_service by its ID."""
         if pipeline_id not in self._pipelines:
-            return Err(ValueError(f"Pipeline {pipeline_id} does not exist"))
+            return Err(PipelineNotFoundError(pipeline_id))
 
         return Ok(self._pipelines[pipeline_id])
 
@@ -52,7 +59,7 @@ class Pipelines:
     ) -> Result[WrappedNode, Exception]:
         """Add a node to a pipeline_service."""
         return self.get_pipeline(pipeline_id).map(
-            lambda p: p.add_node(node_id, node_package, **kwargs).unwrap()
+            lambda p: p.add_node(node_id, node_package, **kwargs)
         )
 
     def add_edge_to(
@@ -60,7 +67,7 @@ class Pipelines:
     ) -> Result[Dict[str, WrappedNode], Exception]:
         """Add an edge to a pipeline_service."""
         return self.get_pipeline(pipeline_id).map(
-            lambda p: p.add_edge(edge[0], edge[1], edge_id=edge_id).unwrap()
+            lambda p: p.add_edge(edge[0], edge[1], edge_id=edge_id)
         )
 
     def remove_edge_from(
@@ -69,7 +76,7 @@ class Pipelines:
         """Remove an edge from a pipeline_service."""
 
         return self.get_pipeline(pipeline_id).map(
-            lambda p: p.remove_edge(edge[0], edge[1], edge_id=edge_id).unwrap()
+            lambda p: p.remove_edge(edge[0], edge[1], edge_id=edge_id)
         )
 
     def remove_node_from(
@@ -77,7 +84,7 @@ class Pipelines:
     ) -> Result[WrappedNode, Exception]:
         """Remove a node from a pipeline_service."""
         return self.get_pipeline(pipeline_id).map(
-            lambda p: p.remove_node(node_id).unwrap()
+            lambda p: p.remove_node(node_id)
         )
 
     def get_pipelines_by_name(
@@ -109,8 +116,22 @@ class Pipelines:
         self, pipeline_id, web_json: Dict[str, Any]
     ) -> Result[Dict[str, Any], Exception]:
         """Update the pipelines from a JSON representation of the pipelines for the web interface."""
-        return (
-            self.get_pipeline(pipeline_id)
-            .map(lambda p: p.update_from_web_json(web_json))
-            .map(lambda p: p.unwrap())
+        return self.get_pipeline(pipeline_id).map(
+            lambda p: p.update_from_web_json(web_json)
         )
+
+    async def instantiate_pipeline(
+        self, pipeline_id
+    ) -> Result[Dict[str, Any], Exception]:
+        """Instantiate a pipeline."""
+        pipeline = self.get_pipeline(pipeline_id)
+        result = pipeline.ok()
+        if result.is_none():
+            return pipeline
+        else:
+            try:
+                p = result.unwrap()
+                instance = p.instantiate()
+                return Ok(instance)
+            except Exception as e:
+                return Err(e)
