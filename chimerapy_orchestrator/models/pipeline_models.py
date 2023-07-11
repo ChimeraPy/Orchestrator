@@ -126,7 +126,7 @@ class WrappedNode(BaseModel):
         if "name" not in kwargs:
             kwargs["name"] = self.name or self.NodeClass.__name__
 
-        self.instance = self.NodeClass(**self.kwargs)
+        self.instance = self.NodeClass(**kwargs)
         return self.instance
 
     def clone(self, **kwargs) -> "WrappedNode":
