@@ -149,7 +149,6 @@ class TestPipelines(BaseTest):
 
             nodes_created.append(nodes)
             pipelines_created.append(pipeline)
-        print(pipelines.web_json().unwrap())
 
         assert pipelines.web_json().unwrap() == [
             {
@@ -167,6 +166,15 @@ class TestPipelines(BaseTest):
                         "type": "SOURCE",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
+                        "attributes_meta": {
+                            "name": {
+                                "name": "name",
+                                "default": "WebcamNode",
+                                "type": "STRING",
+                                "required": False,
+                                "choices": [],
+                            }
+                        },
                     },
                     {
                         "name": "ShowWindow",
@@ -176,6 +184,15 @@ class TestPipelines(BaseTest):
                         "type": "SINK",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
+                        "attributes_meta": {
+                            "name": {
+                                "name": "name",
+                                "default": "ShowWindow",
+                                "type": "STRING",
+                                "required": False,
+                                "choices": [],
+                            }
+                        },
                     },
                 ],
                 "edges": [
@@ -201,6 +218,15 @@ class TestPipelines(BaseTest):
                         "type": "SOURCE",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
+                        "attributes_meta": {
+                            "name": {
+                                "name": "name",
+                                "default": "WebcamNode",
+                                "type": "STRING",
+                                "required": False,
+                                "choices": [],
+                            }
+                        },
                     },
                     {
                         "name": "ShowWindow",
@@ -210,6 +236,15 @@ class TestPipelines(BaseTest):
                         "type": "SINK",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
+                        "attributes_meta": {
+                            "name": {
+                                "name": "name",
+                                "default": "ShowWindow",
+                                "type": "STRING",
+                                "required": False,
+                                "choices": [],
+                            }
+                        },
                     },
                 ],
                 "edges": [

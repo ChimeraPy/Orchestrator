@@ -8,6 +8,10 @@ from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
 from chimerapy_orchestrator.models.registry_models import NodeType
+from chimerapy_orchestrator.node_attributes.attributes_parser import (
+    NodeAttributeMeta,
+    get_node_class_params,
+)
 from chimerapy_orchestrator.registry import plugin_registry
 from chimerapy_orchestrator.utils import uuid
 
@@ -57,6 +61,10 @@ class WebNode(BaseModel):
 
     worker_id: Optional[str] = Field(
         default=None, description="The id of the worker that runs this node."
+    )
+
+    attributes_meta: Dict[str, NodeAttributeMeta] = Field(
+        default={}, description="The meta data of the attributes."
     )
 
     class Config:
@@ -115,6 +123,10 @@ class WrappedNode(BaseModel):
         default=None, description="The id of the worker that runs this node."
     )
 
+    attributes_meta: Dict[str, NodeAttributeMeta] = Field(
+        default={}, description="The meta data of the attributes."
+    )
+
     @property
     def instantiated(self) -> bool:
         return self.instance is not None
@@ -143,6 +155,10 @@ class WrappedNode(BaseModel):
             kwargs=kwargs,
             package=self.package,
             worker_id=self.worker_id,
+            attributes_meta={
+                name: param.copy(deep=True)
+                for name, param in self.attributes_meta.items()
+            },
         )
 
     @classmethod
@@ -162,6 +178,7 @@ class WrappedNode(BaseModel):
             kwargs=kwargs,
             node_type=node_type,
             registry_name=registry_name,
+            attributes_meta=get_node_class_params(NodeClass),
         )
 
         return wrapped_node
@@ -175,6 +192,10 @@ class WrappedNode(BaseModel):
             package=self.package,
             kwargs=self.kwargs,
             worker_id=self.worker_id,
+            attributes_meta={
+                name: param.copy(deep=True)
+                for name, param in self.attributes_meta.items()
+            },
         )
 
     def update_from_web_node(self, web_node: WebNode) -> None:

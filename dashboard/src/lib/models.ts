@@ -1,4 +1,5 @@
 // ToDo: A lot of interface modeling needs to happen here.
+import type { NodeAttributeMeta } from './NodeAttributes';
 
 export enum ManagerStatus {
 	STARTED = 'STARTED',
@@ -35,6 +36,7 @@ export interface PipelineNode {
 	type: NodeType;
 	kwargs: { [key: string]: any };
 	package: string;
+	attributes_meta: { [key: string]: NodeAttributeMeta };
 }
 
 export interface Edge {

@@ -1,6 +1,5 @@
 import pytest
 from chimerapy.node import Node
-from pydantic import ValidationError
 
 from chimerapy_orchestrator.models.pipeline_models import (
     NodesPlugin,
@@ -13,7 +12,7 @@ from chimerapy_orchestrator.tests.utils import can_find_plugin_nodes_package
 
 class TestPipelineModels(BaseTest):
     def test_non_node_instantiation_wrapped_node(self):
-        with pytest.raises(ValidationError):
+        with pytest.raises(AssertionError):
             WrappedNode.from_node_class(int, NodeType.SOURCE, "int")
 
     def test_node_instantiation_wrapped_node(self):
@@ -58,6 +57,7 @@ class TestPipelineModels(BaseTest):
         assert wrapped_node_clone.registry_name == "DummyNode"
         assert wrapped_node_clone.instantiated is False
         assert wrapped_node_clone.NodeClass == DummyNode
+        print(wrapped_node_clone.to_web_node().dict())
         assert wrapped_node_clone.to_web_node().dict() == {
             "name": "DummyNode",
             "registry_name": "DummyNode",
@@ -66,6 +66,15 @@ class TestPipelineModels(BaseTest):
             "type": NodeType.SOURCE,
             "package": None,
             "worker_id": None,
+            "attributes_meta": {
+                "name": {
+                    "name": "name",
+                    "type": "STRING",
+                    "default": "DummyNode",
+                    "required": False,
+                    "choices": [],
+                }
+            },
         }
 
     @pytest.mark.skipif(
