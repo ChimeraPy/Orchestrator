@@ -58,7 +58,7 @@ jobs:
 
       - name: Install ChimeraPy-Engine (Bleeding Edge)
         run: |
-          cd ChimeraPy
+          cd ChimeraPy-Engine
           ${{ steps.cp39.outputs.python-path }} -m pip install --upgrade pip
           ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
 
