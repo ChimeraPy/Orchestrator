@@ -33,7 +33,7 @@ class AttributeType(str, Enum):
 class NodeAttributeMeta(BaseModel):
     name: str = Field(..., description="The name of the parameter.")
 
-    default: Any = Field(
+    value: Any = Field(
         default=None, description="The default value of the parameter."
     )
 
@@ -127,6 +127,18 @@ def _parse_param_type(annotation: Any) -> AttributeType:
     return AttributeType.UNKNOWN
 
 
+def _get_choices(annotation: Any) -> List[Any]:
+    """Get the choices of a parameter."""
+
+    if _is_a_type(annotation, Enum):
+        return [choice.value for choice in annotation]
+
+    if _is_a_type(annotation, bool):
+        return [True, False]
+
+    return []
+
+
 def get_node_class_params(
     node_class: Type[Node],
 ) -> Dict[str, NodeAttributeMeta]:
@@ -159,9 +171,9 @@ def get_node_class_params(
         all_params[name] = NodeAttributeMeta(
             name=name,
             required=param.default is param.empty,
-            default=param.default if param.default is not param.empty else None,
+            value=param.default if param.default is not param.empty else None,
             type=_parse_param_type(annotation),
-            choices=[],
+            choices=_get_choices(annotation),
         )
 
     return all_params

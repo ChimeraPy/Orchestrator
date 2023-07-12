@@ -169,7 +169,7 @@ class TestPipelines(BaseTest):
                         "attributes_meta": {
                             "name": {
                                 "name": "name",
-                                "default": "WebcamNode",
+                                "value": "WebcamNode",
                                 "type": "STRING",
                                 "required": False,
                                 "choices": [],
@@ -187,7 +187,7 @@ class TestPipelines(BaseTest):
                         "attributes_meta": {
                             "name": {
                                 "name": "name",
-                                "default": "ShowWindow",
+                                "value": "ShowWindow",
                                 "type": "STRING",
                                 "required": False,
                                 "choices": [],
@@ -221,7 +221,7 @@ class TestPipelines(BaseTest):
                         "attributes_meta": {
                             "name": {
                                 "name": "name",
-                                "default": "WebcamNode",
+                                "value": "WebcamNode",
                                 "type": "STRING",
                                 "required": False,
                                 "choices": [],
@@ -239,7 +239,7 @@ class TestPipelines(BaseTest):
                         "attributes_meta": {
                             "name": {
                                 "name": "name",
-                                "default": "ShowWindow",
+                                "value": "ShowWindow",
                                 "type": "STRING",
                                 "required": False,
                                 "choices": [],

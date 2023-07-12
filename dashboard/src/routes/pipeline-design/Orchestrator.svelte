@@ -70,9 +70,30 @@
 		return workers; // TODO: Fix this after proper worker heartbeat handling
 	}
 
-	function getNodeTitle() {
-		const node = getNode($selectedPipelineStore.pipeline, $selectedPipelineStore.selectedNodeId);
+	function getNodeAttributes(nodeId: string, pipeline: Pipeline) {
+		const node = getNode(pipeline, nodeId);
+
+		if (!node) return [];
+		console.log(node.attributes_meta);
+		return Object.entries(node.attributes_meta).map(([key, value]) => ({ key, value }));
+	}
+
+	function getNodeTitle(selectedPipeline, selectedNodeId) {
+		const node = getNode(selectedPipeline, selectedNodeId);
 		return node?.name || 'No node selected';
+	}
+
+	function getNodeIcons(selectedPipeline, selectedNodeId) {
+		const node = getNode(selectedPipeline, selectedNodeId);
+		if (!node) return [];
+		return [
+			{
+				type: 'info',
+				tooltip: 'Node info',
+				fill: 'none',
+				strokeWidth: 2
+			}
+		];
 	}
 
 	async function enableZeroconfDiscovery() {
@@ -274,18 +295,49 @@
 	</div>
 	<div class="w-1/6 flex flex-col border-gray-400">
 		<div>
-			<HorizontalMenu title={getNodeTitle($selectedPipelineStore)} backgroundClass="bg-blue-600" />
+			<HorizontalMenu
+					title={getNodeTitle($selectedPipelineStore?.pipeline, $selectedPipelineStore?.selectedNodeId)}
+					backgroundClass="bg-blue-600"
+					icons={getNodeIcons($selectedPipelineStore?.pipeline, $selectedPipelineStore?.selectedNodeId)}
+			/>
 		</div>
 		<div class="flex-1 flex flex-col w-full bg-[#F3F7F6]">
 			{#if $selectedPipelineStore?.selectedNodeId}
 				<div class="p-2">
-					<Label>Select a worker</Label>
+					<Label class="text-xl"><strong>Select a worker</strong></Label>
 					<Select
 						mt-2
 						items={getWorkerItems($networkStore, $selectedPipelineStore)}
 						bind:value={selectedWorkerId}
 						on:change={onWorkerIdSelectionChange}
 					/>
+				</div>
+				<div class="p-0">
+					<Label class="p-2"><strong>Attributes</strong></Label>
+					{#each getNodeAttributes($selectedPipelineStore?.selectedNodeId, $selectedPipelineStore.pipeline) as attr, index}
+							<div class="px-2 bg-indigo-100 py-1 border-{index === 0 ? 'y' : 'b'}-2 border-gray-500 flex flex-row justify-between">
+								<div class="p-1">{attr.key}</div>
+								{#if ['STRING', 'INTEGER', 'FLOAT', 'UNKNOWN'].includes(attr.value.type)}
+									<input class="ml-4 p-1 w-full" bind:value={attr.value.value}/>
+								{:else if attr.value.type === 'BOOLEAN'}
+									<select type="select" bind:value={attr.value} class="ml-4 p-1 w-full">
+										<option value="true" selected={attr.value}>true</option>
+										<option value="false" selected={attr.value}>false</option>
+									</select>
+								{:else if attr.value.type === 'ENUM'}
+									<select type="select" bind:value="{attr.value.value}" class="ml-4 p-1 w-full">
+										{#each attr.value.choices as value}
+											{#if value === attr.value.value}
+												<option value={value} selected>{value}</option>
+											{:else}
+												<option value={value}>{value}</option>
+											{/if}
+										{/each}
+									</select>
+								{/if}
+							</div>
+					{/each}
+
 				</div>
 			{/if}
 		</div>

@@ -27,7 +27,7 @@ export interface NodeAttributeMeta {
   /**
    * The default value of the parameter.
    */
-  default?: {
+  value?: {
     [k: string]: unknown;
   };
   /**
