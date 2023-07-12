@@ -15,7 +15,7 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-			pages: '../chimerapy_orchestrator/build',
+			pages: '../chimerapy/orchestrator/build',
 			strict: false,
 			fallback: 'index.html'
 		}),
