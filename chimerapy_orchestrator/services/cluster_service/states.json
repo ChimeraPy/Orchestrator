@@ -103,9 +103,14 @@
                 "name": "/record",
                 "from_state": "STOPPED",
                 "to_state": "RECORDING"
+            },
+            {
+              "name": "/collect",
+              "from_state": "STOPPED",
+              "to_state": "STOPPED"
             }
         ],
-      "description": "The pipeline is stopped and ready to be previewed/run/reset"
+      "description": "The pipeline is stopped and ready to be previewed/run/reset/collected"
     }
   },
   "initial_state": "INITIALIZED"

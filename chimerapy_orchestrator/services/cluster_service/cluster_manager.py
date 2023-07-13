@@ -268,6 +268,28 @@ class ClusterManager(FSM):
         )
         return Ok(True)
 
+    async def collect_pipeline(self) -> Result[bool, Exception]:
+        """Collect the results of the pipeline from workers."""
+        can, reason = self.can_transition("/collect")
+
+        if self.transitioning:
+            return Err(
+                StateTransitionError("Cannot transition while transitioning")
+            )
+
+        if not can:
+            return Err(StateTransitionError(reason))
+
+        if self._active_pipeline is None:
+            return Err(StateTransitionError("No active pipeline"))
+
+        self.transitioning = True
+        stop_task = asyncio.create_task(self._manager.async_collect())
+        stop_task.add_done_callback(
+            lambda result: self.transition_if_success(result, "/collect")
+        )
+        return Ok(True)
+
     async def reset_pipeline(self) -> Result[bool, Exception]:
         can, reason = self.can_transition("/reset")
 

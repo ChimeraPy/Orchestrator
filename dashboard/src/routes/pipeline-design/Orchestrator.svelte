@@ -221,6 +221,15 @@
 		});
 	}
 
+	async function collectPipeline() {
+		(await clusterClient.collectPipeline()).mapError((err) => {
+			infoModalContent = {
+				title: 'Error stopping pipeline',
+				content: err
+			};
+		});
+	}
+
 	async function resetPipeline() {
 		(await clusterClient.resetPipeline()).mapError((err) => {
 			infoModalContent = {
@@ -261,6 +270,7 @@
 			on:record={recordPipeline}
 			on:stop={stopPipeline}
 			on:reset={resetPipeline}
+			on:collect={collectPipeline}
 			title="Active Jobs"
 		/>
 		<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
