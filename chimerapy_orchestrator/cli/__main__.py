@@ -161,14 +161,14 @@ def add_server_parser(subparsers):
         choices=["dev", "prod"],
     )
 
-    for field, model_field in OrchestratorConfig.__fields__.items():
+    for field, model_field in OrchestratorConfig.model_fields.items():
         if field == "mode":
             continue
 
         server_parser.add_argument(
             f"--{field.replace('_', '-')}",
-            help=model_field.field_info.description,
-            type=model_field.type_,
+            help=model_field.description,
+            type=model_field.annotation,
             required=False,
             default=model_field.default,
         )
@@ -202,7 +202,7 @@ def run(args=None):
     if args.subcommand != "server":
         with open(args.config) as config_file:
             config_dict = json.load(config_file)
-            cp_config = ChimeraPyPipelineConfig.parse_obj(config_dict)
+            cp_config = ChimeraPyPipelineConfig.model_validate(config_dict)
 
     if args.subcommand == "orchestrate":
         if args.mode and cp_config.mode != args.mode:
