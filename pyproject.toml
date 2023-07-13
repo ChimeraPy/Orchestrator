@@ -27,7 +27,8 @@ classifiers = [
 
 dependencies = [
     'chimerapy',
-    'pydantic',
+    'pydantic>=2.0.0',
+    'pydantic-settings',
     'fastapi[all]',
     'importlib-metadata',
 ]
