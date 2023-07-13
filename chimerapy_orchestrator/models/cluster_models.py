@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, ClassVar, Dict, Literal, Optional, Union
 
 from chimerapy.states import (
     ManagerState,
@@ -10,7 +10,7 @@ from chimerapy.states import (
 from chimerapy.states import (
     WorkerState as _WorkerState,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NodeState(BaseModel):
@@ -26,9 +26,7 @@ class NodeState(BaseModel):
     def from_cp_node_state(cls, node_state: _NodeState):
         return cls(**node_state.to_dict())
 
-    class Config:
-        allow_extra = False
-        allow_mutation = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
 
 class WorkerState(BaseModel):
@@ -45,9 +43,7 @@ class WorkerState(BaseModel):
             **state_dict,
         )
 
-    class Config:
-        allow_extra = False
-        allow_mutation = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
 
 class ClusterState(BaseModel):
@@ -69,9 +65,7 @@ class ClusterState(BaseModel):
         state_dict = state.to_dict()
         return cls(**state_dict, zeroconf_discovery=zeroconf_discovery)
 
-    class Config:
-        allow_extra = False
-        allow_mutation = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
 
 class UpdateMessageType(str, Enum):
@@ -100,6 +94,4 @@ class UpdateMessage(BaseModel):
 
         return cls(signal=signal, data=data)
 
-    class Config:
-        allow_extra = False
-        allow_mutation = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")

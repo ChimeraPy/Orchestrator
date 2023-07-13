@@ -1,7 +1,8 @@
 from functools import lru_cache
 from typing import ClassVar, Optional
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class OrchestratorConfig(BaseSettings):
@@ -30,13 +31,12 @@ class OrchestratorConfig(BaseSettings):
 
     def dump_env(self, file=".env"):
         with open(file, "w") as f:
-            for field, value in self.dict().items():
+            for field, value in self.model_dump(mode="json").items():
                 f.write(f"{field.upper()}={value}\n")
 
-    class Config:
-        allow_extra = False
-        allow_mutation = False
-        env_file = ".env"
+    model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
+        extra="forbid", frozen=True, env_file=".env"
+    )
 
 
 @lru_cache()

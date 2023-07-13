@@ -1,8 +1,8 @@
 import importlib
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from chimerapy.node import Node
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from chimerapy_orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
@@ -28,8 +28,7 @@ class PipelineRequest(BaseModel):
         description="The configuration of the pipeline.",
     )
 
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class WebNode(BaseModel):
@@ -59,8 +58,7 @@ class WebNode(BaseModel):
         default=None, description="The id of the worker that runs this node."
     )
 
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class WebEdge(BaseModel):
@@ -74,8 +72,7 @@ class WebEdge(BaseModel):
 
     sink: WebNode = Field(..., description="The target node of the edge.")
 
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class WrappedNode(BaseModel):
@@ -194,9 +191,9 @@ class WrappedNode(BaseModel):
     def __repr__(self):
         return f"<WrappedNode: {self.NodeClass.__name__}>"
 
-    class Config:
-        allow_extra = False
-        arbitrary_types_allowed = True
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        extra="forbid", arbitrary_types_allowed=True
+    )
 
 
 class NodesPlugin(BaseModel):
@@ -237,5 +234,4 @@ class NodesPlugin(BaseModel):
             description=description,
         )
 
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
