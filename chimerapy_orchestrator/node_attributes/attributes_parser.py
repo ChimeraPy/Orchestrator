@@ -3,6 +3,7 @@ from enum import Enum
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     List,
     Type,
@@ -12,8 +13,9 @@ from typing import (
     get_type_hints,
 )
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from chimerapy.node import Node
-from pydantic import BaseModel, Field
 
 
 class AttributeType(str, Enum):
@@ -49,8 +51,7 @@ class NodeAttributeMeta(BaseModel):
         default=False, description="Whether the parameter is required."
     )
 
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class ParamMeta:
