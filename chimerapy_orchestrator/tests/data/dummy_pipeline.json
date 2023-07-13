@@ -30,7 +30,8 @@
     ],
     "manager_config": {
         "logdir": "/tmp/logs",
-        "port": 8000
+        "port": 8000,
+        "zeroconf": false
     },
     "mappings": {
         "worker1": ["node1"],
