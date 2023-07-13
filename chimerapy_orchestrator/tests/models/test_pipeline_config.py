@@ -13,7 +13,7 @@ class TestPipelineConfig(BaseTest):
     @pytest.fixture(scope="class")
     def dummy_pipeline_config(self) -> ChimeraPyPipelineConfig:
         with get_test_file_path("dummy_pipeline.json").open() as f:
-            return ChimeraPyPipelineConfig.parse_obj(json.load(f))
+            return ChimeraPyPipelineConfig.model_validate(json.load(f))
 
     def test_worker_config(self, dummy_pipeline_config):
         assert dummy_pipeline_config.workers.manager_ip == "localhost"

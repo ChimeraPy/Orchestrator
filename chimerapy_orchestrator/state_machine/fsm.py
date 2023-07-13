@@ -137,7 +137,10 @@ class FSM:
             "current_state": self.current_state.name,
             "description": self.description,
             "initial_state": self.initial_state.name,
-            "states": {state.name: state.dict() for state in self.states},
+            "states": {
+                state.name: state.model_dump(mode="python")
+                for state in self.states
+            },
         }
 
     @property
@@ -154,7 +157,7 @@ class FSM:
             state_cache[state_name] = State(
                 name=state_name,
                 valid_transitions=[
-                    Transition.parse_obj(t_dict)
+                    Transition.model_validate(t_dict)
                     for t_dict in props["valid_transitions"]
                 ],
                 description=props["description"],

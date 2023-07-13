@@ -22,7 +22,9 @@ class TestPipelineRouter(BaseTest):
         response = pipeline_client.get("/pipeline/plugins")
         assert response.status_code == 200
         assert response.json() == [
-            NodesPlugin.from_plugin_registry(package_name=package_name).dict()
+            NodesPlugin.from_plugin_registry(
+                package_name=package_name
+            ).model_dump(mode="json")
             for package_name in importable_packages()
         ]
 
@@ -62,7 +64,7 @@ class TestPipelineRouter(BaseTest):
         config = get_pipeline_config("local_camera")
         pipeline = pipeline_client.put(
             "/pipeline/create",
-            json={"config": config.dict()},
+            json={"config": config.model_dump(mode="json")},
         )
         assert pipeline.status_code == 200
         json_response = pipeline.json()
