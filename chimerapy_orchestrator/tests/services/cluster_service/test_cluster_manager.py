@@ -141,7 +141,7 @@ class TestClusterManager(BaseTest):
         collect_result = await cluster_manager.collect_pipeline()
         await asyncio.sleep(10)  # 10 Second to collect
         assert collect_result.ok().is_some()
-        assert cluster_manager.current_state.name == "STOPPED"
+        assert cluster_manager.current_state.name == "COLLECTED"
 
         preview_result = await cluster_manager.preview_pipeline()
         await asyncio.sleep(2)  # 2 Seconds to preview

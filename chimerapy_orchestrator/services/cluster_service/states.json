@@ -107,10 +107,36 @@
             {
               "name": "/collect",
               "from_state": "STOPPED",
-              "to_state": "STOPPED"
+              "to_state": "COLLECTED"
             }
         ],
       "description": "The pipeline is stopped and ready to be previewed/run/reset/collected"
+    },
+    "COLLECTED": {
+      "name": "COLLECTED",
+      "valid_transitions": [
+            {
+            "name": "/reset",
+            "from_state": "COLLECTED",
+            "to_state": "INITIALIZED"
+            },
+            {
+                "name": "/preview",
+                "from_state": "COLLECTED",
+                "to_state": "PREVIEWING"
+            },
+            {
+                "name": "/record",
+                "from_state": "COLLECTED",
+                "to_state": "RECORDING"
+            },
+            {
+              "name": "/stop",
+              "from_state": "COLLECTED",
+              "to_state": "STOPPED"
+            }
+      ],
+      "description": "The data is collected from the running pipeline"
     }
   },
   "initial_state": "INITIALIZED"
