@@ -53,7 +53,7 @@ jobs:
         name: Checkout ChimeraPy-Engine (Bleeding Edge)
         with:
           repository: ChimeraPy/ChimeraPy-Engine
-          ref: 203-rename-to-chimerapy-engine
+          ref: main
           path: ChimeraPy-Engine
 
       - name: Install ChimeraPy-Engine (Bleeding Edge)

@@ -64,17 +64,14 @@ class TestClusterRouter(BaseTest):
 
         response = client.get("/cluster/state")
         assert response.status_code == 200
-        assert (
-            response.json()
-            == ClusterState.from_cp_manager_state(
-                manager.get_network().unwrap(),
-                manager.is_zeroconf_discovery_enabled(),
-            ).dict()
-        )
+        assert response.json() == ClusterState.from_cp_manager_state(
+            manager.get_network().unwrap(),
+            manager.is_zeroconf_discovery_enabled(),
+        ).model_dump(mode="json")
 
         with client.websocket_connect("/cluster/updates") as ws:
             state = ws.receive_json()
-            state = UpdateMessage.parse_obj(state)
+            state = UpdateMessage.model_validate(state)
             assert state.signal == UpdateMessageType.NETWORK_UPDATE
 
     @pytest.mark.anyio

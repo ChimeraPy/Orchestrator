@@ -1,7 +1,17 @@
 import json
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Type
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+)
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import chimerapy.engine as cpe
 from chimerapy.orchestrator.registry import get_registered_node
@@ -10,9 +20,10 @@ from chimerapy.orchestrator.registry import get_registered_node
 class ManagerConfig(BaseModel):
     logdir: str = Field(..., description="The log directory for the manager.")
     port: int = Field(..., description="The port for the manager.")
-
-    class Config:
-        allow_extra = False
+    zeroconf: bool = Field(
+        default=True, description="If true, enable zeroconf discovery."
+    )
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class NodeConfig(BaseModel):
@@ -27,9 +38,7 @@ class NodeConfig(BaseModel):
     package: Optional[str] = Field(
         default=None, description="The package that registered this node."
     )
-
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class WorkerConfig(BaseModel):
@@ -44,9 +53,7 @@ class WorkerConfig(BaseModel):
     description: Optional[str] = Field(
         default="", description="The description of the worker."
     )
-
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class Workers(BaseModel):
@@ -57,9 +64,7 @@ class Workers(BaseModel):
     instances: List[WorkerConfig] = Field(
         ..., description="The workers to be added."
     )
-
-    class Config:
-        allow_extra = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class Timeouts(BaseModel):
@@ -92,9 +97,7 @@ class Timeouts(BaseModel):
         default=20, description="The timeout for shutdown operation in seconds."
     )
 
-    class Config:
-        allow_extra = False
-        allow_mutation = False
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
 class ChimeraPyPipelineConfig(BaseModel):
@@ -141,8 +144,14 @@ class ChimeraPyPipelineConfig(BaseModel):
         description="The timeouts for the pipeline operation.",
     )
 
-    def manager(self) -> cpe.Manager:
-        return cpe.Manager(**self.manager_config.dict())
+    def instantiate_manager(self) -> cpe.Manager:
+        m = cpe.Manager(
+            **self.manager_config.model_dump(
+                mode="python", exclude={"zeroconf"}
+            )
+        )
+        m.zeroconf(enable=self.manager_config.zeroconf)
+        return m
 
     def get_registered_node(
         self, name, package
@@ -181,7 +190,7 @@ class ChimeraPyPipelineConfig(BaseModel):
             else:
                 remote_workers.add(wc.id)
 
-        manager = self.manager()
+        manager = self.instantiate_manager()
 
         [
             w.connect(host=manager.host, port=manager.port)
@@ -213,14 +222,29 @@ class ChimeraPyPipelineConfig(BaseModel):
         raise ValueError(f"Worker: {worker_id} not found.")
 
     def list_remote_workers(self):
-        remotes = [wc.dict() for wc in self.workers.instances if wc.remote]
+        remotes = [
+            wc.model_dump(mode="json")
+            for wc in self.workers.instances
+            if wc.remote
+        ]
         print(json.dumps(remotes, indent=2))
 
-    @validator("nodes", pre=True, each_item=True)
-    def validate_nodes(cls, v):
-        if isinstance(v, str):
-            return NodeConfig(registry_name=v, name=v)
-        return v
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @field_validator("nodes", mode="before")
+    def validate_nodes(cls, values):
+        nodes = []
 
-    class Config:
-        arbitrary_types_allowed = True
+        for v in values:
+            if isinstance(v, str):
+                nodes.append(NodeConfig(registry_name=v, name=v))
+            elif isinstance(v, dict):
+                nodes.append(NodeConfig(**v))
+            else:
+                nodes.append(v)
+
+        return nodes
+
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        arbitrary_types_allowed=True
+    )

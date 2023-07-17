@@ -58,7 +58,7 @@ class TestPipelineModels(BaseTest):
         assert wrapped_node_clone.registry_name == "DummyNode"
         assert wrapped_node_clone.instantiated is False
         assert wrapped_node_clone.NodeClass == DummyNode
-        assert wrapped_node_clone.to_web_node().dict() == {
+        assert wrapped_node_clone.to_web_node().model_dump(mode="json") == {
             "name": "DummyNode",
             "registry_name": "DummyNode",
             "id": wrapped_node_clone.id,

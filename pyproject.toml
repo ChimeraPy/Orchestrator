@@ -27,7 +27,8 @@ classifiers = [
 
 dependencies = [
     'chimerapy-engine',
-    'pydantic',
+    'pydantic>=2.0.0',
+    'pydantic-settings',
     'fastapi[all]',
     'importlib-metadata',
 ]
@@ -42,9 +43,9 @@ test = [
 ]
 
 [project.urls]
-homepath = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
-documentation = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
-repository = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
+homepath = "https://github.com/chimerapy/Orchestrator"
+documentation = "https://github.com/chimerapy/Orchestrator"
+repository = "https://github.com/chimerapy/Orchestrator"
 
 # Entrypoint
 [project.scripts]
@@ -58,13 +59,15 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.package-data]
+chimerapy = ['orchestrator/**/*.json']
+
 [project.entry-points."chimerapy.orchestrator.nodes_registry"]
 get_nodes_registry = "chimerapy.orchestrator.registry:register_nodes_metadata"
 
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["chimerapy"]
 
 [tool.coverage]
 [tool.coverage.run]

@@ -172,7 +172,7 @@ class Pipeline(nx.DiGraph):
             "committed": self.committed,
             "description": self.description,
             "nodes": [
-                data["wrapped_node"].to_web_node().dict()
+                data["wrapped_node"].to_web_node().model_dump(mode="json")
                 for node_id, data in self.nodes(data=True)
             ],
             "edges": [
@@ -195,7 +195,7 @@ class Pipeline(nx.DiGraph):
         # Update Nodes
         for node in web_json["nodes"]:
             wrapped_node = self.nodes[node["id"]]["wrapped_node"]
-            wrapped_node.update_from_web_node(WebNode.parse_obj(node))
+            wrapped_node.update_from_web_node(WebNode.model_validate(node))
 
         # Verify Edges, ToDo: Update edges after chimerapy update
         for edge in web_json["edges"]:

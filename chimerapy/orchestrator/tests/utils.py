@@ -54,6 +54,6 @@ def get_pipeline_config(pipeline, root_dir=None) -> ChimeraPyPipelineConfig:
         raise FileNotFoundError(f"Could not find config file {pipeline}")
 
     with config_path.open("r") as json_file:
-        config = ChimeraPyPipelineConfig.parse_raw(json_file.read())
+        config = ChimeraPyPipelineConfig.model_validate_json(json_file.read())
 
     return config
