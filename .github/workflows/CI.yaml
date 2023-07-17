@@ -50,27 +50,27 @@ jobs:
           echo "MANUAL_OS_SET=Darwin" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
-        name: Checkout ChimeraPy (Bleeding Edge)
+        name: Checkout ChimeraPy-Engine (Bleeding Edge)
         with:
-          repository: oele-isis-vanderbilt/ChimeraPy
+          repository: ChimeraPy/ChimeraPy-Engine
           ref: main
-          path: ChimeraPy
+          path: ChimeraPy-Engine
 
-      - name: Install ChimeraPy (Bleeding Edge)
+      - name: Install ChimeraPy-Engine (Bleeding Edge)
         run: |
-          cd ChimeraPy
+          cd ChimeraPy-Engine
           ${{ steps.cp39.outputs.python-path }} -m pip install --upgrade pip
           ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
 
       - name: Install Package and Plugin Test Package
         run: |
           ${{ steps.cp39.outputs.python-path }} -m pip install -e ".[test]"
-          cd chimerapy_orchestrator/tests/plugin-nodes-package
+          cd chimerapy/orchestrator/tests/plugin-nodes-package
           ${{ steps.cp39.outputs.python-path }} -m pip install .
 
       - name: Perform Tests (${{ matrix.os }})
         run: |
-          ${{ steps.cp39.outputs.python-path }} -m coverage run --source=chimerapy_orchestrator -m pytest -v --color yes chimerapy_orchestrator/tests
+          ${{ steps.cp39.outputs.python-path }} -m coverage run --source=chimerapy/orchestrator -m pytest -v --color yes chimerapy/orchestrator/tests
 
       - name: Upload Coverage Data to coveralls.io
         if : matrix.os == 'ubuntu-latest'
