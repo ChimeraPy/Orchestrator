@@ -1,6 +1,6 @@
 [project]
 name = "chimerapy-orchestrator"
-version = "0.0.1"
+version = "0.0.0"
 description = "ChimeraPyOrchestrator: A webapp and CLI tool for orchestrating ChimeraPy pipelines"
 authors = [
     {name = "Eduardo Davalos", email="eduardo.davalos.anaya@vanderbilt.edu"},
@@ -40,6 +40,7 @@ test = [
     'coveralls',
     'pre-commit',
     'coverage[toml]',
+    'bump2version'
 ]
 
 [project.urls]
