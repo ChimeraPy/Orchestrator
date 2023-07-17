@@ -5,3 +5,5 @@ from chimerapy.orchestrator.registry.utils import (
 )
 
 from . import registered_nodes
+
+__version__ = "0.0.0"
