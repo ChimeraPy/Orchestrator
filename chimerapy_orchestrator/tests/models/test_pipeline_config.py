@@ -54,3 +54,4 @@ class TestPipelineConfig(BaseTest):
         manager = dummy_pipeline_config.manager_config
         assert manager.port == 8000
         assert manager.logdir == "/tmp/logs"
+        assert not manager.zeroconf

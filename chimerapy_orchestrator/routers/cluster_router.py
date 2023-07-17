@@ -106,6 +106,13 @@ class ClusterRouter(APIRouter):
         )
 
         self.add_api_route(
+            "/collect",
+            self.collect,
+            methods=["POST"],
+            response_description="Collect the current pipeline results",
+        )
+
+        self.add_api_route(
             "/reset",
             self.reset,
             methods=["POST"],
@@ -229,6 +236,12 @@ class ClusterRouter(APIRouter):
 
     async def stop(self) -> bool:
         result = await self.manager.stop_pipeline()
+        return result.map_error(
+            lambda err: get_mapping(err).to_fastapi()
+        ).unwrap()
+
+    async def collect(self) -> bool:
+        result = await self.manager.collect_pipeline()
         return result.map_error(
             lambda err: get_mapping(err).to_fastapi()
         ).unwrap()

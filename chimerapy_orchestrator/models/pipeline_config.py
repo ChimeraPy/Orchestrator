@@ -20,6 +20,9 @@ from chimerapy_orchestrator.registry import get_registered_node
 class ManagerConfig(BaseModel):
     logdir: str = Field(..., description="The log directory for the manager.")
     port: int = Field(..., description="The port for the manager.")
+    zeroconf: bool = Field(
+        default=True, description="If true, enable zeroconf discovery."
+    )
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
 
@@ -141,8 +144,14 @@ class ChimeraPyPipelineConfig(BaseModel):
         description="The timeouts for the pipeline operation.",
     )
 
-    def manager(self) -> cp.Manager:
-        return cp.Manager(**self.manager_config.model_dump(mode="python"))
+    def instantiate_manager(self) -> cp.Manager:
+        m = cp.Manager(
+            **self.manager_config.model_dump(
+                mode="python", exclude={"zeroconf"}
+            )
+        )
+        m.zeroconf(enable=self.manager_config.zeroconf)
+        return m
 
     def get_registered_node(
         self, name, package
@@ -181,7 +190,7 @@ class ChimeraPyPipelineConfig(BaseModel):
             else:
                 remote_workers.add(wc.id)
 
-        manager = self.manager()
+        manager = self.instantiate_manager()
 
         [
             w.connect(host=manager.host, port=manager.port)
