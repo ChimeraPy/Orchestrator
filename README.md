@@ -1,37 +1,28 @@
-# chimerapy-orchestrator
+<p align="center">
+  <a href="https://github.com/ChimeraPy"><img src="./docs/images/banner.png" alt="ChimeraPy"></a>
+</p>
+<p align="center">
+    <em>Reusable Nodes and Orchestration Scheme/ Dashboard Application for ChimeraPy with JSON configuration.</em>
+</p>
+<p align="center">
+<a href="https://github.com/ChimeraPy/ChimeraPy/actions?query=workflow%3ATest" target="_blank">
+    <img src="https://github.com/ChimeraPy/ChimeraPy/workflows/Test/badge.svg" alt="Test">
+</a>
+<a href='https://coveralls.io/github/ChimeraPy/ChimeraPyOrchestrator?branch=main'>
+    <img src='https://coveralls.io/repos/github/ChimeraPy/ChimeraPyOrchestrator/badge.svg?branch=main' alt='Coverage Status' />
+</a>
+</p>
 
-Proof of concept Reusable Nodes and Orchestration Scheme/ Dashboard Application for ChimeraPy with JSON configuration.
 
-## Installation and Usage (Alpha Only)
+ChimeraPy is a Scientific, Distributed Computing Framework for Real-time Multimodal Data Retrieval and Processing. This package provides reusable nodes and orchestration scheme (CLI)/ and web dashboard application(via REST API) for ChimeraPy with JSON configuration.
 
-### Installation for Orchestrator CLI
-Recommended: use a virtual environment with conda.
-
+## Installation
+Package is available on `PyPI`, install with `pip`:
 ```bash
-$ conda create -n chimerapy-dev python=3.9 -c defaults -c conda-forge
+$ pip install chimerapy-orchestrator
 ```
 
-Install the system level dependencies for ChimeraPy:
-```bash
-$ sudo apt-get install ffmpeg libsm6 libxext6 -y
-$ sudo apt-get install libportaudio2 libportaudiocpp0 portaudio19-dev libasound-dev libsndfile1-dev portaudio19-dev python3-pyaudio -y
-```
-
-The `main` branch of this library is build against the `main` branch of `ChimeraPy`. To install the main branch of `ChimeraPy`, then, install the main branch of this library: run the following commands (in your virtual environment):
-
-```bash
-$ conda activate chimerapy-dev
-$ git clone https://github.com/oele-isis-vanderbilt/ChimeraPy.git
-$ cd ChimeraPy
-$ pip install -e ".[test]"
-$ cd ..
-$ git clone https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator.git
-$ cd ChimeraPyOrchestrator
-$ pip install -e ".[test]"
-```
-
-
-### Usage for Orchestrator CLI
+## Usage for Orchestrator CLI
 Installation provides  `cp-orchestrator` command:
 
 ```shell
@@ -54,7 +45,7 @@ subcommands:
 
 Specific subcommands also have their own help messages, and can be used `cp-orchestrator <subcommand> --help`.
 
-### Orchestrator CLI Example
+## Orchestrator CLI Example
 In the [`configs`](./configs) directory, there are few configuration examples for simple `ChimeraPy` pipelines.
 
 The command below will run a pipeline that uses the webcamera and showwindow nodes and runs it in a local worker:
@@ -71,7 +62,7 @@ In a separate terminal, run the remote worker:
 $ cp-orchestrator orchestrate-worker --config configs/local_camera_remote_worker.json --worker-id worker1
 ```
 
-### Dashboard
+## Dashboard
 The dashboard application is still in early stages of development and can't be used directly yet. However, it can be run in development mode.
 To run the dashboard, run the backend server first:
 
@@ -88,5 +79,11 @@ $ npm run dev
 
 Finally, open a browser and navigate to `http://localhost:5173` for the dashboard.
 
+## Contributing
+Contributions are welcomed! Our [Developer Documentation](https://chimerapy.readthedocs.io/en/latest/developer/index.html) should provide more details in how ChimeraPy works and what is in current development.
 
-**Note:** This is a proof of concept and is not intended for production use.
+## License
+[ChimeraPy](https://github.com/ChimeraPy) and [ChimeraPy/Orchestrator](https://github.com/ChimeraPy/Orchestrator) uses the GNU GENERAL PUBLIC LICENSE, as found in [LICENSE](./LICENSE) file.
+
+## Funding Info
+This project is supported by the [National Science Foundation](https://www.nsf.gov/) under AI Institute  Grant No. [DRL-2112635](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2112635&HistoricalAwards=false).
