@@ -2,7 +2,7 @@
   <a href="https://github.com/ChimeraPy"><img src="./docs/images/banner.png" alt="ChimeraPy"></a>
 </p>
 <p align="center">
-    <em>A Scientific Distributed Computing Framework for Real-time Multimodal Data Retrieval and Processing</em>
+    <em>Reusable Nodes and Orchestration Scheme/ Dashboard Application for ChimeraPy with JSON configuration.</em>
 </p>
 <p align="center">
 <a href="https://github.com/ChimeraPy/ChimeraPy/actions?query=workflow%3ATest" target="_blank">
