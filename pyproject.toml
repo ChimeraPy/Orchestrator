@@ -1,6 +1,6 @@
 [project]
 name = "chimerapy-orchestrator"
-version = "0.0.1"
+version = "0.0.2"
 description = "ChimeraPyOrchestrator: A webapp and CLI tool for orchestrating ChimeraPy pipelines"
 authors = [
     {name = "Eduardo Davalos", email="eduardo.davalos.anaya@vanderbilt.edu"},
@@ -17,17 +17,16 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GPL-3.0",
     "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Distributed Computing",
     "Topic :: Software Development",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 dependencies = [
-    'chimerapy',
-    'pydantic',
+    'chimerapy-engine',
+    'pydantic>=2.0.0',
+    'pydantic-settings',
     'fastapi[all]',
     'importlib-metadata',
 ]
@@ -39,16 +38,17 @@ test = [
     'coveralls',
     'pre-commit',
     'coverage[toml]',
+    'bump2version'
 ]
 
 [project.urls]
-homepath = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
-documentation = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
-repository = "https://github.com/oele-isis-vanderbilt/ChimeraPyOrchestrator"
+homepath = "https://github.com/chimerapy/Orchestrator"
+documentation = "https://github.com/chimerapy/Orchestrator"
+repository = "https://github.com/chimerapy/Orchestrator"
 
 # Entrypoint
 [project.scripts]
-cp-orchestrator = "chimerapy_orchestrator.cli.__main__:run"
+cp-orchestrator = "chimerapy.orchestrator.cli.__main__:run"
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -58,8 +58,11 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 include-package-data = true
 
-[project.entry-points."chimerapy_orchestrator.nodes_registry"]
-get_nodes_registry = "chimerapy_orchestrator.registry:register_nodes_metadata"
+[tool.setuptools.package-data]
+chimerapy = ['orchestrator/**/*.json']
+
+[project.entry-points."chimerapy.orchestrator.nodes_registry"]
+get_nodes_registry = "chimerapy.orchestrator.registry:register_nodes_metadata"
 
 
 [tool.setuptools.packages.find]

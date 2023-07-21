@@ -1,0 +1,143 @@
+{
+  "description": "The state machine for the chimerapy cluster",
+  "states": {
+    "INITIALIZED": {
+      "name": "INITIALIZED",
+      "valid_transitions": [
+        {
+          "name": "/instantiate",
+          "from_state": "INITIALIZED",
+          "to_state": "INSTANTIATED"
+        }
+      ],
+      "description": "The cluster is initialized and ready to be committed"
+    },
+    "INSTANTIATED": {
+      "name": "INSTANTIATED",
+      "valid_transitions": [
+        {
+          "name": "/commit",
+          "from_state": "INSTANTIATED",
+          "to_state": "COMMITTED"
+        },
+        {
+          "name": "/reset",
+          "from_state": "INSTANTIATED",
+          "to_state": "INITIALIZED"
+        }
+      ],
+      "description": "The cluster is instantiated with a pipeline and it is ready to be committed"
+    },
+    "COMMITTED": {
+      "name": "COMMITTED",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "COMMITTED",
+          "to_state": "INITIALIZED"
+        },
+        {
+          "name": "/preview",
+          "from_state": "COMMITTED",
+          "to_state": "PREVIEWING"
+        },
+        {
+          "name": "/record",
+          "from_state": "COMMITTED",
+          "to_state": "RECORDING"
+        }
+      ],
+      "description": "The cluster is committed and ready to be run or reset"
+    },
+    "PREVIEWING": {
+      "name": "PREVIEWING",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "PREVIEWING",
+          "to_state": "INITIALIZED"
+        },
+        {
+            "name": "/record",
+            "from_state": "PREVIEWING",
+            "to_state": "RECORDING"
+        },
+        {
+            "name": "/stop",
+            "from_state": "PREVIEWING",
+            "to_state": "STOPPED"
+        }
+      ],
+      "description": "The cluster is previewing the pipeline and ready to be recorded/reset"
+    },
+    "RECORDING": {
+      "name": "RECORDING",
+      "valid_transitions": [
+        {
+          "name": "/reset",
+          "from_state": "RECORDING",
+          "to_state": "INITIALIZED"
+        },
+        {
+            "name": "/stop",
+            "from_state": "RECORDING",
+            "to_state": "STOPPED"
+        }
+      ],
+      "description": "The cluster is recording the pipeline and ready to be previewed/run/reset"
+    },
+    "STOPPED": {
+      "name": "STOPPED",
+        "valid_transitions": [
+            {
+            "name": "/reset",
+            "from_state": "STOPPED",
+            "to_state": "INITIALIZED"
+            },
+            {
+                "name": "/preview",
+                "from_state": "STOPPED",
+                "to_state": "PREVIEWING"
+            },
+            {
+                "name": "/record",
+                "from_state": "STOPPED",
+                "to_state": "RECORDING"
+            },
+            {
+              "name": "/collect",
+              "from_state": "STOPPED",
+              "to_state": "COLLECTED"
+            }
+        ],
+      "description": "The pipeline is stopped and ready to be previewed/run/reset/collected"
+    },
+    "COLLECTED": {
+      "name": "COLLECTED",
+      "valid_transitions": [
+            {
+            "name": "/reset",
+            "from_state": "COLLECTED",
+            "to_state": "INITIALIZED"
+            },
+            {
+                "name": "/preview",
+                "from_state": "COLLECTED",
+                "to_state": "PREVIEWING"
+            },
+            {
+                "name": "/record",
+                "from_state": "COLLECTED",
+                "to_state": "RECORDING"
+            },
+            {
+              "name": "/stop",
+              "from_state": "COLLECTED",
+              "to_state": "STOPPED"
+            }
+      ],
+      "description": "The data is collected from the running pipeline"
+    }
+  },
+  "initial_state": "INITIALIZED"
+}

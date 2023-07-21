@@ -1,0 +1,41 @@
+{
+    "workers": {
+        "manager_ip": "localhost",
+        "manager_port": 8000,
+        "instances": [
+            {
+                "name": "worker1",
+                "remote": true,
+                "id": "1235"
+            },
+            {
+                "name": "worker2",
+                "id": "1234"
+            }
+        ]
+    },
+    "nodes": [
+        {
+            "registry_name": "MyCustomNode",
+            "name": "node1",
+            "kwargs": {
+                "param1": 1,
+                "param2": "abc"
+            }
+        },
+        "node2"
+    ],
+    "adj": [
+        ["node1", "node2"]
+    ],
+    "manager_config": {
+        "logdir": "/tmp/logs",
+        "port": 8000,
+        "zeroconf": false
+    },
+    "mappings": {
+        "worker1": ["node1"],
+        "1234": ["node2"]
+    },
+    "discover_nodes_from": ["my_module"]
+}
