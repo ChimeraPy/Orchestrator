@@ -266,7 +266,7 @@ export class ClusterClient extends Client {
 
 	async collectPipeline(): Promise<Result<boolean, ResponseError>> {
 		const prefix = `/collect`;
-		const result = await this._fetch<boolean>(prefix, {method: 'POST'});
+		const result = await this._fetch<boolean>(prefix, { method: 'POST' });
 		return result.map((_) => true);
 	}
 

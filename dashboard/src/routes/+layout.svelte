@@ -6,7 +6,7 @@
 	export let data;
 </script>
 
-<div class="container mx-auto flex flex-col h-screen">
+<div class="mx-auto flex flex-col h-screen">
 	<Header sections={data.sections} logo={data.logo} url={dev ? '/' : '/dashboard'} />
 	<main class="mb-auto h-[calc(100vh-5rem)]">
 		<slot />

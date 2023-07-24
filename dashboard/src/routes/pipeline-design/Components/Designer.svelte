@@ -7,7 +7,7 @@
 	import PartBrowser from '$lib/Components/JointJS/PartBrowser.svelte';
 	import HorizontalMenu from '$lib/Components/JointJS/HorizontalMenu.svelte';
 	import EditableList from '$lib/Components/JointJS/EditableList.svelte';
-	import PluginInstaller from '$lib/Components/PluginInstaller/PluginInstaller.svelte';
+	import PluginInstaller from './PluginInstaller.svelte';
 	import PipelineImporter from '$lib/Components/PipelineImporter/PipelineImporter.svelte';
 	import * as joint from 'jointjs';
 	import Modal from '$lib/Components/Modal/Modal.svelte';
@@ -339,167 +339,54 @@
 	}
 </script>
 
-<div class="flex flex-row w-full h-full">
-	<div class="w-1/6 flex flex-col border-r-2 border-gray-400">
-		<div class="flex flex-col flex-1 overflow-hidden">
-			<div>
-				<HorizontalMenu
-					on:refresh={debouncedFetchNodes}
-					on:add={() => showPluginInstaller()}
-					title="Nodes"
-					icons={[
-						{
-							type: Icons.refresh,
-							tooltip: 'Refresh nodes'
-						},
-						{
-							type: Icons.add,
-							tooltip: 'Plugins'
-						}
-					]}
-					backgroundClass="bg-blue-600"
-				/>
-			</div>
-			<div class="flex-1 bg-[#F3F7F6] overflow-hidden">
-				<PartBrowser
-					on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
-					cells={nodeCells}
-				/>
-			</div>
-		</div>
+<div bind:this={editorContainer} class="w-full h-full">
+	<div>
+		<HorizontalMenu
+			bind:this={horizontalMenu}
+			on:magnify={() => pipelineGraph?.zoomIn()}
+			on:reduce={() => pipelineGraph?.zoomOut()}
+			on:refresh={() => pipelineGraph?.scaleContentToFit()}
+			on:activatePipeline={() => activatePipeline()}
+			icons={[
+				{
+					type: Icons.magnify,
+					tooltip: 'Zoom in',
+					disabled: !selectedPipeline
+				},
+				{
+					type: Icons.reduce,
+					tooltip: 'Zoom out',
+					disabled: !selectedPipeline
+				},
+				{
+					type: Icons.refresh,
+					tooltip: 'Fit to screen',
+					disabled: !selectedPipeline
+				},
+				{
+					type: Icons.bolt,
+					tooltip: 'Activate pipeline',
+					disabled: !selectedPipeline,
+					dispatchEventName: 'activatePipeline'
+				}
+			]}
+			title="Pipeline Editor"
+		/>
 	</div>
-	<div class="flex flex-col w-4/6 h-full bg-indigo-100 border-r-2 border-gray-400">
-		<div bind:this={editorContainer} class="flex-1 flex flex-col overflow-hidden">
-			<div>
-				<HorizontalMenu
-					bind:this={horizontalMenu}
-					on:magnify={() => pipelineGraph?.zoomIn()}
-					on:reduce={() => pipelineGraph?.zoomOut()}
-					on:refresh={() => pipelineGraph?.scaleContentToFit()}
-					on:activatePipeline={() => activatePipeline()}
-					icons={[
-						{
-							type: Icons.magnify,
-							tooltip: 'Zoom in',
-							disabled: !selectedPipeline
-						},
-						{
-							type: Icons.reduce,
-							tooltip: 'Zoom out',
-							disabled: !selectedPipeline
-						},
-						{
-							type: Icons.refresh,
-							tooltip: 'Fit to screen',
-							disabled: !selectedPipeline
-						},
-						{
-							type: Icons.bolt,
-							tooltip: 'Activate pipeline',
-							disabled: !selectedPipeline,
-							dispatchEventName: 'activatePipeline'
-						}
-					]}
-					title="Pipeline Editor"
-				/>
-			</div>
-			<div class="flex-1 overflow-hidden">
-				<EditableDagViewer
-					bind:this={pipelineGraph}
-					additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
-					on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
-					on:linkAdd={(event) => addLinkToPipeline(event.detail)}
-					on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
-					on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
-					on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
-					on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-					on:blankClick={(event) => clearPipelineHighlights()}
-				/>
-			</div>
-		</div>
-	</div>
-	<div class="w-1/6 flex flex-col bg-indigo-50">
-		<div class="flex flex-col flex-1 overflow-hidden">
-			<div>
-				<HorizontalMenu
-					title="Pipelines"
-					backgroundClass="bg-blue-600"
-					icons={[
-						{ type: Icons.refresh, tooltip: 'Refresh Components' },
-						{ type: Icons.add, tooltip: 'Create a new Pipeline' },
-						{ type: Icons.upload, tooltip: 'Import a Pipeline', fill: 'none', strokeWidth: 2 }
-					]}
-					on:add={showAddPipelineModal}
-					on:upload={showPipelineImporter}
-					on:refresh={debouncedFetchPipelines}
-				/>
-			</div>
-			<div class="flex-1 overflow-hidden">
-				<EditableList
-					items={pipelineListItems}
-					on:info={(event) => requestPipelineInfo(event.detail)}
-					on:click={(event) => selectPipeline(event.detail)}
-					on:delete={(event) => requestPipelineDeletion(event.detail)}
-				/>
-			</div>
-		</div>
+	<div class="w-full h-full">
+		<EditableDagViewer
+			bind:this={pipelineGraph}
+			additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
+			on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
+			on:linkAdd={(event) => addLinkToPipeline(event.detail)}
+			on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
+			on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
+			on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
+			on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
+			on:blankClick={(event) => clearPipelineHighlights()}
+		/>
 	</div>
 </div>
-
-<!-- Creation Modal -->
-<Modal
-	type="confirm"
-	title="Pipeline Creator"
-	bind:modalOpen
-	disableConfirm={!pipelineName}
-	autoclose={false}
-	{confirmMessage}
-	{cancelMessage}
-	on:confirm={requestPipelineCreation}
-	on:cancel={() => (createPipelineStage = CreatePipelineStages.INACTIVE)}
->
-	<div slot="content">
-		{#if createPipelineStage === CreatePipelineStages.ERROR}
-			<div class="text-red-500">
-				<h3 class="text-xl font-medium text-red-900 p-0">Error</h3>
-				<pre>{pipelineCreationMessage}</pre>
-			</div>
-		{:else if createPipelineStage === CreatePipelineStages.OK}
-			<div>
-				<h3 class="text-xl font-medium text-green-900 p-0">Success</h3>
-				<pre>{pipelineCreationMessage}</pre>
-			</div>
-		{:else}
-			<h3 class="text-xl font-medium text-gray-900 p-0">
-				{#if createPipelineStage === CreatePipelineStages.CREATING}
-					<Spinner size={4} color="green" />
-				{/if}
-				{createPipelineStage === CreatePipelineStages.CREATING ? 'Creating' : 'Create'} a New Pipeline
-			</h3>
-			<br />
-			<Label class="space-y-2">
-				<span>Pipeline Name</span>
-				<Input
-					bind:value={pipelineName}
-					type="text"
-					name="pipeline"
-					placeholder="Be creative here"
-					required
-				/>
-			</Label>
-			<br />
-			<Label class="space-y-2">
-				<span>Pipeline Description(optional)</span>
-				<Input
-					bind:value={pipelineDescription}
-					type="text"
-					name="pipeline"
-					placeholder="Be creative here"
-				/>
-			</Label>
-		{/if}
-	</div>
-</Modal>
 
 <!-- Alert Modal -->
 <Modal
