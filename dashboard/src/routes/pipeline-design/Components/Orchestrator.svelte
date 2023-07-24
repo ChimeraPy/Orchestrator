@@ -1,126 +1,39 @@
 <script lang="ts">
 	import { clusterClient } from '$lib/services';
 	import { getStore } from '$lib/stores';
-	import { ClusterUtils } from '$lib/Services/ClusterUtils';
 	import { Ok } from 'ts-monads';
 	import { ToolViewType } from '$lib/Components/JointJS/utils';
 
 	import HorizontalMenu from '$lib/Components/JointJS/HorizontalMenu.svelte';
-	import EditableList from '$lib/Components/JointJS/EditableList.svelte';
-	import Modal from '$lib/Components/Modal/Modal.svelte';
+	import Alert from './Alert.svelte';
 	import EditableDagViewer from '$lib/Components/JointJS/EditableDAGViewer.svelte';
-	import type { ClusterState } from '$lib/models';
 	import type { IconType } from '$lib/Icons';
 	import { Icons, getIconFromFSMActions } from '$lib/Icons';
 	import { PipelineUtils } from '$lib/Services/PipelineUtils';
 
-	import { Select, Label } from 'flowbite-svelte';
-	import type { Pipeline, PipelineNode } from '$lib/models';
 	import { onMount } from 'svelte';
 
-	let networkStore = getStore('network');
-	let selectedPipelineStore = getStore('selectedPipeline');
 	let lifeCycleStore = getStore('lifeCycle');
 
-	let infoModalContent: { title: string; content: any } | null = null;
 	let icons: IconType[] = [];
+	let editorContainer: HTMLDivElement;
 	let pipelineGraph: any = null;
+	let modal: Alert | null = null;
 	let pipelineCells = [];
-	let selectedWorkerId: string | null = null;
 
 	onMount(async () => {
 		const clusterActionsResult = await clusterClient.getActionsFSM();
 		clusterActionsResultToIcons(clusterActionsResult);
+		const observer = new ResizeObserver((entries) => {
+			entries.forEach((entry) => {
+				if (entry.target === editorContainer) {
+					pipelineGraph?.resize();
+				}
+			});
+		});
+
+		observer.observe(editorContainer);
 	});
-
-	function getNetworkTitle(clusterState: ClusterState | null) {
-		if (!clusterState) {
-			return 'No active network';
-		}
-		return `${clusterState.id}#${clusterState.ip}`;
-	}
-
-	function getNetworkIcons() {
-		if (!$networkStore) {
-			return [];
-		}
-		const zeroConfEnabled = $networkStore?.zeroconf_discovery;
-		const icons = [
-			{
-				type: zeroConfEnabled ? 'eyeOpen' : 'eyeClosed',
-				tooltip: `Zeroconf discovery ${zeroConfEnabled ? 'enabled' : 'disabled'}. Click to toggle`,
-				dispatchEventName: zeroConfEnabled ? 'disableZeroconfDiscovery' : 'enableZeroconfDiscovery',
-				fill: 'none',
-				strokeWidth: 2
-			}
-		];
-
-		return icons;
-	}
-
-	function getWorkerItems(networkDetails, selectedPipelineDetails) {
-		const workers = Object.values(networkDetails?.workers || {})
-			.map((w) => ({ value: w.id, name: w.name }))
-			.concat([{ value: null, name: 'Select a worker' }]);
-		const nodeId = selectedPipelineDetails.selectedNodeId;
-		nodeId === null
-			? (selectedWorkerId = null)
-			: (selectedWorkerId =
-					selectedPipelineDetails?.pipeline?.nodes.find((n) => n.id === nodeId)?.worker_id || null);
-		return workers; // TODO: Fix this after proper worker heartbeat handling
-	}
-
-	function getNodeTitle() {
-		const node = getNode($selectedPipelineStore.pipeline, $selectedPipelineStore.selectedNodeId);
-		return node?.name || 'No node selected';
-	}
-
-	async function enableZeroconfDiscovery() {
-		(await clusterClient.enableZeroConf()).mapError((err) => {
-			infoModalContent = {
-				title: 'Error enabling zeroconf discovery',
-				content: JSON.stringify(err, null, 2)
-			};
-		});
-	}
-
-	async function disableZeroconfDiscovery() {
-		(await clusterClient.disableZeroConf()).mapError((err) => {
-			infoModalContent = {
-				title: 'Error disabling zeroconf discovery',
-				content: JSON.stringify(err, null, 2)
-			};
-		});
-	}
-
-	function displayWorkerInfo(worker) {
-		const workerDetails = Object.values($networkStore?.workers || []).find(
-			(w) => w.id === worker.id
-		);
-		if (workerDetails) {
-			infoModalContent = {
-				title: workerDetails.name,
-				content: workerDetails
-			};
-		}
-	}
-
-	function onWorkerIdSelectionChange() {
-		if ($selectedPipelineStore?.selectedNodeId === null) return;
-		let selectedNode = getNode(
-			$selectedPipelineStore.pipeline,
-			$selectedPipelineStore.selectedNodeId
-		);
-		selectedNode ? (selectedNode.worker_id = selectedWorkerId) : null;
-		selectedNode = selectedNode;
-	}
-
-	function getNode(pipeline: Pipeline, nodeId: string): PipelineNode | null {
-		if (!pipeline) return null;
-		if (!nodeId) return null;
-
-		return pipeline.nodes.find((n) => n.id === nodeId);
-	}
 
 	function clusterActionsResultToIcons(clusterActionsResult) {
 		clusterActionsResult.map((fsm) => {
@@ -157,16 +70,16 @@
 	async function displayClusterStatesInfo() {
 		(await clusterClient.getActionsFSM())
 			.map((fsm) => {
-				infoModalContent = {
+				modal?.display({
 					title: 'Cluster States Info',
 					content: fsm
-				};
+				});
 			})
 			.mapError((err) => {
-				infoModalContent = {
+				modal?.display({
 					title: 'Error getting cluster states info',
 					content: err
-				};
+				});
 			});
 	}
 
@@ -187,62 +100,62 @@
 
 	async function commitPipeline() {
 		(await clusterClient.commitPipeline()).mapError((err) => {
-			infoModalContent = {
+			modal?.display({
 				title: 'Error committing pipeline',
 				content: err
-			};
+			});
 		});
 	}
 
 	async function previewPipeline() {
 		(await clusterClient.previewPipeline()).mapError((err) => {
-			infoModalContent = {
+			modal?.display({
 				title: 'Error previewing pipeline',
 				content: err
-			};
+			});
 		});
 	}
 
 	async function recordPipeline() {
 		(await clusterClient.recordPipeline()).mapError((err) => {
-			infoModalContent = {
+			modal?.display({
 				title: 'Error recording pipeline',
 				content: err
-			};
+			});
 		});
 	}
 
 	async function stopPipeline() {
 		(await clusterClient.stopPipeline()).mapError((err) => {
-			infoModalContent = {
+			modal?.display({
 				title: 'Error stopping pipeline',
 				content: err
-			};
+			});
 		});
 	}
 
 	async function collectPipeline() {
 		(await clusterClient.collectPipeline()).mapError((err) => {
-			infoModalContent = {
+			modal?.display({
 				title: 'Error stopping pipeline',
 				content: err
-			};
+			});
 		});
 	}
 
 	async function resetPipeline() {
 		(await clusterClient.resetPipeline()).mapError((err) => {
-			infoModalContent = {
+			modal?.display({
 				title: 'Error resetting pipeline',
 				content: err
-			};
+			});
 		});
 	}
 
 	$: renderChanges($lifeCycleStore?.pipeline, $lifeCycleStore?.fsm);
 </script>
 
-<div class="flex-1 flex flex-col overflow-hidden">
+<div class="w-full h-full" bind:this={editorContainer}>
 	<HorizontalMenu
 		{icons}
 		on:info={displayClusterStatesInfo}
@@ -254,7 +167,7 @@
 		on:collect={collectPipeline}
 		title="Active Jobs"
 	/>
-	<div class="flex-1 flex justify-center items-center bg-[#F3F7F6]">
+	<div class="w-full h-full bg-[#F3F7F6]">
 		<EditableDagViewer
 			bind:this={pipelineGraph}
 			editable={false}
@@ -263,19 +176,3 @@
 		/>
 	</div>
 </div>
-
-<!-- Alert Modal -->
-<Modal
-	type="alert"
-	title={infoModalContent?.title}
-	bind:modalOpen={infoModalContent}
-	autoclose={true}
-	alertMessage="Close"
-	on:cancel={() => (infoModalContent = null)}
-	on:alert={() => (infoModalContent = null)}
->
-	<div slot="content">
-		<h3 class="text-xl font-medium text-green-900 p-2">{infoModalContent.title}</h3>
-		<pre>{JSON.stringify(infoModalContent.content, null, 2)}</pre>
-	</div>
-</Modal>

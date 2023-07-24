@@ -44,11 +44,11 @@
 	}
 </script>
 
-<div class="flex flex-col flex-1 overflow-hidden">
+<div class="w-full h-full">
 	<div>
 		<HorizontalMenu title={getNodeTitle($selectedPipelineStore)} backgroundClass="bg-blue-600" />
 	</div>
-	<div class="flex-1 flex flex-col w-full bg-[#F3F7F6]">
+	<div class="w-full h-full bg-[#F3F7F6]">
 		{#if $selectedPipelineStore?.selectedNodeId}
 			<div class="p-2">
 				<Label>Select a worker</Label>

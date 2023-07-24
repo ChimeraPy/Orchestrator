@@ -8,9 +8,13 @@
 	import { pipelineClient } from '$lib/services';
 	import { Icons } from '$lib/Icons';
 	import { onMount } from 'svelte';
+	import { getStore } from '$lib/stores';
+	import Alert from './Alert.svelte';
 
 	let pluginInstaller: PluginInstaller;
 	let nodeCells: joint.dia.Cell[] = [];
+	let modal: Alert | null = null;
+	let selectedPipelineStore = getStore('selectedPipeline');
 
 	onMount(() => {
 		fetchPartBrowserNodes();
@@ -28,7 +32,43 @@
 
 	const debouncedFetchNodes = debounce(fetchPartBrowserNodes);
 
-	async function addNodeToActivePipeline(node: joint.dia.Cell) {}
+	async function addNodeToActivePipeline(cell: joint.dia.Cell) {
+		if ($selectedPipelineStore?.pipeline) {
+			const node = {
+				name: cell.prop('registryName'),
+				registry_name: cell.prop('registryName'),
+				package: cell.prop('package'),
+				id: cell.id
+			};
+
+			const result = await pipelineClient.addNodeTo($selectedPipelineStore.pipeline.id, node);
+			(
+				await result.mapAsync(async (_) => {
+					const result = await pipelineClient.getPipeline($selectedPipelineStore.pipeline.id);
+					result
+						.map((pipeline) => {
+							$selectedPipelineStore.pipeline = pipeline;
+						})
+						.mapError((err) => {
+							modal?.display({
+								title: 'Error',
+								content: err
+							});
+						});
+				})
+			).mapError((error) => {
+				modal?.display({
+					title: 'Error',
+					content: error
+				});
+			});
+		} else {
+			modal?.display({
+				title: 'No active  pipeline',
+				content: 'Please create or activate a pipeline to add nodes to it.'
+			});
+		}
+	}
 </script>
 
 <div class="w-full h-full">
@@ -61,3 +101,4 @@
 </div>
 
 <PluginInstaller bind:this={pluginInstaller} on:pluginInstalled={() => fetchPartBrowserNodes()} />
+<Alert bind:this={modal} />

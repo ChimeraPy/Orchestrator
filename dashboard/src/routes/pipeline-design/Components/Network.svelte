@@ -68,7 +68,7 @@
 	}
 </script>
 
-<div class="flex flex-col flex-1 h-full w-full overflow-hidden bg-[#F3F7F6]">
+<div class="h-full w-full">
 	<div>
 		<HorizontalMenu
 			title={getNetworkTitle($networkStore)}
@@ -78,7 +78,7 @@
 			on:disableZeroconfDiscovery={() => disableZeroconfDiscovery()}
 		/>
 	</div>
-	<div class="flex-1 overflow-hidden">
+	<div class="bg-[#F3F7F6] w-full h-full">
 		<EditableList
 			editable={false}
 			items={ClusterUtils.clusterStateToWorkerListItems($networkStore)}

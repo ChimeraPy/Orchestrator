@@ -126,7 +126,6 @@ export class PipelineUtils {
 
 	static committablePipelineToJointCells(pipeline: Pipeline): joint.dia.Cell[] {
 		const getNodeColor = (node: PipelineNode): string => {
-			console.log(pipeline.committed);
 			if (pipeline.committed) return 'green';
 			if (pipeline.instantiated) return 'yellow';
 			return 'gray';
