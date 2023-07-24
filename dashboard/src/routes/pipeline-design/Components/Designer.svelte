@@ -134,7 +134,7 @@
 		});
 
 		if ($selectedPipelineStore) {
-			$selectedPipelineStore.selectedNodeId = null;
+			$selectedPipelineStore.selectedNodeId = undefined;
 		}
 	}
 
@@ -193,6 +193,8 @@
 	$: {
 		if ($selectedPipelineStore.pipeline && $selectedPipelineStore.selectedNodeId === null) {
 			renderSelectedPipelineGraph(true);
+		} else if ($selectedPipelineStore.pipeline === null) {
+			pipelineGraph?.clearGraph();
 		}
 	}
 </script>
