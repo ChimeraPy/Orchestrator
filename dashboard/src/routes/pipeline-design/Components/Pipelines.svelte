@@ -79,6 +79,7 @@
 
 		selectedPipeline = pipelines.find((p) => p.id === item.id);
 		$selectedPipelineStore.pipeline = selectedPipeline;
+		$selectedPipelineStore.selectedNodeId = null;
 	}
 
 	async function requestPipelineDeletion(item) {

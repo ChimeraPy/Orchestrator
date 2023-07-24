@@ -176,3 +176,4 @@
 		/>
 	</div>
 </div>
+<Alert bind:this={modal} />

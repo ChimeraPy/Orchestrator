@@ -5,16 +5,13 @@
 
 	import HorizontalMenu from '$lib/Components/JointJS/HorizontalMenu.svelte';
 	import * as joint from 'jointjs';
-	import type { Pipeline } from '$lib/models';
 	import EditableDagViewer from '$lib/Components/JointJS/EditableDAGViewer.svelte';
 	import { Icons } from '$lib/Icons';
 	import { getStore } from '$lib/stores';
 	import Alert from './Alert.svelte';
 
-	let nodeCells: joint.dia.Cell[];
 	const selectedPipelineStore = getStore('selectedPipeline');
 	let modal: Alert | null = null;
-	let selectedPipeline: Pipeline | null = null;
 	let pipelineGraph: EditableDagViewer;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
@@ -33,10 +30,11 @@
 	});
 
 	async function removeNodeFromPipeline(cell) {
-		if (!$selectedPipelineStore.pipeline) {
+		const selectedPipeline = $selectedPipelineStore.pipeline;
+		if (!selectedPipeline) {
 			return;
 		}
-		const selectedPipeline = $selectedPipelineStore.pipeline;
+
 		const nodeToRemove = selectedPipeline.nodes.find((n) => n.id === cell.id);
 		if (nodeToRemove) {
 			const result = await pipelineClient.removeNodeFrom(selectedPipeline.id, nodeToRemove);
@@ -46,21 +44,32 @@
 					content: error
 				});
 			});
-			await renderSelectedPipelineGraph(true);
+			setSelectedPipeline();
 		}
 	}
 
+	async function setSelectedPipeline(clear = true) {
+		const selectedPipeline = $selectedPipelineStore.pipeline;
+		if (!selectedPipeline) return;
+		(await pipelineClient.getPipeline(selectedPipeline?.id)).map((pipeline) => {
+			$selectedPipelineStore.pipeline = pipeline;
+		});
+		renderSelectedPipelineGraph(clear);
+	}
+
 	async function renderSelectedPipelineGraph(clear = true) {
-		if (!$selectedPipelineStore.pipeline) {
+		const selectedPipeline = $selectedPipelineStore.pipeline;
+		if (!selectedPipeline) {
 			return;
 		}
-		const result = await pipelineClient.getPipeline($selectedPipelineStore.pipeline.id);
+		const result = await pipelineClient.getPipeline(selectedPipeline.id);
 		const cells = PipelineUtils.pipelineResultToJointCells(result);
 		pipelineGraph?.render(cells, clear);
 		pipelineGraph?.layout();
 	}
 
 	async function addLinkToPipeline({ src, tgt, link }) {
+		const selectedPipeline = $selectedPipelineStore.pipeline;
 		const source = selectedPipeline?.nodes.find((n) => n.id === src?.id);
 		const target = selectedPipeline?.nodes.find((n) => n.id === tgt?.id);
 
@@ -70,6 +79,7 @@
 				link.prop('id', edge.id);
 			});
 		}
+		setSelectedPipeline(false);
 	}
 
 	async function removeLinkFromPipeline({ src, tgt, link }) {
@@ -95,6 +105,7 @@
 					});
 				});
 		}
+		setSelectedPipeline(true);
 	}
 
 	function highlightPipelineNode(cell) {
@@ -128,6 +139,7 @@
 	}
 
 	function showNodeInfo(node) {
+		const selectedPipeline = $selectedPipelineStore.pipeline;
 		const nodeDetails = selectedPipeline?.nodes.find((n) => n.id === node.id);
 		if (nodeDetails) {
 			modal?.display({
@@ -145,7 +157,7 @@
 		const targetNode = paper.findViewByModel(target.id);
 		const sourceNodeModel = sourceNode.model;
 		const targetNodeModel = targetNode.model;
-
+		const selectedPipeline = $selectedPipelineStore.pipeline;
 		const linkExists = selectedPipeline?.edges.some(
 			(e) => e.source === sourceNodeModel.id && e.sink === targetNodeModel.id
 		);
@@ -153,15 +165,14 @@
 	}
 
 	async function instantiatePipeline() {
-		if (!$selectedPipelineStore.pipeline) {
+		const selectedPipeline = $selectedPipelineStore.pipeline;
+		if (!selectedPipeline) {
 			return;
 		}
-		const selectedPipeline = $selectedPipelineStore.pipeline;
 		const updateResult = await pipelineClient.updatePipeline(selectedPipeline.id, selectedPipeline);
 		updateResult
 			.map((pipeline) => {
 				$selectedPipelineStore.pipeline = pipeline;
-				renderSelectedPipelineGraph();
 			})
 			.mapError((err) => {
 				modal?.display({
@@ -177,6 +188,12 @@
 				content: err
 			});
 		});
+	}
+
+	$: {
+		if ($selectedPipelineStore.pipeline && $selectedPipelineStore.selectedNodeId === null) {
+			renderSelectedPipelineGraph(true);
+		}
 	}
 </script>
 
