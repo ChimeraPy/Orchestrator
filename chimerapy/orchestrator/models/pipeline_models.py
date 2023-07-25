@@ -1,4 +1,5 @@
 import importlib
+import inspect
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,8 +9,32 @@ from chimerapy.orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
 from chimerapy.orchestrator.models.registry_models import NodeType
-from chimerapy.orchestrator.registry import plugin_registry
+from chimerapy.orchestrator.registry import discovered_nodes, plugin_registry
 from chimerapy.orchestrator.utils import uuid
+
+
+class NodeSourceCode(BaseModel):
+    """A node's source code."""
+
+    source_code: str = Field(..., description="The source code of the node.")
+    module: str = Field(..., description="The module of the node.")
+    doc: Optional[str] = Field(
+        default=None, description="The docstring of the node."
+    )
+    model_config = ConfigDict(extra="forbid")
+
+    @classmethod
+    def from_registry(cls, registry_name, package) -> "NodeSourceCode":
+        """Create a NodeSourceCode from a registry_name and package."""
+        wrapped_node = discovered_nodes.get_node(registry_name, package=package)
+        source_code = inspect.getsource(
+            inspect.getmodule(wrapped_node.NodeClass)
+        )
+        return cls(
+            source_code=source_code,
+            module=wrapped_node.NodeClass.__module__,
+            doc=wrapped_node.NodeClass.__doc__,
+        )
 
 
 class PipelineRequest(BaseModel):

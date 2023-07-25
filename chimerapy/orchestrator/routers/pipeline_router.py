@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter
 
 from chimerapy.orchestrator.models.pipeline_models import (
+    NodeSourceCode,
     NodesPlugin,
     PipelineRequest,
     WebEdge,
@@ -28,6 +29,13 @@ class PipelineRouter(APIRouter):
             self.list_nodes,
             methods=["GET"],
             response_description="List of all the nodes available to add to a pipeline",
+        )
+
+        self.add_api_route(
+            "/node/source-code",
+            self.get_node_source_code,
+            methods=["GET"],
+            response_description="Get a node's source code",
         )
 
         # Import from plugins
@@ -294,3 +302,12 @@ class PipelineRouter(APIRouter):
         """
         updated = self.pipelines.update_from_web_json(pipeline_id, pipeline)
         return updated.unwrap()
+
+    async def get_node_source_code(
+        self, registry_name: str, package: str
+    ) -> NodeSourceCode:
+        """Get a node's source code."""
+        return NodeSourceCode.from_registry(
+            registry_name,
+            package,
+        )

@@ -10,8 +10,10 @@
 	import { onMount } from 'svelte';
 	import { getStore } from '$lib/stores';
 	import Alert from './Alert.svelte';
+	import MarkdownViewer from '$lib/Components/MarkdownViewer/MarkdownViewer.svelte';
 
 	let pluginInstaller: PluginInstaller;
+	let markdownViewer: MarkdownViewer;
 	let nodeCells: joint.dia.Cell[] = [];
 	let modal: Alert | null = null;
 	let selectedPipelineStore = getStore('selectedPipeline');
@@ -69,6 +71,35 @@
 			});
 		}
 	}
+
+	async function showNodeInfo(cell: joint.dia.Cell) {
+		const registryName = cell.prop('registryName');
+		const pkg = cell.prop('package');
+		const result = await pipelineClient.getNodeSourceCode(registryName, pkg);
+
+		result.map((nodeSourceCode) => {
+			let docs = nodeSourceCode.doc;
+			if (docs) {
+				docs = docs
+					.replace(/^\s*/gm, '') // default indentation creates code blocks
+					// Convert the arguments to a list
+					.replace(/^Args:/gm, (match, arg) => '## Arguments\n')
+					.replace(/^Parameters/gm, (match, arg) => '\n## Parameters\n')
+					.replace(/^([a-zA-Z_]+):/gm, (match, argName) => `- \`${argName}\`:`)
+					.replace(/^\*\*kwargs:?/gm, (match, kwarg) => '- `**kwargs`'); // replace **kwargs and args
+			} else {
+				docs = 'No documentation found.';
+			}
+
+			docs += ['\n## Source code', '```python', nodeSourceCode.source_code, '```'].join('\n');
+			markdownViewer.display(docs, `${registryName}/${pkg}`);
+		}).mapError(err => {
+			modal?.display({
+				title: 'Error Fetching Node Info',
+				content: err
+			});
+		});
+	}
 </script>
 
 <div class="w-full h-full">
@@ -95,6 +126,7 @@
 	<div class="bg-[#F3F7F6] w-full h-full">
 		<PartBrowser
 			on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
+			on:cellInfo={(event) => showNodeInfo(event.detail)}
 			cells={nodeCells}
 		/>
 	</div>
@@ -102,3 +134,4 @@
 
 <PluginInstaller bind:this={pluginInstaller} on:pluginInstalled={() => fetchPartBrowserNodes()} />
 <Alert bind:this={modal} />
+<MarkdownViewer bind:this={markdownViewer} />

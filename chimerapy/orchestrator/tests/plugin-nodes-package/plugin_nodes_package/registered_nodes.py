@@ -4,6 +4,8 @@ from chimerapy.orchestrator.registry.utils import sink_node, source_node
 
 @source_node(name="ANode")
 class ANode(cpe.Node):
+    """A node that returns 5."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

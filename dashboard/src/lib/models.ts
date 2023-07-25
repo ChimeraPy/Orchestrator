@@ -124,3 +124,9 @@ export interface LifeCycle {
 	fsm: ActionsFSM;
 	pipeline: Pipeline;
 }
+
+export interface NodeSourceCode {
+	module: string;
+	source_code: string;
+	doc: string | null;
+}

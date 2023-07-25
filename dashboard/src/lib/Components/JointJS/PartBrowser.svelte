@@ -2,7 +2,7 @@
 	import 'jointjs/dist/joint.css';
 	import * as joint from 'jointjs';
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { getAddTool } from './utils';
+	import { getAddTool, getInfoTool } from './utils';
 
 	export let cells: joint.dia.Cell[] = [];
 	export let mode: 'vertical' | 'horizontal' = 'vertical';
@@ -91,7 +91,13 @@
 					tools: [
 						getAddTool((node) => {
 							dispatchElementClickEvent(node as joint.dia.Element);
-						})
+						}, {}),
+						getInfoTool(
+							(node) => {
+								dispatchElementInfoEvent(node as joint.dia.Element);
+							},
+							{ x: '0%' }
+						)
 					]
 				});
 				element.findView(paper).addTools(elementTools);
@@ -133,6 +139,10 @@
 
 	function dispatchElementClickEvent(cell: joint.dia.Element) {
 		dispatch('cellClick', cell);
+	}
+
+	function dispatchElementInfoEvent(cell: joint.dia.Element) {
+		dispatch('cellInfo', cell);
 	}
 
 	function resize() {
