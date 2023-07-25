@@ -9,6 +9,7 @@
 	import { Icons } from '$lib/Icons';
 	import { getStore } from '$lib/stores';
 	import Alert from './Alert.svelte';
+	import { Ok } from 'ts-monads';
 
 	const selectedPipelineStore = getStore('selectedPipeline');
 	let modal: Alert | null = null;
@@ -62,8 +63,7 @@
 		if (!selectedPipeline) {
 			return;
 		}
-		const result = await pipelineClient.getPipeline(selectedPipeline.id);
-		const cells = PipelineUtils.pipelineResultToJointCells(result);
+		const cells = PipelineUtils.pipelineResultToJointCells(new Ok(selectedPipeline));
 		pipelineGraph?.render(cells, clear);
 		pipelineGraph?.layout();
 	}
