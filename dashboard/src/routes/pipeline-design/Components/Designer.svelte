@@ -10,12 +10,24 @@
 	import { getStore } from '$lib/stores';
 	import Alert from './Alert.svelte';
 	import { Ok } from 'ts-monads';
+	import { JSONEditor } from 'svelte-jsoneditor';
+
+	enum EditorModes {
+		JSON = 'json',
+		GRAPH = 'graph'
+	}
+
+	let content = {
+		json: {},
+		text: undefined
+	}
 
 	const selectedPipelineStore = getStore('selectedPipeline');
 	let modal: Alert | null = null;
 	let pipelineGraph: EditableDagViewer;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
+	let editorMode: EditorModes = EditorModes.GRAPH;
 
 	onMount(async () => {
 		const observer = new ResizeObserver((entries) => {
@@ -190,9 +202,31 @@
 		});
 	}
 
+	function setJSONContent() {
+		content = {
+			json: $selectedPipelineStore.pipeline || {},
+			text: undefined
+		};
+
+	}
+
+	function toggleEditorMode() {
+		if (editorMode === EditorModes.GRAPH) {
+			editorMode = EditorModes.JSON;
+		} else {
+			editorMode = EditorModes.GRAPH;
+			setJSONContent();
+		}
+	}
+
+
 	$: {
 		if ($selectedPipelineStore.pipeline && $selectedPipelineStore.selectedNodeId === null) {
-			renderSelectedPipelineGraph(true);
+			if (editorMode === EditorModes.GRAPH) {
+				renderSelectedPipelineGraph(true);
+			} else {
+				setJSONContent();
+			}
 		} else if ($selectedPipelineStore.pipeline === null) {
 			pipelineGraph?.clearGraph();
 		}
@@ -207,7 +241,16 @@
 			on:reduce={() => pipelineGraph?.zoomOut()}
 			on:refresh={() => pipelineGraph?.scaleContentToFit()}
 			on:activatePipeline={() => instantiatePipeline()}
+			on:toggleEditorMode={() => toggleEditorMode()}
 			icons={[
+				{
+					type: editorMode === EditorModes.GRAPH ? Icons.code : Icons.graph,
+					tooltip: editorMode === EditorModes.GRAPH ? 'JSON' : 'Graph',
+					tooltipPlacement: 'bottom',
+					disabled: !$selectedPipelineStore.pipeline,
+					dispatchEventName: 'toggleEditorMode',
+					strokeWidth: 2
+				},
 				{
 					type: Icons.magnify,
 					tooltip: 'Zoom in',
@@ -238,17 +281,21 @@
 		/>
 	</div>
 	<div class="w-full h-full">
-		<EditableDagViewer
-			bind:this={pipelineGraph}
-			additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
-			on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
-			on:linkAdd={(event) => addLinkToPipeline(event.detail)}
-			on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
-			on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
-			on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
-			on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-			on:blankClick={(event) => clearPipelineHighlights()}
-		/>
+		{#if editorMode === EditorModes.GRAPH}
+			<EditableDagViewer
+				bind:this={pipelineGraph}
+				additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
+				on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
+				on:linkAdd={(event) => addLinkToPipeline(event.detail)}
+				on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
+				on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
+				on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
+				on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
+				on:blankClick={(event) => clearPipelineHighlights()}
+			/>
+		{:else}
+			<JSONEditor bind:content />
+		{/if}
 	</div>
 </div>
 
