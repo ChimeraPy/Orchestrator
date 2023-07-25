@@ -5,6 +5,7 @@ import type {
 	Edge,
 	ResponseError,
 	ClusterState,
+	NodeSourceCode,
 	ActionsFSM,
 	NodesPlugin
 } from '../models';
@@ -211,6 +212,18 @@ export class PipelineClient extends Client {
 			method: 'POST',
 			body: JSON.stringify(pipeline),
 			headers: new Headers({ 'Content-Type': 'application/json' })
+		});
+
+		return response;
+	}
+
+	async getNodeSourceCode(
+		registryName: string,
+		pkg: string
+	): Promise<Result<NodeSourceCode, ResponseError>> {
+		const prefix = `/node/source-code?registry_name=${registryName}&package=${pkg}`;
+		const response = await this._fetch<NodeSourceCode>(prefix, {
+			method: 'GET'
 		});
 
 		return response;

@@ -1,12 +1,16 @@
+import inspect
+
 import pytest
 from pydantic import ValidationError
 
 from chimerapy.engine.node import Node
 from chimerapy.orchestrator.models.pipeline_models import (
+    NodeSourceCode,
     NodesPlugin,
     NodeType,
     WrappedNode,
 )
+from chimerapy.orchestrator.registry import check_registry
 from chimerapy.orchestrator.tests.base_test import BaseTest
 from chimerapy.orchestrator.tests.utils import can_find_plugin_nodes_package
 
@@ -82,3 +86,20 @@ class TestPipelineModels(BaseTest):
         ]
         assert plugin.version == "0.0.1"
         assert plugin.description == "Nodes from plugin-nodes-package"
+
+    @pytest.mark.skipif(
+        not can_find_plugin_nodes_package(),
+        reason="plugin-nodes-package not found",
+    )
+    def test_node_source_code(self):
+        check_registry("plugin-nodes-package")
+        from plugin_nodes_package.registered_nodes import ANode
+
+        node_src = NodeSourceCode.from_registry(
+            registry_name="ANode", package="plugin-nodes-package"
+        )
+        assert node_src.source_code == inspect.getsource(
+            inspect.getmodule(ANode)
+        )
+        assert node_src.doc == ANode.__doc__
+        assert node_src.module == "plugin_nodes_package.registered_nodes"
