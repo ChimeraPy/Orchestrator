@@ -7,7 +7,7 @@
 	<title>ChimeraPy Dashboard</title>
 </svelte:head>
 
-<div id="homepage">
+<div id="homepage" class="container mx-auto flex flex-col h-screen">
 	<Img
 		class="p-2 mt-2"
 		src={dev ? '/ChimeraPy.png' : '/dashboard/ChimeraPy.png'}

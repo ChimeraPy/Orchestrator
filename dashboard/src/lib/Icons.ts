@@ -24,6 +24,7 @@ export enum Icons {
 export type IconType = {
 	type: Icons;
 	tooltip?: string;
+	tooltipPlacement?: 'top' | 'bottom' | 'left' | 'right';
 	disabled?: boolean;
 	fill?: string;
 	strokeWidth?: number;

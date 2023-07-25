@@ -49,7 +49,7 @@
 						{/each}
 					</svg>
 					{#if icon.tooltip}
-						<Tooltip style={'dark'}>
+						<Tooltip style={'dark'} placement={icon.tooltipPlacement || 'top'}>
 							{icon.tooltip}
 						</Tooltip>
 					{/if}
