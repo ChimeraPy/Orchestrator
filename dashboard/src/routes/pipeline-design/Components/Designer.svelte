@@ -13,21 +13,28 @@
 	import { JSONEditor } from 'svelte-jsoneditor';
 
 	enum EditorModes {
-		JSON = 'json',
-		GRAPH = 'graph'
+		SPLIT = 'split',
+		GRAPH = 'graph',
+		JSON = 'json'
+
 	}
 
 	let content = {
 		json: {},
 		text: undefined
-	}
+	};
 
 	const selectedPipelineStore = getStore('selectedPipeline');
 	let modal: Alert | null = null;
 	let pipelineGraph: EditableDagViewer;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
-	let editorMode: EditorModes = EditorModes.GRAPH;
+	let editorMode: EditorModes = EditorModes.SPLIT;
+
+	let viewSwitcherIcon = {
+		type: Icons.GRAPH,
+
+	}
 
 	onMount(async () => {
 		const observer = new ResizeObserver((entries) => {
@@ -40,6 +47,7 @@
 
 		observer.observe(editorContainer);
 		renderSelectedPipelineGraph(true);
+		setPipelineJSONContent();
 	});
 
 	async function removeNodeFromPipeline(cell) {
@@ -213,18 +221,23 @@
 	function toggleEditorMode() {
 		if (editorMode === EditorModes.GRAPH) {
 			editorMode = EditorModes.JSON;
+			setPipelineJSONContent();
 		} else {
 			editorMode = EditorModes.GRAPH;
-			setPipelineJSONContent();
+			renderSelectedPipelineGraph(true);
 		}
+	}
+
+	function setJSONEditorClasses(path, value) {
+		console.log(path, value);
 	}
 
 
 	$: {
 		if ($selectedPipelineStore.pipeline && $selectedPipelineStore.selectedNodeId === null) {
-			if (editorMode === EditorModes.GRAPH) {
+			if ([ EditorModes.GRAPH, EditorModes.SPLIT ].includes(editorMode)) {
 				renderSelectedPipelineGraph(true);
-			} else {
+			} else if ([ EditorModes.GRAPH, EditorModes.SPLIT ].includes(editorMode)) {
 				setPipelineJSONContent();
 			}
 		} else if ($selectedPipelineStore.pipeline === null) {
@@ -232,7 +245,6 @@
 		}
 	}
 </script>
-
 <div bind:this={editorContainer} class="w-full h-full">
 	<div>
 		<HorizontalMenu
@@ -243,14 +255,7 @@
 			on:activatePipeline={() => instantiatePipeline()}
 			on:toggleEditorMode={() => toggleEditorMode()}
 			icons={[
-				{
-					type: editorMode === EditorModes.GRAPH ? Icons.code : Icons.graph,
-					tooltip: editorMode === EditorModes.GRAPH ? 'JSON' : 'Graph',
-					tooltipPlacement: 'bottom',
-					disabled: !$selectedPipelineStore.pipeline,
-					dispatchEventName: 'toggleEditorMode',
-					strokeWidth: 2
-				},
+				viewSwitcherIcon,
 				{
 					type: Icons.magnify,
 					tooltip: 'Zoom in',
@@ -277,11 +282,11 @@
 					tooltipPlacement: 'bottom'
 				}
 			]}
-			title="Pipeline Editor"
+			title="{$selectedPipelineStore.pipeline? `Pipeline Editor (${$selectedPipelineStore.pipeline.name})`: 'Pipeline Editor'}"
 		/>
 	</div>
-	<div class="w-full h-full">
-		{#if editorMode === EditorModes.GRAPH}
+	<div class="w-full h-full" class:flex={editorMode === EditorModes.SPLIT} class:flex-row={editorMode === EditorModes.SPLIT}>
+		{#if [EditorModes.GRAPH, EditorModes.SPLIT].includes(editorMode)}
 			<EditableDagViewer
 				bind:this={pipelineGraph}
 				additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
@@ -293,10 +298,21 @@
 				on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
 				on:blankClick={(event) => clearPipelineHighlights()}
 			/>
-		{:else}
-			<JSONEditor {content} navigationBar="{false}" />
+		{/if}
+		{#if [EditorModes.JSON, EditorModes.SPLIT].includes(editorMode)}
+			<div class="w-full h-full" id="pipeline-json-editor">
+				<JSONEditor {content} mainMenuBar="{false}" navigationBar="{false}" />
+			</div>
 		{/if}
 	</div>
 </div>
 
 <Alert bind:this={modal} />
+
+<style>
+
+	#pipeline-json-editor {
+		 --jse-font-size-mono: 22px;
+	}
+
+</style>
