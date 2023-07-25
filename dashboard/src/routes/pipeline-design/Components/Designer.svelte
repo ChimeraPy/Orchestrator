@@ -10,12 +10,31 @@
 	import { getStore } from '$lib/stores';
 	import Alert from './Alert.svelte';
 	import { Ok } from 'ts-monads';
+	import { JSONEditor } from 'svelte-jsoneditor';
+
+	enum EditorModes {
+		SPLIT = 'split',
+		GRAPH = 'graph',
+		JSON = 'json'
+
+	}
+
+	let content = {
+		json: {},
+		text: undefined
+	};
 
 	const selectedPipelineStore = getStore('selectedPipeline');
 	let modal: Alert | null = null;
 	let pipelineGraph: EditableDagViewer;
 
 	let editorContainer: HTMLElement, horizontalMenu: HTMLElement;
+	let editorMode: EditorModes = EditorModes.SPLIT;
+
+	let viewSwitcherIcon = {
+		type: Icons.GRAPH,
+
+	}
 
 	onMount(async () => {
 		const observer = new ResizeObserver((entries) => {
@@ -28,6 +47,7 @@
 
 		observer.observe(editorContainer);
 		renderSelectedPipelineGraph(true);
+		setPipelineJSONContent();
 	});
 
 	async function removeNodeFromPipeline(cell) {
@@ -190,15 +210,41 @@
 		});
 	}
 
+	function setPipelineJSONContent() {
+		const pipeline = $selectedPipelineStore.pipeline;
+		content = {
+			json: pipeline ? PipelineUtils.pipelineToEditableJSON(pipeline): {},
+			text: undefined
+		};
+	}
+
+	function toggleEditorMode() {
+		if (editorMode === EditorModes.GRAPH) {
+			editorMode = EditorModes.JSON;
+			setPipelineJSONContent();
+		} else {
+			editorMode = EditorModes.GRAPH;
+			renderSelectedPipelineGraph(true);
+		}
+	}
+
+	function setJSONEditorClasses(path, value) {
+		console.log(path, value);
+	}
+
+
 	$: {
 		if ($selectedPipelineStore.pipeline && $selectedPipelineStore.selectedNodeId === null) {
-			renderSelectedPipelineGraph(true);
+			if ([ EditorModes.GRAPH, EditorModes.SPLIT ].includes(editorMode)) {
+				renderSelectedPipelineGraph(true);
+			} else if ([ EditorModes.GRAPH, EditorModes.SPLIT ].includes(editorMode)) {
+				setPipelineJSONContent();
+			}
 		} else if ($selectedPipelineStore.pipeline === null) {
 			pipelineGraph?.clearGraph();
 		}
 	}
 </script>
-
 <div bind:this={editorContainer} class="w-full h-full">
 	<div>
 		<HorizontalMenu
@@ -207,7 +253,9 @@
 			on:reduce={() => pipelineGraph?.zoomOut()}
 			on:refresh={() => pipelineGraph?.scaleContentToFit()}
 			on:activatePipeline={() => instantiatePipeline()}
+			on:toggleEditorMode={() => toggleEditorMode()}
 			icons={[
+				viewSwitcherIcon,
 				{
 					type: Icons.magnify,
 					tooltip: 'Zoom in',
@@ -234,22 +282,37 @@
 					tooltipPlacement: 'bottom'
 				}
 			]}
-			title="Pipeline Editor"
+			title="{$selectedPipelineStore.pipeline? `Pipeline Editor (${$selectedPipelineStore.pipeline.name})`: 'Pipeline Editor'}"
 		/>
 	</div>
-	<div class="w-full h-full">
-		<EditableDagViewer
-			bind:this={pipelineGraph}
-			additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
-			on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
-			on:linkAdd={(event) => addLinkToPipeline(event.detail)}
-			on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
-			on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
-			on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
-			on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
-			on:blankClick={(event) => clearPipelineHighlights()}
-		/>
+	<div class="w-full h-full" class:flex={editorMode === EditorModes.SPLIT} class:flex-row={editorMode === EditorModes.SPLIT}>
+		{#if [EditorModes.GRAPH, EditorModes.SPLIT].includes(editorMode)}
+			<EditableDagViewer
+				bind:this={pipelineGraph}
+				additionalLinkValidators={[PipelineUtils.isValidLink, linkExistsInActivePipeline]}
+				on:nodeInfo={(event) => showNodeInfo(event.detail.cell)}
+				on:linkAdd={(event) => addLinkToPipeline(event.detail)}
+				on:linkDblClick={(event) => removeLinkFromPipeline(event.detail)}
+				on:nodeDelete={(event) => removeNodeFromPipeline(event.detail.cell)}
+				on:nodeClick={(event) => highlightPipelineNode(event.detail.cell)}
+				on:linkClick={(event) => highlightPipelineEdge(event.detail.cell)}
+				on:blankClick={(event) => clearPipelineHighlights()}
+			/>
+		{/if}
+		{#if [EditorModes.JSON, EditorModes.SPLIT].includes(editorMode)}
+			<div class="w-full h-full" id="pipeline-json-editor">
+				<JSONEditor {content} mainMenuBar="{false}" navigationBar="{false}" />
+			</div>
+		{/if}
 	</div>
 </div>
 
 <Alert bind:this={modal} />
+
+<style>
+
+	#pipeline-json-editor {
+		 --jse-font-size-mono: 22px;
+	}
+
+</style>
