@@ -35,6 +35,7 @@ export interface PipelineNode {
 	type: NodeType;
 	kwargs: { [key: string]: any };
 	package: string;
+	worker_id: string|null;
 }
 
 export interface Edge {
@@ -123,4 +124,16 @@ export interface ActionsFSM {
 export interface LifeCycle {
 	fsm: ActionsFSM;
 	pipeline: Pipeline;
+}
+
+export interface EditablePipelineNode {
+	name: string;
+	worker_id: string|null;
+	kwargs: { [key: string]: any };
+}
+
+export interface EditablePipelineJSON {
+	name: string;
+	description: string;
+	nodes: EditablePipelineNode[];
 }

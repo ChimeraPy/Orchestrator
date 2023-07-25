@@ -202,12 +202,12 @@
 		});
 	}
 
-	function setJSONContent() {
+	function setPipelineJSONContent() {
+		const pipeline = $selectedPipelineStore.pipeline;
 		content = {
-			json: $selectedPipelineStore.pipeline || {},
+			json: pipeline ? PipelineUtils.pipelineToEditableJSON(pipeline): {},
 			text: undefined
 		};
-
 	}
 
 	function toggleEditorMode() {
@@ -215,7 +215,7 @@
 			editorMode = EditorModes.JSON;
 		} else {
 			editorMode = EditorModes.GRAPH;
-			setJSONContent();
+			setPipelineJSONContent();
 		}
 	}
 
@@ -225,7 +225,7 @@
 			if (editorMode === EditorModes.GRAPH) {
 				renderSelectedPipelineGraph(true);
 			} else {
-				setJSONContent();
+				setPipelineJSONContent();
 			}
 		} else if ($selectedPipelineStore.pipeline === null) {
 			pipelineGraph?.clearGraph();
@@ -294,7 +294,7 @@
 				on:blankClick={(event) => clearPipelineHighlights()}
 			/>
 		{:else}
-			<JSONEditor bind:content />
+			<JSONEditor {content} navigationBar="{false}" />
 		{/if}
 	</div>
 </div>

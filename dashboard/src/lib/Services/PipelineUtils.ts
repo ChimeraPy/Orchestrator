@@ -1,6 +1,6 @@
 import * as joint from 'jointjs';
 import type { Result } from 'ts-monads/lib/Result';
-import type { PipelineNode, Pipeline, ResponseError } from '../models';
+import type {PipelineNode, Pipeline, ResponseError, EditablePipelineJSON} from '../models';
 import { NodeType } from '../models';
 
 export class PipelineUtils {
@@ -155,5 +155,19 @@ export class PipelineUtils {
 					return link as joint.dia.Cell;
 				})
 			);
+	}
+
+	static pipelineToEditableJSON(pipeline: Pipeline): EditablePipelineJSON {
+		return {
+			name: pipeline.name,
+			description: pipeline.description,
+			nodes: pipeline.nodes.map((node) => {
+				return {
+					name: node.name,
+					kwargs: node.kwargs,
+					worker_id: node.worker_id,
+				};
+			}),
+		};
 	}
 }
