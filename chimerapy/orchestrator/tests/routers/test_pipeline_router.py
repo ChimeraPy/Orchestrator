@@ -1,8 +1,11 @@
+import inspect
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from chimerapy.orchestrator.models.pipeline_models import NodesPlugin
+from chimerapy.orchestrator.registered_nodes.nodes import WebcamNode
 from chimerapy.orchestrator.registry import get_all_nodes, importable_packages
 from chimerapy.orchestrator.routers.pipeline_router import PipelineRouter
 from chimerapy.orchestrator.services.pipeline_service import Pipelines
@@ -178,10 +181,20 @@ class TestPipelineRouter(BaseTest):
         assert pipeline_json_updated["nodes"] == pipeline_json["nodes"]
 
         # Remove pipeline
-        pipeline = pipeline_client.delete(f"/pipeline/remove/{pipeline_id}")
 
         assert pipeline.status_code == 200
         pipeline_json = pipeline.json()
         assert pipeline_json["id"] == pipeline_id
         assert pipeline_json["name"] == "UpdatedName"
         assert pipeline_json["description"] == "test_description"
+
+    def test_node_info(self, pipeline_client):
+        response = pipeline_client.get(
+            "/pipeline/node/source-code/?registry_name=WebcamNode&package=chimerapy-orchestrator"
+        )
+        assert response.status_code == 200
+        assert response.json() == {
+            "source_code": inspect.getsource(inspect.getmodule(WebcamNode)),
+            "module": inspect.getmodule(WebcamNode).__name__,
+            "doc": WebcamNode.__doc__,
+        }

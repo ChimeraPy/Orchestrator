@@ -137,3 +137,9 @@ export interface EditablePipelineJSON {
 	description: string;
 	nodes: EditablePipelineNode[];
 }
+
+export interface NodeSourceCode {
+	module: string;
+	source_code: string;
+	doc: string | null;
+}
