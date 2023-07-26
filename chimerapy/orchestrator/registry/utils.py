@@ -106,6 +106,7 @@ class RegistersChimeraPyNode:
                 param.default if param.default is not param.empty else None
             )
 
+        # Remove the id, debug_port and logdir kwargs
         kwargs.pop("id", None)
         kwargs.pop("debug_port", None)
         kwargs.pop("logdir", None)
