@@ -16,6 +16,10 @@ export class PipelineUtils {
 		{
 			src: NodeType.SOURCE,
 			tgt: NodeType.SINK
+		},
+		{
+			src: NodeType.STEP,
+			tgt: NodeType.STEP
 		}
 	];
 
