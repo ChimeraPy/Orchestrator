@@ -1,15 +1,16 @@
 <p align="center">
-  <a href="https://github.com/ChimeraPy"><img src="./docs/images/banner.png" alt="ChimeraPy"></a>
+  <a href="https://github.com/ChimeraPy/Orchestrator"><img src="./docs/images/banner.png" alt="ChimeraPy/Orchestrator"></a>
 </p>
 <p align="center">
     <em>Reusable Nodes and Orchestration Scheme/ Dashboard Application for ChimeraPy with JSON configuration.</em>
 </p>
 <p align="center">
-<a href="https://github.com/ChimeraPy/ChimeraPy/actions?query=workflow%3ATest" target="_blank">
-    <img src="https://github.com/ChimeraPy/ChimeraPy/workflows/Test/badge.svg" alt="Test">
+<a href="https://github.com/ChimeraPy/Orchestrator/actions?query=workflow%3ATest" target="_blank">
+    <img src="https://github.com/ChimeraPy/Orchestrator/workflows/Test/badge.svg" alt="Test">
 </a>
-<a href='https://coveralls.io/github/ChimeraPy/ChimeraPyOrchestrator?branch=main'>
-    <img src='https://coveralls.io/repos/github/ChimeraPy/ChimeraPyOrchestrator/badge.svg?branch=main' alt='Coverage Status' />
+
+<a href='https://coveralls.io/github/ChimeraPy/Orchestrator?branch=main'>
+    <img src='https://coveralls.io/repos/github/ChimeraPy/Orchestrator/badge.svg?branch=main' alt='Coverage Status' />
 </a>
 </p>
 
