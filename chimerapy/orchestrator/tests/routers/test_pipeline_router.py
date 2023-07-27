@@ -104,12 +104,16 @@ class TestPipelineRouter(BaseTest):
 
         show_window_node = pipeline_client.post(
             f"/pipeline/add-node/{pipeline_id}",
-            json={"name": "ShowWindow", "registry_name": "ShowWindow"},
+            json={
+                "name": "ShowWindow",
+                "registry_name": "ShowWindow",
+                "kwargs": {"name": "test"},
+            },
         )
 
         assert show_window_node.status_code == 200
         show_window_node_json = show_window_node.json()
-        assert show_window_node_json["name"] == "ShowWindow"
+        assert show_window_node_json["name"] == "test"
         assert show_window_node_json["registry_name"] == "ShowWindow"
         assert show_window_node_json["id"] is not None
         assert show_window_node_json["type"] == "SINK"

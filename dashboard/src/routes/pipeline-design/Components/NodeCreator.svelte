@@ -4,6 +4,7 @@
 	import { getStore } from '$lib/stores';
 	import { JSONEditor } from 'svelte-jsoneditor';
 	import { Label, Select } from 'flowbite-svelte';
+	import {NodeKwargsValidator} from './NodeKwargsValidator';
 
 	let modalOpen = null;
 	let disableConfirm = true;
@@ -14,6 +15,8 @@
 	let nodeCreationError = null;
 	const networkStore = getStore('network');
 	const selectedPipelineStore = getStore('selectedPipeline');
+	const validator: NodeKwargsValidator = new NodeKwargsValidator(null);
+
 
 	export async function display(registryName, pkg) {
 
@@ -30,6 +33,7 @@
 					nodeAttributes = {
 						json: nodeDetails.kwargs
 					};
+					validator.setKwargs(nodeDetails.kwargs);
 				} else {
 					disableConfirm = true;
 					modalOpen = true;
@@ -48,12 +52,13 @@
 		console.log('Adding node to pipeline', selectedNode);
 
         (await pipelineClient.addNodeTo($selectedPipelineStore.pipeline.id, selectedNode))
-            .map((res) => {
-                console.log('Node added to pipeline', res);
-                hide();
+            .mapAsync(async (_) => {
+                (await pipelineClient.getPipeline($selectedPipelineStore.pipeline.id)).map((pipeline) => {
+					$selectedPipelineStore.pipeline = pipeline;
+				});
+				hide();
             })
             .mapError((err) => {
-                console.log('Error adding node to pipeline', err);
                 nodeCreationError = err;
             });
 	}
@@ -76,6 +81,12 @@
 		return workers;
 	}
 
+	function validate(json) {
+		const errors = validator.validate(json)
+		disableConfirm = errors.length > 0;
+		return errors;
+	}
+
 </script>
 
 <!-- Alert Modal -->
@@ -86,12 +97,12 @@
 	autoclose={true}
 	confirmMessage="Add to Pipeline"
 	cancelMessage="Cancel"
-	size="lg"
+	size="xl"
 	{disableConfirm}
 	on:confirm={() => addNodeToExistingPipeline(JSON.parse(nodeAttributes.text), selectedWorkerId)}
 	on:cancel={hide}
 >
-	<div slot="content">
+	<div slot="content" class="w-96">
 		{#if nodeCreationError}
 			<div class="mb-4">
 				<code class="text-sm text-red-500">
@@ -104,12 +115,13 @@
 					Customize Arguments for <code>{nodeName}</code>
 				</p>
 			</div>
-			<div class="h-full w-full mb-10">
+			<div class="h-96 w-96 flex items-center mb-5">
 				<JSONEditor
 					mode="text"
+					validator="{validate}"
 					bind:content={nodeAttributes}
 					mainMenuBar={false}
-					navigationBar={false}
+					navigationBar={true}
 				/>
 			</div>
 			<div class="p-2">

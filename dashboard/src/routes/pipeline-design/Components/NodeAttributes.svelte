@@ -77,16 +77,6 @@
 					on:change={onWorkerIdSelectionChange}
 				/>
 			</div>
-			<div class="h-1/2 px-2">
-				<Label>Customize Arguments</Label>
-				<JSONEditor
-					mode="text"
-					content="{kwargs}"
-					mainMenuBar={false}
-					navigationBar={false}
-				/>
-			</div>
-
 		{/if}
 	</div>
 </div>
