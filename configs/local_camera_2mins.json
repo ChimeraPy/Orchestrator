@@ -1,0 +1,38 @@
+{
+  "name": "webcam-demo",
+  "description": "A demo of the webcam node and the show window node",
+  "runtime": 120,
+  "mode": "record",
+  "workers": {
+    "manager_ip": "129.59.104.153",
+    "manager_port": 9001,
+    "instances": [
+      {
+        "name": "local",
+        "id": "local",
+        "remote": false,
+        "description": "Worker 1 for the webcam demo with a webcam node and a show window node"
+      }
+    ]
+  },
+  "nodes": [
+    "WebcamNode",
+    "ShowWindow"
+  ],
+  "adj": [
+    [
+      "WebcamNode",
+      "ShowWindow"
+    ]
+  ],
+  "manager_config": {
+    "logdir": "cp-logs",
+    "port": 9001
+  },
+  "mappings": {
+    "local": [
+      "WebcamNode",
+      "ShowWindow"
+    ]
+  }
+}

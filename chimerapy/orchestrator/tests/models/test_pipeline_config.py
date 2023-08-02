@@ -15,6 +15,11 @@ class TestPipelineConfig(BaseTest):
         with get_test_file_path("dummy_pipeline.json").open() as f:
             return ChimeraPyPipelineConfig.model_validate(json.load(f))
 
+    def test_pipeline_config(self, dummy_pipeline_config):
+        assert dummy_pipeline_config.name == "Pipeline"
+        assert dummy_pipeline_config.description == "A pipeline"
+        assert dummy_pipeline_config.runtime == 2000
+
     def test_worker_config(self, dummy_pipeline_config):
         assert dummy_pipeline_config.workers.manager_ip == "localhost"
         assert dummy_pipeline_config.workers.manager_port == 8000

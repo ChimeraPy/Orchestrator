@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from pathlib import Path
 
@@ -40,11 +41,17 @@ def orchestrate(config: ChimeraPyPipelineConfig):
 
     manager.record().result(timeout=config.timeouts.record_timeout)
 
-    # Wail until user stops
-    while True:
-        q = input("Stop? (Y/n)")
-        if q.lower() == "y":
-            break
+    # Wait until user stops
+    if config.runtime is None:
+        while True:
+            q = input("Stop? (Y/n)")
+            if q.lower() == "y":
+                break
+    else:  # Wait for runtime to elapse
+        start_time = time.time()
+        elapsed_time = time.time() - start_time
+        while elapsed_time < config.runtime:
+            elapsed_time = time.time() - start_time
 
     manager.stop().result(timeout=config.timeouts.stop_timeout)
     manager.collect().result(timeout=config.timeouts.collect_timeout)
