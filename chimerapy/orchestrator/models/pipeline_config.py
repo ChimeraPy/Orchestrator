@@ -122,6 +122,11 @@ class ChimeraPyPipelineConfig(BaseModel):
         ..., description="The nodes in the pipeline_service."
     )
 
+    runtime: Optional[int] = Field(
+        default=None,
+        description="The runtime of the pipeline_service in seconds.",
+    )
+
     adj: List[Tuple[str, str]] = Field(
         ..., description="The edge list of the pipeline_service graph."
     )
