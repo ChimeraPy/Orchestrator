@@ -190,7 +190,7 @@ class ChimeraPyPipelineConfig(BaseModel):
         remote_workers = set()
         for wc in self.workers.instances:
             if not wc.remote:
-                wo = cpe.Worker(name=wc.name, port=0)
+                wo = cpe.Worker(name=wc.name, id=wc.id, port=0)
                 workers[wo.name] = wo
             else:
                 remote_workers.add(wc.id)
