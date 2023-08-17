@@ -3,7 +3,9 @@ import sys
 import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from pathlib import Path
+from typing import Iterable
 
+from chimerapy.engine import Manager
 from chimerapy.engine.config import set
 from chimerapy.orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
@@ -11,10 +13,7 @@ from chimerapy.orchestrator.models.pipeline_config import (
 from chimerapy.orchestrator.orchestrator_config import OrchestratorConfig
 
 
-def orchestrate(config: ChimeraPyPipelineConfig):
-    manager, pipeline, mappings, remote_workers = config.pipeline_graph()
-
-    print("Waiting for remote workers to connect...")
+def _wait_for_workers(manager: Manager, remote_workers: Iterable[str]):
     while True:
         if all(
             [
@@ -24,6 +23,13 @@ def orchestrate(config: ChimeraPyPipelineConfig):
         ):
             print("All remote workers connected!")
             break
+
+
+def orchestrate(config: ChimeraPyPipelineConfig):
+    manager, pipeline, mappings, remote_workers = config.pipeline_graph()
+
+    # Wait until workers connect
+    _wait_for_workers(manager, remote_workers)
 
     # Commit the graph
     manager.commit_graph(graph=pipeline, mapping=mappings).result(
@@ -38,6 +44,9 @@ def orchestrate(config: ChimeraPyPipelineConfig):
         q = input("Ready to start? (Y/n)")
         if q.lower() == "y":
             break
+
+    if config.mode == "record":
+        manager.start().result(timeout=config.timeouts.preview_timeout)
 
     manager.record().result(timeout=config.timeouts.record_timeout)
 
