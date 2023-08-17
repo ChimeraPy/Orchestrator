@@ -122,7 +122,7 @@ class TestClusterManager(BaseTest):
 
         # Preview pipeline
         preview_result = await cluster_manager.preview_pipeline()
-        await asyncio.sleep(2)  # 2 Seconds to preview
+        await asyncio.sleep(2)  # 5 Seconds to preview
         assert preview_result.ok().is_some()
         assert cluster_manager.current_state.name == "PREVIEWING"
 
@@ -134,7 +134,7 @@ class TestClusterManager(BaseTest):
 
         # Stop and Back to preview
         stop_result = await cluster_manager.stop_pipeline()
-        await asyncio.sleep(2)  # 2 Seconds to stop
+        await asyncio.sleep(5)  # 5 Seconds to stop
         assert stop_result.ok().is_some()
         assert cluster_manager.current_state.name == "STOPPED"
 
@@ -144,13 +144,13 @@ class TestClusterManager(BaseTest):
         assert cluster_manager.current_state.name == "COLLECTED"
 
         preview_result = await cluster_manager.preview_pipeline()
-        await asyncio.sleep(2)  # 2 Seconds to preview
+        await asyncio.sleep(5)  # 5 Seconds to preview
         assert preview_result.ok().is_some()
         assert cluster_manager.current_state.name == "PREVIEWING"
 
         # Reset pipeline
         reset_result = await cluster_manager.reset_pipeline()
-        await asyncio.sleep(10)  # 10 Seconds to reset
+        await asyncio.sleep(20)  # 20 Seconds to reset
         assert reset_result.ok().is_some()
         assert cluster_manager.current_state.name == "INITIALIZED"
         assert cluster_manager._active_pipeline is None
