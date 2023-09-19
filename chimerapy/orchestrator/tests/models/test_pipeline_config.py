@@ -17,7 +17,7 @@ class TestPipelineConfig(BaseTest):
 
     def test_pipeline_config(self, dummy_pipeline_config):
         assert dummy_pipeline_config.name == "Pipeline"
-        assert dummy_pipeline_config.description == "A pipeline"
+        assert dummy_pipeline_config.description == ""
         assert dummy_pipeline_config.runtime == 2000
 
     def test_worker_config(self, dummy_pipeline_config):

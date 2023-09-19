@@ -110,7 +110,7 @@ class ClusterUpdatesBroadCaster:
         await self.updater.add_client(q)
 
         if message is not None:
-            await q.put(message.dict())
+            await q.put(message.model_dump(mode="json"))
 
     async def remove_client(self, q: asyncio.Queue) -> None:
         """Remove a client queue from the broadcaster."""
@@ -139,7 +139,7 @@ class ClusterUpdatesBroadCaster:
                 else:
                     msg = None
                 if msg is not None:
-                    msg_dict = msg.dict()
+                    msg_dict = msg.model_dump(mode="json")
                     await self.updater.put_update(msg_dict)
                 if msg and msg.signal is UpdateMessageType.SHUTDOWN:
                     break
@@ -165,7 +165,7 @@ class ClusterUpdatesBroadCaster:
             UpdateMessageType.NETWORK_UPDATE,
             self.zeroconf_enabled,
         )
-        await self.updater.put_update(update_msg.dict())
+        await self.updater.put_update(update_msg.model_dump(mode="json"))
 
     @staticmethod
     def is_cluster_update_message(msg: Dict[str, Any]) -> bool:

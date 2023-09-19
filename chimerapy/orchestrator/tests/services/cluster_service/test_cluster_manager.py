@@ -67,11 +67,15 @@ class TestClusterManager(BaseTest):
         assert cluster_manager.get_network().map(
             lambda n: n.to_dict()
         ).unwrap() == {
-            "id": "Manager",
+            "id": cluster_manager._manager.state.id,  # pylint: disable=protected-access
+            "workers": {},
             "ip": get_ip_address(),
             "port": cluster_manager._manager.port,  # pylint: disable=protected-access
-            "workers": {},
             "logs_subscription_port": None,
+            "log_sink_enabled": True,
+            "logdir": str(
+                cluster_manager._manager.logdir
+            ),  # pylint: disable=protected-access
         }
 
     @pytest.mark.timeout(30)

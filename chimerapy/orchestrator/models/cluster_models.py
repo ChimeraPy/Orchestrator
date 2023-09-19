@@ -44,14 +44,20 @@ class NodeState(BaseModel):
         "SAVED",
         "SHUTDOWN",
     ]
-    registered_methods: Dict[str, Any] = Field(default_factory=dict)
+    registered_methods: Dict[str, RegisteredMethod] = Field(
+        default_factory=dict
+    )
     logdir: Optional[str] = None
     diagnostics: NodeDiagnostics
 
     @classmethod
     def from_cp_node_state(cls, node_state: _NodeState):
         node_state_dict = node_state.to_dict()
-        node_state_dict["logdir"] = str(node_state_dict["logdir"]) if node_state_dict["logdir"] is not None else None
+        node_state_dict["logdir"] = (
+            str(node_state_dict["logdir"])
+            if node_state_dict["logdir"] is not None
+            else None
+        )
         return cls(**node_state.to_dict())
 
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
