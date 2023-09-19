@@ -137,7 +137,7 @@ class ClusterManager(FSM):
 
     def is_zeroconf_discovery_enabled(self) -> bool:
         """Check if zeroconf discovery is enabled."""
-        return self._manager.services.zeroconf.enabled
+        return self._manager.zeroconf_service.enabled
 
     async def instantiate_pipeline(
         self, pipeline_id

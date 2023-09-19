@@ -67,11 +67,15 @@ class TestClusterManager(BaseTest):
         assert cluster_manager.get_network().map(
             lambda n: n.to_dict()
         ).unwrap() == {
-            "id": "Manager",
+            "id": cluster_manager._manager.state.id,  # pylint: disable=protected-access
+            "workers": {},
             "ip": get_ip_address(),
             "port": cluster_manager._manager.port,  # pylint: disable=protected-access
-            "workers": {},
             "logs_subscription_port": None,
+            "log_sink_enabled": True,
+            "logdir": str(
+                cluster_manager._manager.logdir
+            ),  # pylint: disable=protected-access
         }
 
     @pytest.mark.timeout(30)
@@ -134,7 +138,7 @@ class TestClusterManager(BaseTest):
 
         # Stop and Back to preview
         stop_result = await cluster_manager.stop_pipeline()
-        await asyncio.sleep(5)  # 5 Seconds to stop
+        await asyncio.sleep(10)  # 10 Seconds to stop
         assert stop_result.ok().is_some()
         assert cluster_manager.current_state.name == "STOPPED"
 
