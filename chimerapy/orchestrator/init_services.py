@@ -42,10 +42,9 @@ def get(name):
 
 def teardown():
     """Teardown the services."""
-    manager = available_services.get("cluster_manager")
+    manager: ClusterManager = available_services.get("cluster_manager")
     if manager and not manager.has_shutdown():
         manager.shutdown()
 
     for worker in available_services.get("workers", []):
-        if not worker.has_shutdown:
-            worker.shutdown()
+        worker.shutdown()
