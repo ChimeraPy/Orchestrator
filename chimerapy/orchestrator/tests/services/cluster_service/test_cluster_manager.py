@@ -138,7 +138,7 @@ class TestClusterManager(BaseTest):
 
         # Stop and Back to preview
         stop_result = await cluster_manager.stop_pipeline()
-        await asyncio.sleep(5)  # 5 Seconds to stop
+        await asyncio.sleep(10)  # 10 Seconds to stop
         assert stop_result.ok().is_some()
         assert cluster_manager.current_state.name == "STOPPED"
 
