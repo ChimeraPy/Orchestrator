@@ -11,9 +11,11 @@
 	import { getStore } from '$lib/stores';
 	import Alert from './Alert.svelte';
 	import MarkdownViewer from '$lib/Components/MarkdownViewer/MarkdownViewer.svelte';
+	import NodeCreator from './NodeCreator.svelte';
 
 	let pluginInstaller: PluginInstaller;
 	let markdownViewer: MarkdownViewer;
+	let nodeCreator: NodeCreator;
 	let nodeCells: joint.dia.Cell[] = [];
 	let modal: Alert | null = null;
 	let selectedPipelineStore = getStore('selectedPipeline');
@@ -65,11 +67,20 @@
 				});
 			});
 		} else {
-			modal?.display({
-				title: 'No active  pipeline',
-				content: 'Please create or activate a pipeline to add nodes to it.'
-			});
+			displayNoActivePipelineError();
 		}
+	}
+
+	async function showNodeCreator(cell: joint.dia.Cell) {
+		if (!$selectedPipelineStore?.pipeline) {
+			displayNoActivePipelineError();
+			return;
+		}
+
+		const registryName = cell.prop('registryName');
+		const pkg = cell.prop('package');
+
+		nodeCreator?.display(registryName, pkg);
 	}
 
 	async function showNodeInfo(cell: joint.dia.Cell) {
@@ -77,27 +88,36 @@
 		const pkg = cell.prop('package');
 		const result = await pipelineClient.getNodeSourceCode(registryName, pkg);
 
-		result.map((nodeSourceCode) => {
-			let docs = nodeSourceCode.doc;
-			if (docs) {
-				docs = docs
-					.replace(/^\s*/gm, '') // default indentation creates code blocks
-					// Convert the arguments to a list
-					.replace(/^Args:/gm, (match, arg) => '## Arguments\n')
-					.replace(/^Parameters/gm, (match, arg) => '\n## Parameters\n')
-					.replace(/^([a-zA-Z_]+):/gm, (match, argName) => `- \`${argName}\`:`)
-					.replace(/^\*\*kwargs:?/gm, (match, kwarg) => '- `**kwargs`'); // replace **kwargs and args
-			} else {
-				docs = 'No documentation found.';
-			}
+		result
+			.map((nodeSourceCode) => {
+				let docs = nodeSourceCode.doc;
+				if (docs) {
+					docs = docs
+						.replace(/^\s*/gm, '') // default indentation creates code blocks
+						// Convert the arguments to a list
+						.replace(/^Args:/gm, (match, arg) => '## Arguments\n')
+						.replace(/^Parameters/gm, (match, arg) => '\n## Parameters\n')
+						.replace(/^([a-zA-Z_]+):/gm, (match, argName) => `- \`${argName}\`:`)
+						.replace(/^\*\*kwargs:?/gm, (match, kwarg) => '- `**kwargs`'); // replace **kwargs and args
+				} else {
+					docs = 'No documentation found.';
+				}
 
-			docs += ['\n## Source code', '```python', nodeSourceCode.source_code, '```'].join('\n');
-			markdownViewer.display(docs, `${registryName}/${pkg}`);
-		}).mapError(err => {
-			modal?.display({
-				title: 'Error Fetching Node Info',
-				content: err
+				docs += ['\n## Source code', '```python', nodeSourceCode.source_code, '```'].join('\n');
+				markdownViewer.display(docs, `${registryName}/${pkg}`);
+			})
+			.mapError((err) => {
+				modal?.display({
+					title: 'Error Fetching Node Info',
+					content: err
+				});
 			});
+	}
+
+	function displayNoActivePipelineError() {
+		modal?.display({
+			title: 'No active  pipeline',
+			content: 'Please create or activate a pipeline to add nodes to it.'
 		});
 	}
 </script>
@@ -125,7 +145,7 @@
 	</div>
 	<div class="bg-[#F3F7F6] w-full h-full">
 		<PartBrowser
-			on:cellClick={(event) => addNodeToActivePipeline(event.detail)}
+			on:cellClick={(event) => showNodeCreator(event.detail)}
 			on:cellInfo={(event) => showNodeInfo(event.detail)}
 			cells={nodeCells}
 		/>
@@ -135,3 +155,4 @@
 <PluginInstaller bind:this={pluginInstaller} on:pluginInstalled={() => fetchPartBrowserNodes()} />
 <Alert bind:this={modal} />
 <MarkdownViewer bind:this={markdownViewer} />
+<NodeCreator bind:this={nodeCreator} />

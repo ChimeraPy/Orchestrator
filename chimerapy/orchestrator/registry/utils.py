@@ -1,4 +1,5 @@
-from typing import Optional, Type
+import inspect
+from typing import Any, Dict, Optional, Type
 
 from chimerapy.engine import Node
 from chimerapy.orchestrator.models.pipeline_models import NodeType, WrappedNode
@@ -70,6 +71,7 @@ class RegistersChimeraPyNode:
             node_class,
             node_type=self.type,
             registry_name=name,
+            kwargs=self._parse_init_kwargs(node_class),
         )
 
         qualified_name = f"{node_class.__module__}:{node_class.__name__}"
@@ -82,3 +84,31 @@ class RegistersChimeraPyNode:
             )
 
         return node_class
+
+    def _parse_init_kwargs(self, node_class: Type[Node]) -> Dict[str, Any]:
+        """Parse the init kwargs of a node class."""
+        signature = inspect.signature(node_class.__init__)
+        kwargs = {}
+        super_classes = inspect.getmro(node_class)
+        for super_class in super_classes:
+            if super_class not in [object, node_class]:
+                kwargs.update(self._parse_init_kwargs(super_class))
+
+        for param in signature.parameters.values():
+            if param.name == "self":
+                continue
+            if param.name == "kwargs":
+                continue
+            if param.name == "args":
+                continue
+
+            kwargs[param.name] = (
+                param.default if param.default is not param.empty else None
+            )
+
+        # Remove the id, debug_port and logdir kwargs
+        kwargs.pop("id", None)
+        kwargs.pop("debug_port", None)
+        kwargs.pop("logdir", None)
+
+        return kwargs

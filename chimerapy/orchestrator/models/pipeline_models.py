@@ -157,14 +157,17 @@ class WrappedNode(BaseModel):
             kwargs = {}
         if kwargs == {}:
             kwargs = self.kwargs
+
+        worker_id = kwargs.pop("worker_id", None) or self.worker_id
+
         return WrappedNode(
-            name=self.name,
+            name=kwargs.get("name", None) or self.name,
             NodeClass=self.NodeClass,
             node_type=self.node_type,
             registry_name=self.registry_name,
             kwargs=kwargs,
             package=self.package,
-            worker_id=self.worker_id,
+            worker_id=worker_id,
         )
 
     @classmethod

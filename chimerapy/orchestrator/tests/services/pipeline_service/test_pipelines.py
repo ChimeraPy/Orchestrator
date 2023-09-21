@@ -149,7 +149,6 @@ class TestPipelines(BaseTest):
 
             nodes_created.append(nodes)
             pipelines_created.append(pipeline)
-        print(pipelines.web_json().unwrap())
 
         assert pipelines.web_json().unwrap() == [
             {
@@ -163,7 +162,9 @@ class TestPipelines(BaseTest):
                         "name": "WebcamNode",
                         "registry_name": "WebcamNode",
                         "id": nodes_created[0][0].id,
-                        "kwargs": {},
+                        "kwargs": {
+                            "name": "WebcamNode",
+                        },
                         "type": "SOURCE",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
@@ -172,7 +173,9 @@ class TestPipelines(BaseTest):
                         "name": "ShowWindow",
                         "registry_name": "ShowWindow",
                         "id": nodes_created[0][1].id,
-                        "kwargs": {},
+                        "kwargs": {
+                            "name": "ShowWindow",
+                        },
                         "type": "SINK",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
@@ -197,7 +200,9 @@ class TestPipelines(BaseTest):
                         "name": "WebcamNode",
                         "registry_name": "WebcamNode",
                         "id": nodes_created[1][0].id,
-                        "kwargs": {},
+                        "kwargs": {
+                            "name": "WebcamNode",
+                        },
                         "type": "SOURCE",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,
@@ -206,7 +211,9 @@ class TestPipelines(BaseTest):
                         "name": "ShowWindow",
                         "registry_name": "ShowWindow",
                         "id": nodes_created[1][1].id,
-                        "kwargs": {},
+                        "kwargs": {
+                            "name": "ShowWindow",
+                        },
                         "type": "SINK",
                         "package": "chimerapy-orchestrator",
                         "worker_id": None,

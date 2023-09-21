@@ -160,7 +160,11 @@ class PipelineRouter(APIRouter):
         The response will return the newly added node. If the pipeline does not exist, a 404 error will be returned.
         """
         wrapped_node = self.pipelines.add_node_to(
-            pipeline_id, web_node.registry_name, web_node.package
+            pipeline_id,
+            web_node.registry_name,
+            web_node.package,
+            **web_node.kwargs,
+            worker_id=web_node.worker_id
         )
 
         return (

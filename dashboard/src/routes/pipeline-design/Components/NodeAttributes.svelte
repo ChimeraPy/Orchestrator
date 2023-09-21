@@ -3,11 +3,15 @@
 	import { Select, Label } from 'flowbite-svelte';
 	import { getStore } from '$lib/stores';
 	import type { Pipeline, PipelineNode } from '$lib/models';
+	import {JSONEditor} from "svelte-jsoneditor";
 
 	let networkStore = getStore('network');
 	let selectedPipelineStore = getStore('selectedPipeline');
 	let lifeCycleStore = getStore('lifeCycle');
 	let selectedWorkerId = null;
+	let kwargs = {
+		text: {}
+	};
 
 	function getNodeTitle() {
 		const node = getNode($selectedPipelineStore.pipeline, $selectedPipelineStore.selectedNodeId);
@@ -41,6 +45,20 @@
 		);
 		selectedNode ? (selectedNode.worker_id = selectedWorkerId) : null;
 		selectedNode = selectedNode;
+	}
+
+	function getNodeKwargs() {
+		const node = getNode($selectedPipelineStore.pipeline, $selectedPipelineStore.selectedNodeId);
+		return node?.kwargs || {};
+	}
+
+	$: {
+		if ($selectedPipelineStore?.selectedNodeId !== null) {
+			kwargs = {
+				text: JSON.stringify(getNodeKwargs(), null, 2)
+			};
+		}
+
 	}
 </script>
 
