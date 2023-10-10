@@ -1,6 +1,6 @@
 [project]
 name = "chimerapy-orchestrator"
-version = "0.0.2"
+version = "0.0.3"
 description = "ChimeraPyOrchestrator: A webapp and CLI tool for orchestrating ChimeraPy pipelines"
 authors = [
     {name = "Eduardo Davalos", email="eduardo.davalos.anaya@vanderbilt.edu"},
