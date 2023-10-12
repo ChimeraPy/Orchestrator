@@ -3,7 +3,7 @@ import json
 import sys
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from pathlib import Path
-from typing import Iterable
+from typing import Dict, Iterable, List, Set
 
 import tqdm
 
@@ -27,14 +27,18 @@ def _wait_for_workers(manager: Manager, remote_workers: Iterable[str]):
             break
 
 
-async def _connect_workers(manager, config):
+async def _connect_workers(
+    manager: Manager, config: ChimeraPyPipelineConfig
+) -> Set[Worker]:
     # Created Local Workers and Connect
     remote_workers = set()
+    local_workers = set()
     for wc in config.workers.instances:
         if not wc.remote:
             w = Worker(name=wc.name, id=wc.id, port=0, delete_temp=True)
             await w.aserve()
             await w.async_connect(method="zeroconf", timeout=20)
+            local_workers.add(w)
         else:
             remote_workers.add(wc.id)
 
@@ -42,8 +46,12 @@ async def _connect_workers(manager, config):
     print("Waiting for workers to connect...")
     _wait_for_workers(manager, remote_workers)
 
+    return local_workers
 
-def _get_mappings(config, created_nodes):
+
+def _get_mappings(
+    config: ChimeraPyPipelineConfig, created_nodes: Dict
+) -> Dict[str, List[str]]:
     mp = {}
     for worker_id in config.mappings:
         if mp.get(worker_id) is None:
@@ -55,7 +63,29 @@ def _get_mappings(config, created_nodes):
     return mp
 
 
-async def aorchestrate(config: ChimeraPyPipelineConfig):
+async def _pipeline_preview(manager: Manager) -> None:
+    await manager.async_start()
+
+    # Wait until user stops
+    while True:
+        q = input("Ready to start? (Y/n)")
+        if q.lower() == "y":
+            break
+
+    await manager.async_record()
+
+
+async def _pipeline_record(manager: Manager) -> None:
+    while True:
+        q = input("Ready to start? (Y/n)")
+        if q.lower() == "y":
+            break
+
+    await manager.async_start()
+    await manager.async_record()
+
+
+async def aorchestrate(config: ChimeraPyPipelineConfig) -> None:
     """Orchestrate the pipeline."""
     pipeline, created_nodes = config.get_cp_graph_map()
     manager = config.instantiate_manager()
@@ -63,30 +93,16 @@ async def aorchestrate(config: ChimeraPyPipelineConfig):
     await manager.aserve()
     await manager.async_zeroconf(enable=True)
 
-    await _connect_workers(manager, config)
+    local_workers = await _connect_workers(manager, config)
     mappings = _get_mappings(config, created_nodes)
 
     # Commit the graph
     await manager.async_commit(graph=pipeline, mapping=mappings)
 
     if config.mode == "preview":
-        await manager.async_start()
-
-        # Wait until user stops
-        while True:
-            q = input("Ready to start? (Y/n)")
-            if q.lower() == "y":
-                break
-
-        await manager.async_record()
+        await _pipeline_preview(manager)
     else:
-        # Wait until user stops
-        while True:
-            q = input("Ready to start? (Y/n)")
-            if q.lower() == "y":
-                break
-        await manager.async_start()
-        await manager.async_record()
+        await _pipeline_record(manager)
 
     if config.runtime is None:
         while True:
@@ -102,7 +118,11 @@ async def aorchestrate(config: ChimeraPyPipelineConfig):
     cpe_config.set(
         "manager.timeout.worker-shutdown", config.timeouts.shutdown_timeout
     )
+
     await manager.async_shutdown()
+    print("Shutting down local workers...")
+    for worker in local_workers:
+        await worker.async_shutdown()
 
 
 def orchestrate_worker(
