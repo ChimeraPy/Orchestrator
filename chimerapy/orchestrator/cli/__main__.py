@@ -9,28 +9,23 @@ import tqdm
 
 from chimerapy.engine import Manager, Worker
 from chimerapy.engine import config as cpe_config
+from chimerapy.engine.utils import async_waiting_for
 from chimerapy.orchestrator.models.pipeline_config import (
     ChimeraPyPipelineConfig,
 )
 from chimerapy.orchestrator.orchestrator_config import OrchestratorConfig
 
 
-def _wait_for_workers(manager: Manager, remote_workers: Iterable[str]):
-    while True:
-        if all(
-            [
-                remote_worker in manager.workers
-                for remote_worker in remote_workers
-            ]
-        ):
-            print("All remote workers connected!")
-            break
+def _check_remote_workers(manager: Manager, remote_workers: Iterable[str]):
+    return all(
+        [remote_worker in manager.workers for remote_worker in remote_workers]
+    )
 
 
 async def _connect_workers(
     manager: Manager, config: ChimeraPyPipelineConfig
 ) -> Set[Worker]:
-    # Created Local Workers and Connect
+    # Create Local Workers and Connect
     remote_workers = set()
     local_workers = set()
     for wc in config.workers.instances:
@@ -44,8 +39,10 @@ async def _connect_workers(
 
     # Wait until workers connect
     print("Waiting for workers to connect...")
-    _wait_for_workers(manager, remote_workers)
-
+    await async_waiting_for(
+        lambda: _check_remote_workers(manager, remote_workers),
+    )
+    print("All remote workers connected!")
     return local_workers
 
 
@@ -59,7 +56,6 @@ def _get_mappings(
 
         for node_name in config.mappings[worker_id]:
             mp[worker_id].append(created_nodes[node_name].id)
-
     return mp
 
 
