@@ -27,7 +27,7 @@ def _wait_for_workers(manager: Manager, remote_workers: Iterable[str]):
             break
 
 
-def _connect_workers(manager, config):
+async def _connect_workers(manager, config):
     # Created Local Workers and Connect
     remote_workers = set()
     for wc in config.workers.instances:
@@ -63,7 +63,7 @@ async def aorchestrate(config: ChimeraPyPipelineConfig):
     await manager.aserve()
     await manager.async_zeroconf(enable=True)
 
-    _connect_workers(manager, config)
+    await _connect_workers(manager, config)
     mappings = _get_mappings(config, created_nodes)
 
     # Commit the graph
