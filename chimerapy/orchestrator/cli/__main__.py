@@ -115,6 +115,7 @@ async def aorchestrate(config: ChimeraPyPipelineConfig) -> None:
         "manager.timeout.worker-shutdown", config.timeouts.shutdown_timeout
     )
 
+    await manager.async_reset(keep_workers=config.keep_remote_workers)
     await manager.async_shutdown()
     print("Shutting down local workers...")
     for worker in local_workers:
