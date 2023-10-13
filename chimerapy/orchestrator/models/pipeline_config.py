@@ -6,7 +6,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Set,
     Tuple,
     Type,
 )
@@ -155,7 +154,6 @@ class ChimeraPyPipelineConfig(BaseModel):
                 mode="python", exclude={"zeroconf"}
             )
         )
-        m.zeroconf(enable=self.manager_config.zeroconf)
         return m
 
     def get_registered_node(
@@ -164,9 +162,7 @@ class ChimeraPyPipelineConfig(BaseModel):
         wrapped_node = get_registered_node(name, package)
         return wrapped_node
 
-    def pipeline_graph(
-        self,
-    ) -> Tuple[cpe.Manager, cpe.Graph, Dict[str, List[str]], Set[str]]:
+    def get_cp_graph_map(self) -> Tuple[cpe.Graph, Dict[str, cpe.Node]]:
         created_nodes = {}
 
         for node_config in self.nodes:
@@ -186,35 +182,7 @@ class ChimeraPyPipelineConfig(BaseModel):
         for edge in edges:
             pipeline.add_edge(*edge)
 
-        workers = {}
-        remote_workers = set()
-        for wc in self.workers.instances:
-            if not wc.remote:
-                wo = cpe.Worker(name=wc.name, id=wc.id, port=0)
-                workers[wo.name] = wo
-            else:
-                remote_workers.add(wc.id)
-
-        manager = self.instantiate_manager()
-
-        [
-            w.connect(host=manager.host, port=manager.port)
-            for w in workers.values()
-        ]
-
-        mp = {}
-        for worker in self.mappings:
-            try:
-                mp[workers[worker].id] = [
-                    created_nodes[node_name].id
-                    for node_name in self.mappings[worker]
-                ]
-            except KeyError:
-                mp[worker] = [
-                    created_nodes[node_name].id
-                    for node_name in self.mappings[worker]
-                ]
-        return manager, pipeline, mp, remote_workers
+        return pipeline, created_nodes
 
     def instantiate_remote_worker(self, worker_id) -> cpe.Worker:
         for wc in self.workers.instances:
