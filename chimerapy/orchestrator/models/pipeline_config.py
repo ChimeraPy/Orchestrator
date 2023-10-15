@@ -148,6 +148,11 @@ class ChimeraPyPipelineConfig(BaseModel):
         description="The timeouts for the pipeline operation.",
     )
 
+    keep_remote_workers: bool = Field(
+        default=True,
+        description="If true, keep remote workers after pipeline has finished collection.",
+    )
+
     def instantiate_manager(self) -> cpe.Manager:
         m = cpe.Manager(
             **self.manager_config.model_dump(
