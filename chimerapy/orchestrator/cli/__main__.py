@@ -110,7 +110,7 @@ async def aorchestrate(config: ChimeraPyPipelineConfig) -> None:
             await asyncio.sleep(1)
 
     await manager.async_stop()
-    await manager.async_collect()
+    await manager.async_collect_v2()
     cpe_config.set(
         "manager.timeout.worker-shutdown", config.timeouts.shutdown_timeout
     )
